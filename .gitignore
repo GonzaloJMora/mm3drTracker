@@ -1,0 +1,12 @@
+# Operating System files (prevents icon cache clutter)
+.DS_Store
+Thumbs.db
+
+# Code Editor settings (prevents pushing your local UI layout choices)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
