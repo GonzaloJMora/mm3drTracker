@@ -1,0 +1,70 @@
+{
+  "region_name": "South Clock Town",
+  "item_checks": [
+    {
+      "id": "sct_ocarina_of_time",
+      "name": "Ocarina of Time",
+      "logic": "((magic_meter|magic_meter_double)&deku_mask)|bow|hookshot|zora_mask"
+    },
+    {
+      "id": "sct_song_of_time",
+      "name": "Song of Time",
+      "logic": "((magic_meter|magic_meter_double)&deku_mask)|bow|hookshot|zora_mask"
+    },
+    {
+      "id": "sct_deku_mask",
+      "name": "Deku Mask",
+      "logic": ""
+    },
+    {
+      "id": "sct_song_of_healing",
+      "name": "Song of Healing",
+      "logic": ""
+    },
+    {
+      "id": "sct_bombers_notebook",
+      "name": "Bombers Notebook",
+      "logic": ""
+    },
+    {
+      "id": "sct_scrub_trade",
+      "name": "Scrub Trade",
+      "logic": "moons_tear"
+    },
+    {
+      "id": "sct_postbox",
+      "name": "Postbox",
+      "logic": "postman_hat"
+    },
+    {
+      "id": "sct_clock_tower_hp",
+      "name": "Clock Tower Heart Piece",
+      "logic": ""
+    },
+    {
+      "id": "sct_straw_roof_chest",
+      "name": "Straw Roof Chest",
+      "logic": "hookshot"
+    },
+    {
+      "id": "sct_final_day_chest",
+      "name": "Final Day Chest",
+      "logic": "hookshot"
+    },
+    {
+      "id": "sct_bank_reward_1",
+      "name": "Bank Reward 1",
+      "logic": ""
+    },
+    {
+      "id": "sct_bank_reward_2",
+      "name": "Bank Reward 2",
+      "logic": ""
+    },
+    {
+      "id": "sct_bank_reward_3",
+      "name": "Bank Reward 3",
+      "logic": ""
+    }
+  ]
+}
