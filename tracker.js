@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "magic_meter": ["magic_meter", "magic_meter_double"]
     };
 
-    fetch("data/items.json")
+    fetch("data/Items.json")
         .then(response => response.json())
         .then(itemsArray => {
             const itemMap = {};
@@ -40,13 +40,6 @@ function renderGrid(container, gridOrder, itemMap, progressions) {
     gridOrder.forEach(slotId => {
         const slot = document.createElement("div");
         slot.classList.add("item-slot");
-
-        if (slotId === "") {
-            slot.classList.add("empty-slot");
-            container.appendChild(slot);
-            return;
-        }
-
         slot.dataset.id = slotId;
         const img = document.createElement("img");
         img.classList.add("item-image");
@@ -67,14 +60,16 @@ function renderGrid(container, gridOrder, itemMap, progressions) {
         slot.appendChild(img);
         container.appendChild(slot);
 
+        const itemChain = progressions[slotId] || [];
+
         slot.addEventListener("click", (e) => {
             e.preventDefault(); // Stops any default browser hangups on fast clicks
-            handleItemClick(slot, img, isProgressive, progressions[slotId], itemMap, 1);
+            handleItemClick(slot, img, isProgressive, itemChain, itemMap, 1);
         });
 
         slot.addEventListener("contextmenu", (e) => {
             e.preventDefault();
-            handleItemClick(slot, img, isProgressive, progressions[slotId], itemMap, -1);
+            handleItemClick(slot, img, isProgressive, itemChain, itemMap, -1);
         });
     });
 }
