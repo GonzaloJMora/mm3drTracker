@@ -1,15 +1,16 @@
 {
   "region_name": "South Clock Town",
+  "logic": "",
   "item_checks": [
     {
       "id": "sct_ocarina_of_time",
       "name": "Ocarina of Time",
-      "logic": "((magic_meter|magic_meter_double)&deku_mask)|bow|hookshot|zora_mask"
+      "logic": "(magic_meter&deku_mask)|bow|hookshot|zora_mask"
     },
     {
       "id": "sct_song_of_time",
       "name": "Song of Time",
-      "logic": "((magic_meter|magic_meter_double)&deku_mask)|bow|hookshot|zora_mask"
+      "logic": "(magic_meter&deku_mask)|bow|hookshot|zora_mask"
     },
     {
       "id": "sct_deku_mask",

@@ -1,3 +1,92 @@
+main {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.region-sidebar {
+    background-color: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.region-sidebar h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 8px;
+}
+
+/* Dropdown Accordion Styling */
+.region-group {
+    margin-bottom: 10px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #262626;
+}
+
+.region-header {
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+    width: 100%;
+    text-align: left;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.region-header:hover {
+    background-color: #444;
+}
+
+.region-content {
+    display: none;
+    padding: 10px;
+    background-color: #202020;
+}
+
+.region-content.open {
+    display: block;
+}
+
+/* Clickable region check items (Expanded size, left-aligned, no checkboxes) */
+.region-check-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    color: #e0e0e0;
+}
+
+/* Hover effect to show it's interactive */
+.region-check-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+/* Completed / grayed out state */
+.region-check-item.completed {
+    opacity: 0.4;
+    text-decoration: line-through;
+    color: #888888;
+}
+
 body {
     background-color: #121212;
     color: #ffffff;
@@ -6,8 +95,8 @@ body {
 }
 
 .grid-container {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
     gap: 10px;
     width: 100%;
 }
@@ -48,7 +137,7 @@ body {
     background-color: transparent !important;
     border: none !important;
     cursor: default;
-    pointer-events: none; /* Prevents users from clicking on the empty space */
+    pointer-events: none;
 }
 
 /* Hover effect for active and unactive items */
@@ -63,11 +152,9 @@ body {
     object-fit: contain;
     transition: filter 0.15s ease-in-out;
     -webkit-user-drag: none;
-    
-    /* Add these to make clicks snappy on the image element */
     user-select: none;
     -webkit-user-select: none;
-    pointer-events: none; /* Optional: lets clicks pass straight through the img to the slot div */
+    pointer-events: none;
 }
 
 /* Active state (Full brightness) */

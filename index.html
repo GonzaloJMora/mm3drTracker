@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#121212">
     <title>MM3D Rando Tracker</title>
     
     <!-- This line sets your website icon -->
@@ -11,7 +12,7 @@
     <!-- Links your CSS styling file -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body style="background-color: #121212; color: #ffffff;">
 
     <header>
         <h1>MM3D Rando Tracker</h1>
@@ -21,7 +22,14 @@
         <div class="grid-container">
         <div id="item-grid" class="item-grid"></div>
         <div id="mask-grid" class="item-grid"></div>
+        <div id="dungeon-grid" class="item-grid"></div>
+        <div id="gear-grid" class="item-grid"></div>
         </div>
+
+        <aside id="region-sidebar" class="region-sidebar">
+        <h2>Region Checks</h2>
+        <div id="region-dropdown-container"></div>
+    </aside>
     </main>
 
     <script src="tracker.js"></script>

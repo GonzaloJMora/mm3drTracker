@@ -1,0 +1,51 @@
+{
+  "region_name": "North Clock Town",
+  "logic": "",
+  "item_checks": [
+    {
+      "id": "nct_great_fairy_deku",
+      "name": "Clock Town Great Fairy (Deku)",
+      "logic": "clock_town_stray_fairy&deku_mask"
+    },
+    {
+      "id": "nct_great_fairy_human",
+      "name": "Clock Town Great Fairy (Human)",
+      "logic": "clock_town_stray_fairy"
+    },
+    {
+      "id": "nct_keaton_quiz",
+      "name": "Keaton Quiz",
+      "logic": "(sword|deku_mask|zora_mask)&keaton_mask"
+    },
+    {
+      "id": "nct_deku_playground_3_days",
+      "name": "Deku Playground 3 Days",
+      "logic": "deku_mask"
+    },
+    {
+      "id": "nct_tree_hp",
+      "name": "Tree Heart Piece",
+      "logic": ""
+    },
+    {
+      "id": "nct_old_lady",
+      "name": "Save Old Lady",
+      "logic": "sword|zora_mask|goron_mask|great_fairy_sword"
+    },
+    {
+      "id": "nct_tingle_clock_town_map_buy",
+      "name": "Tingle Clock Town Map",
+      "logic": ""
+    },
+    {
+      "id": "nct_tingle_woodfall_map_buy",
+      "name": "Tingle Woodfall Map",
+      "logic": ""
+    },
+    {
+      "id": "nct_postbox",
+      "name": "Postbox",
+      "logic": "postman_hat"
+    }
+  ]
+}

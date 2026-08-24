@@ -1,0 +1,40 @@
+{
+  "grids": {
+    "item": [
+      "sword", "shield", "bow", "fire_arrow", "ice_arrow", "light_arrow",
+      "magic", "bomb", "bombchu", "deku_stick", "deku_nut", "magic_bean",
+      "wallet", "powder_keg", "pictograph_box", "lens_of_truth", "hookshot", "great_fairy_sword",
+      "red_potion", "gold_dust", "milk", "chateau_romani", "mystery_milk", "empty_bottle"
+    ],
+    "mask": [
+      "postman_hat", "all_night_mask", "blast_mask", "stone_mask", "great_fairy_mask", "deku_mask",
+      "keaton_mask", "bremen_mask", "bunny_hood", "don_gero_mask", "mask_of_scents", "goron_mask",
+      "romani_mask", "troupe_leader_mask", "kafei_mask", "couples_mask", "mask_of_truth", "zora_mask",
+      "kamaro_mask", "gibdo_mask", "garo_mask", "captains_hat", "giants_mask", "fierce_deity_mask"
+    ],
+    "dungeon": [
+      "", "swamp_skulltula_token", "ocean_skulltula_token", "clock_town_stray_fairy", "seahorse", "zora_egg",
+      "map_woodfall_temple", "compass_woodfall_temple", "woodfall_small_key", "woodfall_big_key", "woodfall_stray_fairy", "odolwa_remains",
+      "map_snowhead_temple", "compass_snowhead_temple", "snowhead_small_key", "snowhead_big_key", "snowhead_stray_fairy", "goht_remains",
+      "map_great_bay_temple", "compass_great_bay_temple", "great_bay_small_key", "great_bay_big_key", "great_bay_stray_fairy", "gyorg_remains",
+      "map_stone_tower_temple", "compass_stone_tower_temple", "stone_tower_small_key", "stone_tower_big_key", "stone_tower_stray_fairy", "twinmold_remains"
+    ],
+    "gear": [
+      "", "moons_tear", "clock_town_title_deed", "swamp_title_deed", "mountain_title_deed", "ocean_title_deed",
+      "room_key", "letter_to_kafei", "pendant_of_memories", "letter_to_mama", "heart_piece", "heart_container",
+      "bombers_notebook", "", "", "", "", "",
+      "ocarina_of_time", "song_of_time", "song_of_healing", "song_of_soaring", "eponas_song", "song_of_storms",
+      "sonata_of_awakening", "goron_lullaby", "new_wave_bossa_nova", "elegy_of_emptiness", "oath_to_order", "scarecrow_song"
+    ]
+  },
+  "progressions": {
+    "sword": ["kokiri_sword", "razor_sword", "guilded_sword"],
+    "shield": ["termina_shield", "mirror_shield"],
+    "wallet": ["base_wallet", "adults_wallet", "giants_wallet"],
+    "magic": ["magic_meter", "magic_meter_double"],
+    "goron_lullaby": ["goron_lullaby_intro", "goron_lullaby_full"]
+  },
+  "check_groups": [
+    ["sct_postbox", "nct_postbox"]
+  ]
+}
