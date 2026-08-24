@@ -2,7 +2,7 @@
   { "id": "adults_wallet", "image": "images/AdultsWallet.png" },
   { "id": "all_night_mask", "image": "images/AllNightMask.png" },
   { "id": "blast_mask", "image": "images/BlastMask.png" },
-  { "id": "bombs", "image": "images/Bomb.png" },
+  { "id": "bomb", "image": "images/Bomb.png" },
   { "id": "bombchu", "image": "images/Bombchu.png" },
   { "id": "bombers_notebook", "image": "images/BombersNotebook.png" },
   { "id": "bow", "image": "images/Bow.png" },
