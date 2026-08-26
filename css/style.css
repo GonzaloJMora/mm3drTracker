@@ -1,0 +1,12 @@
+main {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+body {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
