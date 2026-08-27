@@ -43,19 +43,23 @@ function renderRegionDropdown(regionData, container, CHECK_GROUPS) {
     const contentDiv = document.createElement("div");
     contentDiv.classList.add("region-content");
 
+    const itemDivs = [];
+
     regionData.item_checks.forEach(check => {
-        // Created as a clickable div item instead of a checkbox/label
         const itemDiv = document.createElement("div");
         itemDiv.classList.add("region-check-item");
         itemDiv.dataset.checkId = check.id;
         itemDiv.textContent = check.name;
 
-        // --- CLICK TOGGLE & SYNC LOGIC ---
+        // TODO: REMOVE TESTING CODE ONCE LOCATION COLORING BASED OFF OBTAINED ITEMS
+        const testList = ["inaccessible", "accessible", "vanilla"];
+        itemDiv.classList.add(testList[Math.floor(Math.random() * testList.length)]);
+
         itemDiv.addEventListener("click", () => {
             const isCompleted = itemDiv.classList.toggle("completed");
             const currentId = itemDiv.dataset.checkId;
 
-            // Find any group this check belongs to and sync across the page
+            // Sync equivalent checks (example: the three Clock Town Postbox checks count as the same check)
             CHECK_GROUPS.forEach(group => {
                 if (group.includes(currentId)) {
                     group.forEach(linkedId => {
@@ -70,9 +74,13 @@ function renderRegionDropdown(regionData, container, CHECK_GROUPS) {
                     });
                 }
             });
+
+            // Update headers for all regions affected (or recalculate this one)
+            determineRegionLocationAccessibility(headerBtn, itemDivs);
         });
 
         contentDiv.appendChild(itemDiv);
+        itemDivs.push(itemDiv);
     });
 
     headerBtn.addEventListener("click", () => {
@@ -84,4 +92,44 @@ function renderRegionDropdown(regionData, container, CHECK_GROUPS) {
     groupDiv.appendChild(headerBtn);
     groupDiv.appendChild(contentDiv);
     container.appendChild(groupDiv);
+
+    determineRegionLocationAccessibility(headerBtn, itemDivs);
+}
+
+function determineRegionLocationAccessibility(headerBtn, itemDivs) {
+    let hasRed = false;
+    let hasGreen = false;
+    let hasPurple = false;
+
+    itemDivs.forEach(check => {
+        if (!check.classList.contains("completed")) {
+            if (check.classList.contains("inaccessible")) {
+                hasRed = true;
+            }
+            if (check.classList.contains("accessible")) {
+                hasGreen = true;
+            }
+            if (check.classList.contains("vanilla")) {
+                hasPurple = true;
+            }
+        }
+    });
+
+    headerBtn.classList.remove("inaccessible", "partialCompletion", "fullClear", "vanilla", "completed");
+
+    if (hasRed && hasGreen) {
+        headerBtn.classList.add("partialCompletion");
+    }
+    else if (hasRed) {
+        headerBtn.classList.add("inaccessible");
+    }
+    else if (hasGreen) {
+        headerBtn.classList.add("fullClear");
+    }
+    else if (hasPurple) {
+        headerBtn.classList.add("vanilla");
+    }
+    else {
+        headerBtn.classList.add("completed");
+    }
 }

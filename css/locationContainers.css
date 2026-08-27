@@ -18,7 +18,7 @@
 /* Dropdown Accordion Styling */
 .region-group {
     margin-bottom: 10px;
-    border: 1px solid #333;
+    border: 1px solid #333333;
     border-radius: 6px;
     overflow: hidden;
     background-color: #262626;
@@ -42,6 +42,31 @@
     background-color: #444;
 }
 
+/* Player does not have the necessary items to complete any checks in this region without glitches */
+.region-header.inaccessible {
+    color: #ff0000;
+}
+
+/* Player is able to check some of the item checks in a given region */
+.region-header.partialCompletion {
+    color: #ebdc0b;
+}
+
+/* Player is able to fully check every remaining item check in a given region */
+.region-header.fullClear {
+    color: #00c000;
+}
+
+/* All remaining checks in this region are not randomized */
+.region-header.vanilla {
+    color: #9f0dda;
+}
+
+/* No more checks left in a given region */
+.region-header.completed {
+    color: #888888;
+}
+
 .region-content {
     display: none;
     padding: 10px;
@@ -52,7 +77,6 @@
     display: block;
 }
 
-/* Clickable region check items (Expanded size, left-aligned, no checkboxes) */
 .region-check-item {
     display: flex;
     align-items: center;
@@ -68,10 +92,25 @@
     color: #e0e0e0;
 }
 
-/* Hover effect to show it's interactive */
+/* Hover effect */
 .region-check-item:hover {
     background-color: rgba(255, 255, 255, 0.05);
     color: #ffffff;
+}
+
+/* Player does not have the necessary items to complete this check without glitches */
+.region-check-item.inaccessible {
+    color: #ff0000;
+}
+
+/* Player is able to obtain the item from this check */
+.region-check-item.accessible {
+    color: #00c000;
+}
+
+/* Item in this check is not randomized */
+.region-check-item.vanilla {
+    color: #9f0dda;
 }
 
 /* Completed / grayed out state */

@@ -46,6 +46,11 @@
       "id": "nct_postbox",
       "name": "Postbox",
       "logic": "postman_hat"
+    },
+    {
+      "id": "nct_bombers_minigame",
+      "name": "Bombers' Minigame",
+      "logic": "bow|hookshot|zora_mask|(deku_mask&magic)"
     }
   ]
 }
