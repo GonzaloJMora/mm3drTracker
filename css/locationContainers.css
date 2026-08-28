@@ -3,9 +3,14 @@
     border: 2px solid #333;
     border-radius: 8px;
     padding: 15px;
-    width: 100%;
-    max-width: 320px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    
+    /* Prevents the sidebar from distorting or squishing when space is limited */
+    flex: 1 1 400px;
+    min-width: 0; 
+    box-sizing: border-box;
+    
+    display: flex;
+    flex-direction: column;
 }
 
 .region-sidebar h2 {
@@ -13,10 +18,24 @@
     font-size: 1.2rem;
     border-bottom: 1px solid #333;
     padding-bottom: 8px;
+    flex-shrink: 0;
+}
+
+/* Container that auto-generates side-by-side columns and wraps safely when F12 is opened */
+#region-dropdown-container {
+    /* Uses auto-fit/auto-fill behavior so it drops columns cleanly instead of squishing */
+    columns: 280px 2; 
+    column-gap: 15px;
+    
+    overflow-y: auto;    
+    overflow-x: hidden;  
+    padding-right: 5px;  
+    max-height: calc(100vh - 160px);
 }
 
 /* Dropdown Accordion Styling */
 .region-group {
+    break-inside: avoid; 
     margin-bottom: 10px;
     border: 1px solid #333333;
     border-radius: 6px;
@@ -42,30 +61,11 @@
     background-color: #444;
 }
 
-/* Player does not have the necessary items to complete any checks in this region without glitches */
-.region-header.inaccessible {
-    color: #ff0000;
-}
-
-/* Player is able to check some of the item checks in a given region */
-.region-header.partialCompletion {
-    color: #ebdc0b;
-}
-
-/* Player is able to fully check every remaining item check in a given region */
-.region-header.fullClear {
-    color: #00c000;
-}
-
-/* All remaining checks in this region are not randomized */
-.region-header.vanilla {
-    color: #9f0dda;
-}
-
-/* No more checks left in a given region */
-.region-header.completed {
-    color: #888888;
-}
+.region-header.inaccessible { color: #ff0000; }
+.region-header.partialCompletion { color: #ebdc0b; }
+.region-header.fullClear { color: #00c000; }
+.region-header.vanilla { color: #9f0dda; }
+.region-header.completed { color: #888888; }
 
 .region-content {
     display: none;
@@ -92,30 +92,35 @@
     color: #e0e0e0;
 }
 
-/* Hover effect */
 .region-check-item:hover {
     background-color: rgba(255, 255, 255, 0.05);
     color: #ffffff;
 }
 
-/* Player does not have the necessary items to complete this check without glitches */
-.region-check-item.inaccessible {
-    color: #ff0000;
-}
-
-/* Player is able to obtain the item from this check */
-.region-check-item.accessible {
-    color: #00c000;
-}
-
-/* Item in this check is not randomized */
-.region-check-item.vanilla {
-    color: #9f0dda;
-}
-
-/* Completed / grayed out state */
+.region-check-item.inaccessible { color: #ff0000; }
+.region-check-item.accessible { color: #00c000; }
+.region-check-item.vanilla { color: #9f0dda; }
 .region-check-item.completed {
     opacity: 0.4;
     text-decoration: line-through;
     color: #888888;
+}
+
+/* Fallback for when the screen/inspector shrinks too narrow for dual columns */
+@media screen and (max-width: 900px) {
+    #region-dropdown-container {
+        columns: 1; /* Drops cleanly to 1 column without breaking layout components */
+    }
+}
+
+/* Mobile adjustments */
+@media screen and (max-width: 1024px) {
+    .region-sidebar {
+        width: 100%;
+        flex: none;
+    }
+    #region-dropdown-container {
+        columns: 1; 
+        max-height: none;
+    }
 }

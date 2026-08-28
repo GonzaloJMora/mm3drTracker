@@ -20,21 +20,36 @@
     </header>
 
     <main>
-        <div class="grid-container">
-        <div id="item-grid" class="item-grid"></div>
-        <div id="mask-grid" class="item-grid"></div>
-        <div id="dungeon-grid" class="item-grid"></div>
-        <div id="gear-grid" class="item-grid"></div>
+        <!-- Mobile Tab Navigation (Hidden on Desktop) -->
+        <div class="mobile-tabs">
+            <button class="tab-btn active" onclick="switchMobileTab('items')">Item Tracker</button>
+            <button class="tab-btn" onclick="switchMobileTab('locations')">Locations</button>
         </div>
 
-        <aside id="region-sidebar" class="region-sidebar">
-            <h2></h2>
-            <div id="region-dropdown-container"></div>
-        </aside>
+        <div class="tracker-layout-wrapper">
+            <!-- Item Tracker Section -->
+            <div id="item-section" class="tracker-section active-section">
+                <div class="grid-container">
+                    <div id="item-grid" class="item-grid"></div>
+                    <div id="mask-grid" class="item-grid"></div>
+                    <div id="dungeon-grid" class="item-grid"></div>
+                    <div id="gear-grid" class="item-grid"></div>
+                </div>
+            </div>
+
+            <!-- Location Tracker Section -->
+            <div id="location-section" class="tracker-section">
+                <aside id="region-sidebar" class="region-sidebar">
+                    <h2></h2>
+                    <div id="region-dropdown-container"></div>
+                </aside>
+            </div>
+        </div>
     </main>
 
-    <script src="js/gameState.js"></script>
+    <script src="js/gameStateManager.js"></script>
     <script src="js/itemTracker.js"></script>
     <script src="js/locationTracker.js"></script>
+    <script src="js/mobileTabManager.js"></script>
 </body>
 </html>

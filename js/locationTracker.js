@@ -117,6 +117,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function renderRegionDropdown(regionData, container, CHECK_GROUPS) {
+    const existingHeader = Array.from(container.querySelectorAll(".region-header span:first-child"))
+        .find(span => span.textContent === regionData.region_name);
+    
+    if (existingHeader) {
+        return; 
+    }
+
     const groupDiv = document.createElement("div");
     groupDiv.classList.add("region-group");
 

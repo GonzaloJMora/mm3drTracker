@@ -1,4 +1,3 @@
-// itemGrid.js
 document.addEventListener("DOMContentLoaded", async () => {
     const itemContainer = document.getElementById("item-grid");
     const maskContainer = document.getElementById("mask-grid");
@@ -44,31 +43,45 @@ function renderGrid(container, gridOrder, itemMap, progressions, item_counts) {
             return;
         }
 
-        const img = document.createElement("img");
-        img.classList.add("item-image");
-        img.draggable = false;
-        slot.classList.add("dimmed");
-
         const isProgressive = progressions.hasOwnProperty(slotId);
         const hasItemCount = item_counts.hasOwnProperty(slotId);
         let itemChain = progressions[slotId] || [];
 
-        if (isProgressive) {
-            slot.dataset.stage = "-1";
-            img.src = itemMap[itemChain[0]];
-            slot.title = formatTooltip(itemChain[0]);
+        const isBombersCodeDigit = slotId.startsWith("bombers_code_digit_");
+
+        let img = null;
+        if (!isBombersCodeDigit) {
+            img = document.createElement("img");
+            img.classList.add("item-image");
+            img.draggable = false;
+            slot.classList.add("dimmed");
+
+            if (isProgressive) {
+                slot.dataset.stage = "-1";
+                img.src = itemMap[itemChain[0]];
+                slot.title = formatTooltip(itemChain[0]);
+            } else {
+                img.src = itemMap[slotId];
+                slot.title = formatTooltip(slotId);
+            }
+
+            slot.appendChild(img);
         } else {
-            img.src = itemMap[slotId];
+            slot.classList.add("bombers-code-slot");
+            slot.dataset.count = "0";
             slot.title = formatTooltip(slotId);
         }
 
-        slot.appendChild(img);
-
         const counterNode = document.createElement("div");
         counterNode.classList.add("slot-counter");
+        
+        if (isBombersCodeDigit) {
+            counterNode.innerText = "0";
+        }
+
         slot.appendChild(counterNode);
 
-        if (hasItemCount) {
+        if (hasItemCount && !isBombersCodeDigit) {
             itemChain = item_counts[slotId];
             if (Number.isInteger(itemChain)) {
                 slot.dataset.count = "0";
@@ -92,10 +105,32 @@ function renderGrid(container, gridOrder, itemMap, progressions, item_counts) {
 }
 
 function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCount, chain, itemMap, direction) {
-    counterNode.classList.remove("max-count");
-    counterNode.innerText = "";
+    const slotId = slot.dataset.id;
+    const isBombersCodeDigit = slotId.startsWith("bombers_code_digit_");
 
-    if (isProgressive) {
+    counterNode.classList.remove("max-count");
+    if (!isBombersCodeDigit) {
+        counterNode.innerText = "";
+    }
+
+    if (isBombersCodeDigit) {
+        let currentCount = parseInt(slot.dataset.count);
+        const maxCount = 5; // Limit defined by item_counts.bombers_code
+
+        if (direction === 1) {
+            if (currentCount === maxCount) currentCount = 0;
+            else currentCount++;
+        } else if (direction === -1) {
+            if (currentCount === 0) currentCount = maxCount;
+            else currentCount--;
+        }
+
+        slot.dataset.count = currentCount;
+        counterNode.innerText = currentCount;
+
+        window.GameState.updateItemState(slotId, null, currentCount);
+    }
+    else if (isProgressive) {
         let currentStage = parseInt(slot.dataset.stage);
         const maxStages = chain.length;
         currentStage += direction;
@@ -116,7 +151,7 @@ function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCo
             slot.title = formatTooltip(activeItemId);
         }
 
-        window.GameState.updateItemState(slot.dataset.id, currentStage, null);
+        window.GameState.updateItemState(slotId, currentStage, null);
     }
     else if (hasItemCount) {
         if (Number.isInteger(chain)) {
@@ -143,7 +178,7 @@ function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCo
                 }
             }
 
-            window.GameState.updateItemState(slot.dataset.id, null, currentCount);
+            window.GameState.updateItemState(slotId, null, currentCount);
         }
         else if (Array.isArray(chain)) {
             let currentStage = parseInt(slot.dataset.stage);
@@ -165,14 +200,14 @@ function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCo
                 }
             }
 
-            window.GameState.updateItemState(slot.dataset.id, currentStage, null);
+            window.GameState.updateItemState(slotId, currentStage, null);
         }
     }
     else {
         slot.classList.toggle("dimmed");
         const isDimmed = slot.classList.contains("dimmed");
         
-        window.GameState.updateItemState(slot.dataset.id, isDimmed ? -1 : 0, null);
+        window.GameState.updateItemState(slotId, isDimmed ? -1 : 0, null);
     }
 }
 
