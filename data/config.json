@@ -34,6 +34,25 @@
     "magic": ["magic_meter", "magic_meter_double"],
     "goron_lullaby": ["goron_lullaby_intro", "goron_lullaby_full"]
   },
+  "item_counts": {
+      "bow": [30, 40, 50],
+      "bomb": [20, 30, 40],
+      "empty_bottle": 2,
+      "swamp_skulltula_token": 30,
+      "ocean_skulltula_token": 30,
+      "zora_egg": 7,
+      "woodfall_small_key": 1,
+      "snowhead_small_key": 3,
+      "great_bay_small_key": 1,
+      "stone_tower_small_key": 4,
+      "woodfall_stray_fairy": 15,
+      "snowhead_stray_fairy": 15,
+      "great_bay_stray_fairy": 15,
+      "stone_tower_stray_fairy": 15,
+      "heart_piece": 52,
+      "heart_container": 4,
+      "bombers_code": 5
+  },
   "check_groups": [
     ["sct_postbox", "nct_postbox"]
   ]

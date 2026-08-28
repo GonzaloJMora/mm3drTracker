@@ -15,7 +15,7 @@
     {
       "id": "nct_keaton_quiz",
       "name": "Keaton Quiz",
-      "logic": "(sword|deku_mask|zora_mask)&keaton_mask"
+      "logic": "(kokiri_sword|deku_mask|zora_mask)&keaton_mask"
     },
     {
       "id": "nct_deku_playground_3_days",
@@ -30,7 +30,7 @@
     {
       "id": "nct_old_lady",
       "name": "Save Old Lady",
-      "logic": "sword|zora_mask|goron_mask|great_fairy_sword"
+      "logic": "kokiri_sword|zora_mask|goron_mask|great_fairy_sword"
     },
     {
       "id": "nct_tingle_clock_town_map_buy",
@@ -50,7 +50,7 @@
     {
       "id": "nct_bombers_minigame",
       "name": "Bombers' Minigame",
-      "logic": "bow|hookshot|zora_mask|(deku_mask&magic)"
+      "logic": "bow|hookshot|zora_mask|(deku_mask&magic_meter)"
     }
   ]
 }
