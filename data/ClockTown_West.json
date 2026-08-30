@@ -1,0 +1,91 @@
+{
+  "region_name": "West Clock Town",
+  "logic": "",
+  "item_checks": [
+    {
+      "id": "wct_rosa_sisters",
+      "name": "Rosa Sisters",
+      "logic": "kamaro_mask"
+    },
+    {
+      "id": "wct_swordsman_school",
+      "name": "Swordsman School",
+      "logic": "kokiri_sword|great_fairy_sword"
+    },
+    {
+      "id": "wct_postman_game",
+      "name": "Postman Game",
+      "logic": "bunny_hood"
+    },
+    {
+      "id": "wct_all_night_mask_purchase",
+      "name": "All Night Mask Purchase",
+      "logic": "(kokiri_sword|zora_mask|goron_mask|great_fairy_sword)&giants_wallet"
+    },
+    {
+      "id": "wct_bomb_shop_bombs",
+      "name": "Bomb Shop Bombs Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_bomb_shop_bombchu",
+      "name": "Bomb Shop Bombchu Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_bomb_shop_bomb_bag",
+      "name": "Bomb Shop Bomb Bag Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_bomb_shop_big_bomb_bag",
+      "name": "Bomb Shop Big Bomb Bag Purchase",
+      "logic": "kokiri_sword|zora_mask|goron_mask|great_fairy_sword"
+    },
+    {
+      "id": "wct_bomb_shop_powder_keg",
+      "name": "Bomb Shop Powder Keg Purchase",
+      "logic": "goron_mask&powder_keg"
+    },
+    {
+      "id": "wct_trading_post_item_1",
+      "name": "Trading Post Item 1 Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_trading_post_item_2",
+      "name": "Trading Post Item 2 Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_trading_post_item_3",
+      "name": "Trading Post Item 3 Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_trading_post_item_4",
+      "name": "Trading Post Item 4 Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_trading_post_item_5",
+      "name": "Trading Post Item 5 Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_trading_post_item_6",
+      "name": "Trading Post Item 6 Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_trading_post_item_7",
+      "name": "Trading Post Item 7 Purchase",
+      "logic": ""
+    },
+    {
+      "id": "wct_trading_post_item_8",
+      "name": "Trading Post Item 8 Purchase",
+      "logic": ""
+    }
+  ]
+}

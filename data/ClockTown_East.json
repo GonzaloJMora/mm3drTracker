@@ -1,0 +1,71 @@
+{
+  "region_name": "East Clock Town",
+  "logic": "",
+  "item_checks": [
+    {
+      "id": "ect_chest",
+      "name": "Chest",
+      "logic": ""
+    },
+    {
+      "id": "ect_postbox",
+      "name": "Postbox",
+      "logic": "postman_hat"
+    },
+    {
+      "id": "ect_stray_fairy",
+      "name": "Stray Fairy",
+      "logic": "deku_mask"
+    },
+    {
+      "id": "ect_aroma_in_office",
+      "name": "Mayor's Office Madame Aroma",
+      "logic": ""
+    },
+    {
+      "id": "ect_mayor_reward",
+      "name": "Mayor Reward",
+      "logic": "couples_mask"
+    },
+    {
+      "id": "ect_milk_bar_gorman",
+      "name": "Milk Bar Gorman",
+      "logic": "ocarina_of_time&romani_mask&deku_mask&goron_mask&zora_mask"
+    },
+    {
+      "id": "ect_milk_bar_aroma",
+      "name": "Milk Bar Madame Aroma",
+      "logic": "kafei_mask&letter_to_mama"
+    },
+    {
+      "id": "ect_postman-freedom",
+      "name": "Postman's Freedom",
+      "logic": "letter_to_mama"
+    },
+    {
+      "id": "ect_archery_1",
+      "name": "Town Archery 1",
+      "logic": "bow"
+    },
+    {
+      "id": "ect_archery_2",
+      "name": "Town Archery 2",
+      "logic": "bow"
+    },
+    {
+      "id": "ect_honey_and_darling_3_days",
+      "name": "Honey and Darling 3 Days",
+      "logic": "bow|bomb"
+    },
+    {
+      "id": "ect_treasure_chest_game_goron",
+      "name": "Treasure Chest Game (Goron)",
+      "logic": "goron_mask"
+    },
+    {
+      "id": "ect_bombers_hideout_chest",
+      "name": "Bombers' Hideout Chest",
+      "logic": "bombers_code&bomb"
+    }
+  ]
+}

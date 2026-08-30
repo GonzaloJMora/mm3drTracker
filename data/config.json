@@ -54,6 +54,7 @@
       "bombers_code": 5
   },
   "check_groups": [
-    ["sct_postbox", "nct_postbox"]
+    ["ect_postbox", "nct_postbox", "sct_postbox"],
+    ["ect_stray_fairy", "lp_stray_fairy"]
   ]
 }

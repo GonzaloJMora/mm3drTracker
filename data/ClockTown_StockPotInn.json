@@ -1,0 +1,51 @@
+{
+  "region_name": "Stock Pot Inn",
+  "logic": "",
+  "item_checks": [
+    {
+      "id": "spi_reservation",
+      "name": "Reservation",
+      "logic": "goron_mask"
+    },
+    {
+      "id": "spi_guest_room_chest",
+      "name": "Guest Room Chest",
+      "logic": "room_key"
+    },
+    {
+      "id": "spi_staff_room_chest",
+      "name": "Staff Room Chest",
+      "logic": ""
+    },
+    {
+      "id": "spi_mystery_milk_delivery",
+      "name": "Mystery Milk Delivery",
+      "logic": "mystery_milk"
+    },
+    {
+      "id": "spi_toilet_hand",
+      "name": "Toilet Hand",
+      "logic": "clock_town_title_deed|swamp_title_deed|mountain_title_deed|ocean_title_deed|letter_to_kafei|letter_to_mama"
+    },
+    {
+      "id": "spi_grandma_short_story",
+      "name": "Anju's Grandma Short Story",
+      "logic": "all_night_mask"
+    },
+    {
+      "id": "spi_grandma_long_story",
+      "name": "Anju's Grandma Long Story",
+      "logic": "all_night_mask"
+    },
+    {
+      "id": "spi_midnight_meeting",
+      "name": "Midnight Meeting",
+      "logic": "kafei_mask"
+    },
+    {
+      "id": "spi_anju_and_kafei",
+      "name": "Anju and Kafei",
+      "logic": "kokiri_sword&hookshot&kafei_mask&(gibdo_mask|garo_mask)&letter_to_kafei&pendant_of_memories&ocarina_of_time&eponas_song"
+    }
+  ]
+}

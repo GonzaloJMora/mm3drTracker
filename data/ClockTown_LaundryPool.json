@@ -1,0 +1,31 @@
+{
+  "region_name": "Laundry Pool",
+  "logic": "",
+  "item_checks": [
+    {
+      "id": "lp_stray_fairy",
+      "name": "Stray Fairy",
+      "logic": ""
+    },
+    {
+      "id": "lp_guru_guru",
+      "name": "Bremen Mask",
+      "logic": ""
+    },
+    {
+      "id": "lp_kafei_pendant",
+      "name": "Kafei's Pendant",
+      "logic": "letter_to_kafei"
+    },
+    {
+      "id": "lp_keaton_mask",
+      "name": "Keaton Mask",
+      "logic": "letter_to_kafei"
+    },
+    {
+      "id": "lp_letter_to_mama",
+      "name": "Letter To Mama",
+      "logic": "letter_to_kafei"
+    }
+  ]
+}

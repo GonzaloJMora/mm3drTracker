@@ -65,7 +65,7 @@
   { "id": "mask_of_scents", "image": "images/MaskOfScents.png" },
   { "id": "mask_of_truth", "image": "images/MaskOfTruth.png" },
   { "id": "milk", "image": "images/Milk.png" },
-  { "id": "mystery_milk", "image": "images/Milk.png" },
+  { "id": "mystery_milk", "image": "images/MysteryMilk.png" },
   { "id": "mirror_shield", "image": "images/MirrorShield.png" },
   { "id": "moons_tear", "image": "images/MoonsTear.png" },
   { "id": "mountain_title_deed", "image": "images/MountainDeed.png" },
