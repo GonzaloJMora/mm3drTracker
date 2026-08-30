@@ -11,7 +11,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         ]);
 
         const itemMap = {};
-        itemsRes.forEach(item => itemMap[item.id] = item.image);
+        itemsRes.forEach(item => {
+            itemMap[item.id] = {
+                image: item.image,
+                name: item.name,
+                notes_image: item.notes_image ?? ""
+            };
+        });
 
         await window.GameState.init(itemsRes, configRes);
 
@@ -58,18 +64,18 @@ function renderGrid(container, gridOrder, itemMap, progressions, item_counts) {
 
             if (isProgressive) {
                 slot.dataset.stage = "-1";
-                img.src = itemMap[itemChain[0]];
-                slot.title = formatTooltip(itemChain[0]);
+                img.src = itemMap[itemChain[0]].image;
+                slot.title = itemMap[itemChain[0]].name;
             } else {
-                img.src = itemMap[slotId];
-                slot.title = formatTooltip(slotId);
+                img.src = itemMap[slotId].image;
+                slot.title = itemMap[slotId].name;
             }
 
             slot.appendChild(img);
         } else {
             slot.classList.add("bombers-code-slot");
             slot.dataset.count = "0";
-            slot.title = formatTooltip(slotId);
+            slot.title = "Bomber's Code Digit " + slotId.at(-1);
         }
 
         const counterNode = document.createElement("div");
@@ -142,13 +148,13 @@ function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCo
 
         if (currentStage === -1) {
             slot.classList.add("dimmed");
-            imgElement.src = itemMap[chain[0]];
-            slot.title = formatTooltip(chain[0]);
+            imgElement.src = itemMap[chain[0]].image;
+            slot.title = itemMap[chain[0]].name;
         } else {
             slot.classList.remove("dimmed");
             const activeItemId = chain[currentStage];
-            imgElement.src = itemMap[activeItemId];
-            slot.title = formatTooltip(activeItemId);
+            imgElement.src = itemMap[activeItemId].image;
+            slot.title = itemMap[activeItemId].name;
         }
 
         window.GameState.updateItemState(slotId, currentStage, null);
@@ -209,8 +215,4 @@ function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCo
         
         window.GameState.updateItemState(slotId, isDimmed ? -1 : 0, null);
     }
-}
-
-function formatTooltip(id) {
-    return id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
