@@ -1,0 +1,167 @@
+{
+  "region_name": "Ocean Spider House",
+  "logic": "ocarina_of_time&eponas_song",
+  "map_coordinates": { "xPercent": 32.6, "yPercent": 49.2 },
+  "item_checks": [
+    {
+      "id": "osh_entrance_left_wall",
+      "name": "Entrance Left Wall",
+      "logic": "(bomb|blast_mask)&(hookshot|zora_mask)"
+    },
+    {
+      "id": "osh_entrance_right_wall",
+      "name": "Entrance Right Wall",
+      "logic": "(bomb|blast_mask)&(hookshot|zora_mask)"
+    },
+    {
+      "id": "osh_entrance_web",
+      "name": "Entrance Web",
+      "logic": "(bomb|blast_mask)&(hookshot|zora_mask)&bow"
+    },
+    {
+      "id": "osh_second_room_ceiling_edge",
+      "name": "Second Room Ceiling Edge",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_second_room_ceiling_plank",
+      "name": "Second Room Ceiling Plank",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_second_room_jar",
+      "name": "Second Room Jar",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_second_room_webbed_hole",
+      "name": "Second Room Webbed Hole",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_second_room_webbed_pot",
+      "name": "Second Room Webbed Pot",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_second_room_upper_pot",
+      "name": "Second Room Upper Pot",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_second_room_behind_skull_1",
+      "name": "Second Room Behind Skull 1",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_second_room_behind_skull_2",
+      "name": "Second Room Behind Skull 2",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_second_room_lower_pot",
+      "name": "Second Room Lower Pot",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_library_hole_behind_painting",
+      "name": "Library Hole Behind Painting",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_library_behind_painting",
+      "name": "Library Behind Painting",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_library_on_corner_bookshelf",
+      "name": "Library On Corner Bookshelf",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_library_ceiling_edge",
+      "name": "Library Ceiling Edge",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_library_behind_cabinet",
+      "name": "Library Behind Cabinet",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_library_behind_bookcase_1",
+      "name": "Library Behind Bookcase 1",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_library_behind_bookcase_2",
+      "name": "Library Behind Bookcase 2",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_storage_room_ceiling_web",
+      "name": "Storage Room Ceiling Web",
+      "logic": "(bomb|blast_mask)&hookshot&(bow&magic_meter&fire_arrow)"
+    },
+    {
+      "id": "osh_storage_room_behind_crate",
+      "name": "Storage Room Behind Crate",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_storage_room_crate",
+      "name": "Storage Room Crate",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_storage_room_wall",
+      "name": "Storage Room Wall",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_storage_room_barrel",
+      "name": "Storage Room Barrel",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(bow&magic_meter&fire_arrow))"
+    },
+    {
+      "id": "osh_colored_skulls_room_ceiling_edge",
+      "name": "Colored Skulls Room Ceiling Edge",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_colored_skulls_room_behind_painting",
+      "name": "Colored Skulls Room Behind Painting",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_colored_skulls_room_pot",
+      "name": "Colored Skulls Room Pot",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_colored_skulls_room_chandelier_1",
+      "name": "Colored Skulls Room Chandelier 1",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_colored_skulls_room_chandelier_2",
+      "name": "Colored Skulls Room Chandelier 2",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_colored_skulls_room_chandelier_3",
+      "name": "Colored Skulls Room Chandelier 3",
+      "logic": "(bomb|blast_mask)&hookshot"
+    },
+    {
+      "id": "osh_ocean_spider_chest",
+      "name": "Ocean Spider Chest",
+      "logic": "(bomb|blast_mask)&hookshot&(deku_stick|(magic_meter&fire_arrow))&bow&captains_hat"
+    },
+    {
+      "id": "osh_skulltula_tokens_reward",
+      "name": "Giant's Wallet",
+      "logic": "ocean_skulltula_token>=30"
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+#location-map-container {
+    position: relative;
+    background-color: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    box-sizing: border-box;
+    display: none; /* shown on desktop only, see media query below */
+}
+
+#location-map-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    object-fit: fill;
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+#location-map-marker-layer {
+    position: absolute;
+    inset: 0;
+}
+
+.location-map-marker {
+    position: absolute;
+    width: clamp(15px, 2.5%, 28px);
+    height: auto;
+    aspect-ratio: 1 / 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background-color: #888888; /* default/no-data state */
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    transition: transform 0.15s ease, background-color 0.4s ease;
+}
+
+.location-map-marker:hover {
+    transform: translate(-50%, -50%) scale(1.3);
+    z-index: 10; /* bring to front so the hover scale-up never sits behind a neighbor */
+}
+
+/* Same status classes/colors already used on region headers. */
+.location-map-marker.inaccessible { background-color: #ff0000; }
+.location-map-marker.partialCompletion { background-color: #ebdc0b; }
+.location-map-marker.fullClear { background-color: #00c000; }
+.location-map-marker.vanilla { background-color: #9f0dda; }
+.location-map-marker.completed { background-color: #666666; }
+
+.location-map-crosshair {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    transform: translate(-50%, -50%);
+    border: 2px solid #00e5ff;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* ---------- Overlay (fixed over the map, no dragging) ---------- */
+
+.location-map-overlay {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    box-sizing: border-box;
+    background-color: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    z-index: 20;
+}
+
+.location-map-overlay-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background-color: #333;
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    cursor: pointer; /* the whole titlebar closes the overlay, not just the X */
+}
+
+.location-map-overlay-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 8px;
+}
+
+/* The X lights up from anywhere on the titlebar, since all of it closes. */
+.location-map-overlay-close:hover,
+.location-map-overlay-titlebar:hover .location-map-overlay-close {
+    color: #ff6666;
+}
+
+.location-map-overlay-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden; /* the grid below is sized to fit, so nothing should scroll */
+}
+
+/* The moved-in region's own header duplicates the titlebar, so it's hidden and
+   the group is just a wrapper — the columns happen on .region-content below. */
+.location-map-overlay-body .region-group {
+    background: transparent;
+    border: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.location-map-overlay-body .region-header {
+    display: none;
+}
+
+/* Density is computed, not chosen: locationMap.js walks map_overlay.text_sizes
+   in config.json and sets these to the largest that fits. The defaults are the
+   top of that ladder, which is what an ordinary region gets. */
+.location-map-overlay-body .region-check-item {
+    padding: var(--overlay-check-padding, 10px 12px);
+    font-size: var(--overlay-check-font, 0.95rem);
+    width: auto;
+    /* Catches a name too long for its column, which would otherwise be clipped
+       with no sign it happened. Default break behavior, so it breaks at spaces.
+       fitOverlayContent() forces nowrap back on through this variable while it
+       measures — a wrappable label reports a much narrower min-content and would
+       throw off the column count for every region. */
+    white-space: var(--overlay-check-wrap, normal);
+}
+
+/* Grid, not flex column-wrap: flex sizes each column to its own widest item and
+   packs them left, leaving a chunk of the box empty. Equal columns always span
+   the full width, and column flow keeps a region's rooms grouped as the JSON
+   lists them. The counts come from locationMap.js — CSS can't count items. */
+.location-map-overlay-body .region-content {
+    display: grid !important; /* shown regardless of the open/closed toggle */
+    grid-auto-flow: column;
+    align-content: start;
+    /* height:100% plus this padding would overflow the parent, and the body's
+       overflow:hidden would slice the checks that spilled past it. */
+    box-sizing: border-box;
+    height: 100%;
+    gap: 4px 20px;
+    padding: 14px;
+    background: transparent;
+    overflow: hidden; /* the fit is computed; a scrollbar here would mean a bug */
+}
+
+/* ---------- Desktop only ---------- */
+@media screen and (min-width: 1500px) {
+    #location-map-container {
+        display: block;
+    }
+}

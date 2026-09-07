@@ -1,6 +1,7 @@
 {
   "region_name": "Stock Pot Inn",
   "logic": "",
+  "map_coordinates": { "xPercent": 53.75, "yPercent": 39.53 },
   "item_checks": [
     {
       "id": "spi_reservation",

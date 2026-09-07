@@ -4,52 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#121212">
-    <title>MM3D Rando Tracker</title>
+    <title>MM3D Randomizer Tracker</title>
     
     <link rel="icon" type="image/png" href="images/icon.png">
 
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/itemContainers.css">
     <link rel="stylesheet" href="css/locationContainers.css">
+    <link rel="stylesheet" href="css/locationStats.css">
+    <link rel="stylesheet" href="css/locationPanelLayout.css">
+    <link rel="stylesheet" href="css/locationMap.css">
 </head>
 
-<body style="background-color: #121212; color: #ffffff;">
+<body>
 
     <header>
-        <h1>MM3D Rando Tracker</h1>
+        <img src="images/logo.png" alt="Majora's Mask 3D Randomizer Tracker">
     </header>
 
     <main>
         <!-- Mobile Tab Navigation (Hidden on Desktop) -->
         <div class="mobile-tabs">
-            <button class="tab-btn active" onclick="switchMobileTab('items')">Item Tracker</button>
-            <button class="tab-btn" onclick="switchMobileTab('locations')">Locations</button>
+            <button class="tab-btn active" data-tab="items" data-section="item-section">Item Tracker</button>
+            <button class="tab-btn" data-tab="locations" data-section="location-section">Locations</button>
         </div>
 
         <div class="tracker-layout-wrapper">
             <!-- Item Tracker Section -->
             <div id="item-section" class="tracker-section active-section">
-                <div class="grid-container">
-                    <div id="item-grid" class="item-grid"></div>
-                    <div id="mask-grid" class="item-grid"></div>
-                    <div id="dungeon-grid" class="item-grid"></div>
-                    <div id="gear-grid" class="item-grid"></div>
-                </div>
+                <!-- One .item-grid per key in config.json grids, built by itemTracker.js -->
+                <div class="grid-container"></div>
             </div>
 
             <!-- Location Tracker Section -->
             <div id="location-section" class="tracker-section">
                 <aside id="region-sidebar" class="region-sidebar">
-                    <h2></h2>
                     <div id="region-dropdown-container"></div>
                 </aside>
             </div>
         </div>
     </main>
 
+    <!-- Mobile only (hidden by CSS above the breakpoint). -->
+    <button id="back-to-top" type="button" aria-label="Back to top"></button>
+
+    <script src="js/dataLoader.js"></script>
     <script src="js/gameStateManager.js"></script>
     <script src="js/itemTracker.js"></script>
     <script src="js/locationTracker.js"></script>
+    <script src="js/locationStatsTracker.js"></script>
+    <script src="js/locationPanelLayout.js"></script>
+    <script src="js/locationMap.js"></script>
     <script src="js/mobileTabManager.js"></script>
 </body>
 </html>

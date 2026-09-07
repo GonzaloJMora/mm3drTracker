@@ -1,7 +1,8 @@
-main {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
+/* The breakpoint. JS reads it from here so the two can't disagree about where
+   mobile starts. @media can't read a custom property, so every query below still
+   spells it out — change this, change all of them. */
+:root {
+    --mobile-breakpoint: 1499px;
 }
 
 body {
@@ -9,4 +10,113 @@ body {
     color: #ffffff;
     font-family: Arial, sans-serif;
     padding: 20px;
+
+    /* Prevent the image from being dragged */
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+
+    /* Prevent text/image selection highlighting */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+header img {
+    height: 150px;
+    display: block;
+
+    /* Prevent the image from being dragged */
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+
+    /* Prevent text/image selection highlighting */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+@media screen and (max-width: 1499px) {
+    header img {
+        margin: 0 auto;
+    }
+}
+
+/* ---------- Load failures (dataLoader.js) ---------- */
+
+/* Meant to be pasted into a bug report, so these opt out of the page-wide
+   user-select: none. */
+#tracker-load-error,
+#tracker-region-warning,
+#tracker-map-warning {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+#tracker-load-error {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 20px 24px;
+    background-color: #1a1a1a;
+    border: 2px solid #a33;
+    border-radius: 8px;
+    line-height: 1.5;
+}
+
+#tracker-load-error h2 {
+    margin: 0 0 12px 0;
+    font-size: 1.2rem;
+    color: #ff6666;
+}
+
+#tracker-load-error p {
+    margin: 0 0 12px 0;
+    color: #cccccc;
+}
+
+#tracker-load-error p:last-child {
+    margin-bottom: 0;
+}
+
+/* Both mean "something is missing but the rest works", so they look the same.
+   Full width to take their own row in main's flex layout. */
+#tracker-region-warning,
+#tracker-map-warning {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 15px 0;
+    padding: 10px 14px;
+    background-color: #2a2418;
+    border: 1px solid #7a6320;
+    border-radius: 6px;
+    color: #e8d9a0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* pre-wrap keeps the detail's line breaks; break-word stops a long path
+   widening the box. */
+.tracker-error-detail {
+    display: block;
+    padding: 10px 12px;
+    background-color: #262626;
+    border: 1px solid #444;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #ffffff;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+#tracker-region-warning .tracker-error-detail,
+#tracker-map-warning .tracker-error-detail {
+    margin-top: 8px;
 }

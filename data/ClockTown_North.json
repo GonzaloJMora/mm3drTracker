@@ -1,6 +1,7 @@
 {
   "region_name": "North Clock Town",
   "logic": "",
+  "map_coordinates": { "xPercent": 51, "yPercent": 39.53 },
   "item_checks": [
     {
       "id": "nct_great_fairy_deku",
@@ -15,7 +16,7 @@
     {
       "id": "nct_keaton_quiz",
       "name": "Keaton Quiz",
-      "logic": "(kokiri_sword|deku_mask|zora_mask)&keaton_mask"
+      "logic": "keaton_mask"
     },
     {
       "id": "nct_deku_playground_3_days",

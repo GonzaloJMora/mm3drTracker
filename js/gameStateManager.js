@@ -2,46 +2,80 @@ window.GameState = {
     items: {},
     totalHearts: 3,
     totalBossMasks: 0,
+    totalRegularMasks: 0,
+    regularMaskIds: new Set(),
     config: null,
 
-    async init(itemsList, configData) {
-        try {
-            this.config = configData;
+    // Named groupings from config.json. They cut across the grids on purpose:
+    // grids say where a slot is drawn, item_groups say what it means.
+    group(name) {
+        return (this.config && this.config.item_groups && this.config.item_groups[name]) || [];
+    },
 
-            itemsList.forEach(item => {
-                this.items[item.id] = false;
-            });
+    init(itemsList, configData) {
+        this.config = configData;
 
-            Object.keys(this.config.progressions).forEach(slotId => {
-                this.config.progressions[slotId].forEach(itemId => {
-                    this.items[itemId] = false;
-                });
-            });
+        // Tagged on the item in Items.json rather than read off config.grids.mask,
+        // which is a layout list — moving a mask to another panel would otherwise
+        // quietly change the count. The four transformation masks are simply
+        // untagged, leaving exactly the masks that can be given to the moon
+        // children.
+        this.regularMaskIds = new Set(
+            itemsList.filter(item => item.regular_mask).map(item => item.id)
+        );
 
-            Object.keys(this.config.item_counts).forEach(slotId => {
-                const rule = this.config.item_counts[slotId];
-                if (Array.isArray(rule)) {
-                    this.items[slotId] = false; 
-                    rule.forEach(val => { this.items[`${slotId}_${val}`] = false; });
-                } else {
-                    this.items[slotId] = 0;
-                }
-            });
-
-            for (let i = 1; i <= 5; i++) {
-                this.items[`bombers_code_digit_${i}`] = 0;
-            }
-
-            this.items["bombers_code"] = false;
-            this.items["bombers_code_solved"] = false;
-
-            this.calculateHearts();
-            this.calculateBossMasks();
-            this.calculateBombersCode();
-            this.broadcastChange();
-        } catch (e) {
-            console.error("Failed to initialize game tracker state machine:", e);
+        if (!this.regularMaskIds.size) {
+            console.warn(
+                'GameState: nothing in Items.json is tagged "regular_mask", so total_masks ' +
+                "will always be 0 and every check gated on it stays unreachable."
+            );
         }
+
+        // A slot in both would be treated as a progression but handed the counter
+        // rule as its chain, so the click silently does nothing. Nothing does this
+        // today, but it fails quietly enough to be worth naming.
+        Object.keys(this.config.progressions).forEach(slotId => {
+            if (Object.prototype.hasOwnProperty.call(this.config.item_counts, slotId)) {
+                console.warn(
+                    `GameState: "${slotId}" is in both progressions and item_counts in config.json. ` +
+                    `Those are alternatives, not a combination, and clicking that slot will not work.`
+                );
+            }
+        });
+
+        itemsList.forEach(item => {
+            this.items[item.id] = false;
+        });
+
+        Object.keys(this.config.progressions).forEach(slotId => {
+            this.config.progressions[slotId].forEach(itemId => {
+                this.items[itemId] = false;
+            });
+        });
+
+        Object.keys(this.config.item_counts).forEach(slotId => {
+            const rule = this.config.item_counts[slotId];
+            if (Array.isArray(rule)) {
+                this.items[slotId] = false;
+                rule.forEach(val => { this.items[`${slotId}_${val}`] = false; });
+            } else {
+                this.items[slotId] = 0;
+            }
+        });
+
+        for (let i = 1; i <= this.config.bombers_code.digits; i++) {
+            this.items[`bombers_code_digit_${i}`] = 0;
+        }
+
+        this.items["bombers_code"] = false;
+        this.items["bottle"] = false;
+
+        this.calculateHearts();
+        this.calculateBossMasks();
+        this.calculateRegularMasks();
+        this.calculateBombersCode();
+        this.checkForBottle();
+        this.broadcastChange();
     },
 
     updateItemState(slotId, stageIndex, currentCount) {
@@ -67,7 +101,11 @@ window.GameState = {
         else if ((countRule && Number.isInteger(countRule)) || (slotId && slotId.startsWith("bombers_code_digit_"))) {
             this.items[slotId] = currentCount;
             
-            if (slotId === "heart_piece" || slotId === "heart_container") {
+            // Off heart_rules rather than literal ids, like calculateHearts().
+            // Otherwise renaming one in config leaves the count right on load and
+            // frozen on every click after.
+            const heartRules = this.config.heart_rules;
+            if (slotId === heartRules.piece_id || slotId === heartRules.container_id) {
                 this.calculateHearts();
             }
         }
@@ -75,28 +113,37 @@ window.GameState = {
             this.items[slotId] = (stageIndex !== -1);
         }
 
-        const bossMaskIds = ["odolwa_remains", "goht_remains", "gyorg_remains", "twinmold_remains"];
-        if (bossMaskIds.includes(slotId)) {
+        if (this.group("boss_masks").includes(slotId)) {
             this.calculateBossMasks();
+        }
+
+        if (this.regularMaskIds.has(slotId)) {
+            this.calculateRegularMasks();
         }
 
         if (slotId && slotId.startsWith("bombers_code_")) {
             this.calculateBombersCode();
         }
 
+        if (this.group("bottles").includes(slotId)) {
+            this.checkForBottle();
+        }
+
         this.broadcastChange();
     },
 
     calculateHearts() {
-        const pieces = this.items["heart_piece"] || 0;
-        const containers = this.items["heart_container"] || 0;
-        this.totalHearts = 3 + Math.floor(pieces / 4) + containers;
+        // starting_hearts / pieces_per_heart live in config.json but are really
+        // randomizer settings; Phase 2 folds this block into the settings model.
+        const rules = this.config.heart_rules;
+        const pieces = this.items[rules.piece_id] || 0;
+        const containers = this.items[rules.container_id] || 0;
+        this.totalHearts = rules.starting_hearts + Math.floor(pieces / rules.pieces_per_heart) + containers;
     },
 
     calculateBossMasks() {
         let count = 0;
-        const targetMasks = ["odolwa_remains", "goht_remains", "gyorg_remains", "twinmold_remains"];
-        targetMasks.forEach(maskId => {
+        this.group("boss_masks").forEach(maskId => {
             if (this.items[maskId] === true) {
                 count++;
             }
@@ -104,9 +151,19 @@ window.GameState = {
         this.totalBossMasks = count;
     },
 
+    calculateRegularMasks() {
+        let count = 0;
+        this.regularMaskIds.forEach(maskId => {
+            if (this.items[maskId] === true) {
+                count++;
+            }
+        });
+        this.totalRegularMasks = count;
+    },
+
     calculateBombersCode() {
         let digits = [];
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= this.config.bombers_code.digits; i++) {
             let val = this.items[`bombers_code_digit_${i}`] ?? 0;
             digits.push(parseInt(val, 10) || 0);
         }
@@ -116,12 +173,28 @@ window.GameState = {
         this.items["bombers_code"] = !hasZero && allUnique;
     },
 
+    checkForBottle() {
+        let hasBottle = false;
+
+        for (const bottleId of this.group("bottles")) {
+            const item = this.items[bottleId];
+
+            if (item === true || (Number.isInteger(item) && item > 0)) {
+                hasBottle = true;
+                break;
+            }
+        }
+
+        this.items["bottle"] = hasBottle;
+    },
+
     broadcastChange() {
         window.dispatchEvent(new CustomEvent("trackerStateUpdated", {
             detail: {
                 items: { ...this.items },
                 totalHearts: this.totalHearts,
-                totalBossMasks: this.totalBossMasks
+                totalBossMasks: this.totalBossMasks,
+                totalRegularMasks: this.totalRegularMasks
             }
         }));
     }
@@ -167,10 +240,22 @@ window.GameState = {
         e.preventDefault();
     });
 
+    // Keep a grip on screen. The title bar is the drag handle, and the position is
+    // inline style that survives an F1 toggle — so a panel dragged fully off the
+    // edge cannot be recovered at all.
+    const MIN_ON_SCREEN = 60;
+
     window.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        panel.style.left = `${e.clientX - startX}px`;
-        panel.style.top = `${e.clientY - startY}px`;
+        const maxLeft = window.innerWidth - MIN_ON_SCREEN;
+        const minLeft = MIN_ON_SCREEN - panel.offsetWidth;
+        // Top is clamped at 0 rather than at -height: the title bar is along the
+        // top edge, so letting it go negative puts the handle out of reach even
+        // while the panel is still visible.
+        const maxTop = window.innerHeight - MIN_ON_SCREEN;
+
+        panel.style.left = `${Math.min(Math.max(e.clientX - startX, minLeft), maxLeft)}px`;
+        panel.style.top = `${Math.min(Math.max(e.clientY - startY, 0), maxTop)}px`;
         panel.style.bottom = 'auto';
     });
 
@@ -184,10 +269,12 @@ window.GameState = {
     });
 
     window.addEventListener('trackerStateUpdated', (e) => {
-        const { items, totalHearts, totalBossMasks } = e.detail;
+        const { items, totalHearts, totalBossMasks, totalRegularMasks } = e.detail;
         let html = `<div><strong>Total Hearts:</strong> ${totalHearts} ❤️</div>`;
         html += `<div><strong>Boss Masks Count:</strong> ${totalBossMasks} 🎭</div>`;
+        html += `<div><strong>Regular Masks Count:</strong> ${totalRegularMasks} 🎭</div>`;
         html += `<div><strong>Bombers Code Valid:</strong> ${items["bombers_code"] ? "YES ✅" : "NO ❌"}</div>`;
+        html += `<div><strong>Has Bottle:</strong> ${items["bottle"] ? "YES ✅" : "NO ❌"}</div>`;
         html += `<div style="margin-top:8px; border-bottom:1px dashed #444; padding-bottom:4px;"><strong>Active Flags & Numbers:</strong></div>`;
 
         const activeItems = Object.entries(items).filter(([_, val]) => val !== false && val !== 0);

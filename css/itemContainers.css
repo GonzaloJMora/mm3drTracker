@@ -6,8 +6,12 @@ main {
     gap: 20px;
     width: 100%;
     box-sizing: border-box;
-    padding: 20px;
     align-items: flex-start;
+
+    /* Cap and center the layout. Past this width the map stops growing and the
+       gap between it and the item grids just opens up. */
+    max-width: 1880px;
+    margin-inline: auto;
 }
 
 /* Container housing each individual item-grid. */
@@ -47,7 +51,7 @@ main {
     aspect-ratio: 1 / 1;
     width: 100%;
     cursor: pointer;
-    transition: background-color 0.2s, filter 0.2s, border-color 0.2s;
+    transition: background-color 0.2s, border-color 0.2s;
     user-select: none;
 }
 
@@ -98,10 +102,11 @@ main {
     height: 100%;
     bottom: auto;
     right: auto;
+    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 45px;
+    font-size: min(45px, 10vw);
     color: #ffffffcb;
 }
 
@@ -119,7 +124,6 @@ main {
     width: 85%;
     height: 85%;
     object-fit: contain;
-    transition: filter 0.15s ease-in-out;
     -webkit-user-drag: none;
     user-select: none;
     -webkit-user-select: none;
@@ -127,7 +131,7 @@ main {
 }
 
 /* Mobile adjustments */
-@media screen and (max-width: 1024px) {
+@media screen and (max-width: 1499px) {
     .grid-container {
         grid-template-columns: 1fr;
         width: 100%;
@@ -144,6 +148,7 @@ main {
 
 .tracker-layout-wrapper {
     display: flex;
+    align-items: flex-start;
     gap: 20px;
     width: 100%;
 }
@@ -152,37 +157,52 @@ main {
     display: contents; /* Keeps desktop side-by-side behavior completely unchanged */
 }
 
-/* --- MOBILE TAB VIEW (Screens under 1024px) --- */
-@media screen and (max-width: 1024px) {
+/* --- MOBILE TAB VIEW (Screens under 1500px) --- */
+@media screen and (max-width: 1499px) {
     main {
         flex-direction: column;
     }
 
-    /* Centers the item grid wrapper and ensures it uses full available width */
+    /* As many columns as fit, rather than one centered column with empty space
+       either side. The min() stops a narrow phone getting a track wider than
+       the screen. */
     .grid-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center; /* Centers the grids horizontally on mobile */
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+        justify-content: center;
+        align-items: start;
+        gap: 15px;
         width: 100%;
+        /* Two grids across at most — beyond that the slots get thin. */
+        max-width: 1015px;
         margin: 0 auto;
     }
 
     /* Makes individual item grids fill the mobile screen nicely and center */
     .item-grid {
+        box-sizing: border-box;
         width: 100%;
-        max-width: 500px; /* Gives them a great readable size on phones */
-        margin: 0 auto 15px auto;
+        max-width: 500px;
+        margin: 0 auto;
     }
 
-    /* Scales the Bombers Code numbers up so they fill the mobile slot properly */
+    .item-slot {
+        container-type: inline-size;
+    }
+
     .item-slot.bombers-code-slot .slot-counter {
-        font-size: 12vw; /* Scales fluidly with the screen width for mobile */
+        font-size: 80cqw;
     }
 
     .mobile-tabs {
         display: flex;
         width: 100%;
         gap: 10px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background-color: #121212;
+        padding: 10px 0;
         margin-bottom: 15px;
     }
 
@@ -215,5 +235,51 @@ main {
     .tracker-section.active-section {
         display: block; /* Only display the currently selected tab */
         width: 100%;
+    }
+}
+
+/* ---------- Back to top (mobile only) ---------- */
+
+#back-to-top {
+    display: none;
+}
+
+@media screen and (max-width: 1499px) {
+    #back-to-top {
+        display: block;
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background-color: #262626;
+        border: 1px solid #444;
+        color: #fff;
+        font-size: 1rem;
+        cursor: pointer;
+        z-index: 60; /* above the pinned tabs */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        /* Hidden until scrolled. visibility rather than display so it can fade,
+           pointer-events so it can't be tapped while invisible. */
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    #back-to-top.visible {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    #back-to-top:hover {
+        background-color: #333;
+        border-color: #888;
+    }
+
+    #back-to-top::after {
+        content: "\25B2";
     }
 }

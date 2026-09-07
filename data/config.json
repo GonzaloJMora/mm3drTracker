@@ -50,8 +50,40 @@
       "great_bay_stray_fairy": 15,
       "stone_tower_stray_fairy": 15,
       "heart_piece": 52,
-      "heart_container": 4,
-      "bombers_code": 5
+      "heart_container": 4
+  },
+  "item_groups": {
+    "boss_masks": ["odolwa_remains", "goht_remains", "gyorg_remains", "twinmold_remains"],
+    "bottles": ["red_potion", "gold_dust", "milk", "chateau_romani", "mystery_milk", "empty_bottle"]
+  },
+  "heart_rules": {
+    "starting_hearts": 3,
+    "pieces_per_heart": 4,
+    "piece_id": "heart_piece",
+    "container_id": "heart_container"
+  },
+  "bombers_code": {
+    "digits": 5,
+    "max_digit_value": 5
+  },
+  "map": {
+    "image": "images/TerminaMap.png",
+    "alt": "Map of Termina",
+    "width": 1607,
+    "height": 753
+  },
+  "map_overlay": {
+    "text_sizes": [
+      { "font_size": "0.95rem", "padding": "10px 12px" },
+      { "font_size": "0.9rem",  "padding": "8px 11px" },
+      { "font_size": "0.85rem", "padding": "5px 10px" },
+      { "font_size": "0.8rem",  "padding": "4px 9px" },
+      { "font_size": "0.75rem", "padding": "3px 8px" },
+      { "font_size": "0.7rem",  "padding": "3px 7px" },
+      { "font_size": "0.65rem", "padding": "2px 6px" },
+      { "font_size": "0.6rem",  "padding": "2px 5px" },
+      { "font_size": "0.55rem", "padding": "2px 5px" }
+    ]
   },
   "check_groups": [
     ["ect_postbox", "nct_postbox", "sct_postbox"],

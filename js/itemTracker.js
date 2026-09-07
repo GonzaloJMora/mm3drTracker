@@ -1,17 +1,14 @@
-document.addEventListener("DOMContentLoaded", async () => {
-    const itemContainer = document.getElementById("item-grid");
-    const maskContainer = document.getElementById("mask-grid");
-    const dungeonContainer = document.getElementById("dungeon-grid");
-    const gearContainer = document.getElementById("gear-grid");
+// Held at module scope so handleItemClick can read config values without
+// threading them through renderGrid's already-long parameter list.
+let trackerConfig = null;
+
+window.TrackerData.onReady(({ config, items }) => {
+    trackerConfig = config;
+    const gridContainer = document.querySelector(".grid-container");
 
     try {
-        const [configRes, itemsRes] = await Promise.all([
-            fetch("data/config.json").then(res => res.json()),
-            fetch("data/Items.json").then(res => res.json())
-        ]);
-
         const itemMap = {};
-        itemsRes.forEach(item => {
+        items.forEach(item => {
             itemMap[item.id] = {
                 image: item.image,
                 name: item.name,
@@ -19,31 +16,91 @@ document.addEventListener("DOMContentLoaded", async () => {
             };
         });
 
-        await window.GameState.init(itemsRes, configRes);
+        // Before anything is drawn, so the diagnosis lands ahead of its symptom.
+        // Guarded because it runs before GameState.init — a throw here would leave
+        // the item state empty and make every logic token look unknown.
+        try {
+            validateGridSlots(config, itemMap);
+        } catch (error) {
+            console.error("itemTracker: could not validate the grid slots", error);
+        }
 
-        renderGrid(itemContainer, configRes.grids.item, itemMap, configRes.progressions, configRes.item_counts);
-        renderGrid(maskContainer, configRes.grids.mask, itemMap, configRes.progressions, configRes.item_counts);
-        renderGrid(dungeonContainer, configRes.grids.dungeon, itemMap, configRes.progressions, configRes.item_counts);
-        renderGrid(gearContainer, configRes.grids.gear, itemMap, configRes.progressions, configRes.item_counts);
+        // Not awaited: init() does no I/O. It must not swallow its own errors
+        // either, or the catch below can never see one.
+        window.GameState.init(items, config);
+
+        // One grid per key in config.grids, in the order they appear there —
+        // adding or reordering a grid is a config.json edit, nothing else.
+        gridContainer.innerHTML = "";
+        Object.keys(config.grids).forEach(gridName => {
+            // validateGridSlots() has already named this one; skipping keeps the
+            // grids after it in config.grids order from going down with it.
+            if (!Array.isArray(config.grids[gridName])) return;
+
+            const gridEl = document.createElement("div");
+            gridEl.className = "item-grid";
+            gridEl.dataset.grid = gridName;
+            gridContainer.appendChild(gridEl);
+            renderGrid(gridEl, config.grids[gridName], itemMap, config.progressions, config.item_counts);
+        });
 
     } catch (error) {
-        console.error("Error loading application config or items:", error);
+        console.error("Error rendering item grids:", error);
+    } finally {
+        // Says the grids are populated, not just that the data arrived —
+        // locationPanelLayout.js sizes the map against their real height.
+        //
+        // In the finally on purpose: if anything above threw, the grids are short
+        // and the map still has to re-measure, or it sizes itself against a
+        // half-built grid and looks plausible while being wrong.
+        window.dispatchEvent(new CustomEvent("itemGridsReady"));
+        announceWhenImagesSettle();
     }
 });
 
+// The grids existing is not the same as the grids being their final size. Until
+// the slot images load, .grid-container measures about 40% of its real height,
+// and anything sizing against it locks that in.
+//
+// MIN_SANE_PX cannot catch it — the intermediate height is perfectly plausible,
+// and that guard is there for zero. window.load does not cover it either: on a
+// warm cache it fires before trackerDataReady, so it runs before these grids
+// exist and is spent. That leaves only the ResizeObserver, which is frozen for a
+// window that is not being painted — the case this codebase keeps designing
+// around.
+//
+// So say it again once the images settle. It belongs here because these are this
+// file's images; the alternative is the layout file reaching across to watch
+// them. The listener is idempotent, so this costs nothing when the first
+// announcement was already right.
+function announceWhenImagesSettle() {
+    const pending = Array.from(document.querySelectorAll(".item-image"))
+        .filter(img => !img.complete);
+    if (!pending.length) return;
+
+    let outstanding = pending.length;
+    const settled = () => {
+        if (--outstanding > 0) return;
+        window.dispatchEvent(new CustomEvent("itemGridsReady"));
+    };
+
+    // error as well as load: a slot whose image 404s still settles the layout,
+    // and waiting on it forever would mean never re-announcing.
+    pending.forEach(img => {
+        img.addEventListener("load", settled, { once: true });
+        img.addEventListener("error", settled, { once: true });
+    });
+}
+
 function renderGrid(container, gridOrder, itemMap, progressions, item_counts) {
     container.innerHTML = "";
-
-    if (gridOrder.length === 5) {
-        container.classList.add("row-5-items");
-    }
 
     gridOrder.forEach(slotId => {
         const slot = document.createElement("div");
         slot.classList.add("item-slot");
         slot.dataset.id = slotId;
 
-        if (slotId === "") {
+        if (typeof slotId !== "string" || slotId === "") {
             slot.classList.add("empty-slot");
             container.appendChild(slot);
             return;
@@ -54,6 +111,16 @@ function renderGrid(container, gridOrder, itemMap, progressions, item_counts) {
         let itemChain = progressions[slotId] || [];
 
         const isBombersCodeDigit = slotId.startsWith("bombers_code_digit_");
+
+        // An item not in Items.json would throw on the lookup below and take out
+        // this grid and every one after it. Draw a hole instead — the cell still
+        // occupies its column, and validateGridSlots() already named the id.
+        const imageId = isProgressive ? itemChain[0] : slotId;
+        if (!isBombersCodeDigit && !itemMap[imageId]) {
+            slot.classList.add("empty-slot");
+            container.appendChild(slot);
+            return;
+        }
 
         let img = null;
         if (!isBombersCodeDigit) {
@@ -110,6 +177,64 @@ function renderGrid(container, gridOrder, itemMap, progressions, item_counts) {
     });
 }
 
+// A bad slot draws as an empty one rather than taking the grid down, but a hole
+// with no explanation is its own puzzle — so say what is wrong, once, at load.
+//
+// Progression chains are walked in full on purpose: renderGrid only draws
+// chain[0], so a typo in a later stage renders fine and then throws inside a
+// click handler, where the slot just stops advancing with no clue why.
+function validateGridSlots(config, itemMap) {
+    const missing = [];
+
+    Object.keys(config.grids).forEach(gridName => {
+        const slots = config.grids[gridName];
+
+        if (!Array.isArray(slots)) {
+            missing.push({ id: gridName, where: `grids.${gridName} is not a list of slot ids — the whole grid is skipped` });
+            return;
+        }
+
+        slots.forEach((slotId, index) => {
+            if (typeof slotId !== "string") {
+                missing.push({ id: String(slotId), where: `grids.${gridName}[${index}] is not a slot id` });
+                return;
+            }
+            if (slotId === "") return;
+            if (slotId.startsWith("bombers_code_digit_")) return;
+
+            const at = `grids.${gridName}[${index}]`;
+            const chain = config.progressions[slotId];
+
+            if (!chain) {
+                if (!itemMap[slotId]) missing.push({ id: slotId, where: at });
+                return;
+            }
+
+            if (!chain.length) {
+                missing.push({ id: slotId, where: `${at} — progressions.${slotId} is an empty chain` });
+                return;
+            }
+
+            chain.forEach((stageId, stageIndex) => {
+                if (!itemMap[stageId]) {
+                    missing.push({
+                        id: stageId,
+                        where: `${at} — progressions.${slotId} stage ${stageIndex + 1}`
+                    });
+                }
+            });
+        });
+    });
+
+    if (!missing.length) return;
+
+    console.warn(
+        `itemTracker: ${missing.length} grid slot(s) will not draw an item. ` +
+        `Each one renders as an empty slot instead.`
+    );
+    missing.forEach(({ id, where }) => console.warn(`  "${id}" — ${where}`));
+}
+
 function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCount, chain, itemMap, direction) {
     const slotId = slot.dataset.id;
     const isBombersCodeDigit = slotId.startsWith("bombers_code_digit_");
@@ -121,7 +246,7 @@ function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCo
 
     if (isBombersCodeDigit) {
         let currentCount = parseInt(slot.dataset.count);
-        const maxCount = 5; // Limit defined by item_counts.bombers_code
+        const maxCount = trackerConfig.bombers_code.max_digit_value;
 
         if (direction === 1) {
             if (currentCount === maxCount) currentCount = 0;
@@ -153,8 +278,13 @@ function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCo
         } else {
             slot.classList.remove("dimmed");
             const activeItemId = chain[currentStage];
-            imgElement.src = itemMap[activeItemId].image;
-            slot.title = itemMap[activeItemId].name;
+            // Only chain[0] is guaranteed to exist, since that is the stage
+            // renderGrid draws. Advance anyway and keep the previous artwork,
+            // rather than throwing inside a click handler.
+            if (itemMap[activeItemId]) {
+                imgElement.src = itemMap[activeItemId].image;
+                slot.title = itemMap[activeItemId].name;
+            }
         }
 
         window.GameState.updateItemState(slotId, currentStage, null);

@@ -3,39 +3,28 @@
     border: 2px solid #333;
     border-radius: 8px;
     padding: 15px;
-    
-    /* Prevents the sidebar from distorting or squishing when space is limited */
-    flex: 1 1 400px;
-    min-width: 0; 
+
+    flex: 1 1 auto;
+    min-width: 0;
     box-sizing: border-box;
-    
+
     display: flex;
     flex-direction: column;
 }
 
-.region-sidebar h2 {
-    margin-top: 0;
-    font-size: 1.2rem;
-    border-bottom: 1px solid #333;
-    padding-bottom: 8px;
-    flex-shrink: 0;
-}
 
-/* Container that auto-generates side-by-side columns and wraps safely when F12 is opened */
+/* The region list. Only ever rendered on mobile — above the breakpoint
+   #region-sidebar is display:none and this is the storage bin locationMap.js
+   moves a region in and out of for its overlay. */
 #region-dropdown-container {
-    /* Uses auto-fit/auto-fill behavior so it drops columns cleanly instead of squishing */
-    columns: 280px 2; 
-    column-gap: 15px;
-    
-    overflow-y: auto;    
-    overflow-x: hidden;  
-    padding-right: 5px;  
-    max-height: calc(100vh - 160px);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
 }
 
 /* Dropdown Accordion Styling */
 .region-group {
-    break-inside: avoid; 
     margin-bottom: 10px;
     border: 1px solid #333333;
     border-radius: 6px;
@@ -60,6 +49,10 @@
 .region-header:hover {
     background-color: #444;
 }
+
+/* The accordion arrows */
+.region-header .region-arrow::after { content: "\25BC"; }
+.region-header.expanded .region-arrow::after { content: "\25B2"; }
 
 .region-header.inaccessible { color: #ff0000; }
 .region-header.partialCompletion { color: #ebdc0b; }
@@ -88,7 +81,7 @@
     cursor: pointer;
     user-select: none;
     border-radius: 6px;
-    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
     color: #e0e0e0;
 }
 
@@ -106,21 +99,22 @@
     color: #888888;
 }
 
-/* Fallback for when the screen/inspector shrinks too narrow for dual columns */
-@media screen and (max-width: 900px) {
-    #region-dropdown-container {
-        columns: 1; /* Drops cleanly to 1 column without breaking layout components */
+/* Mobile adjustments */
+@media screen and (max-width: 1499px) {
+    .region-content.open {
+        columns: 260px;
+        column-gap: 15px;
     }
+
+    .region-check-item {
+        break-inside: avoid; /* never split a check across two columns */
+    }
+
 }
 
-/* Mobile adjustments */
-@media screen and (max-width: 1024px) {
-    .region-sidebar {
-        width: 100%;
-        flex: none;
-    }
-    #region-dropdown-container {
-        columns: 1; 
-        max-height: none;
+/* Desktop shows the map instead; the list stays in the DOM as the holding area. */
+@media screen and (min-width: 1500px) {
+    #region-sidebar {
+        display: none;
     }
 }

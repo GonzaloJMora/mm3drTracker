@@ -1,0 +1,37 @@
+/* Where the stats box and map container sit in the location column.
+   The map's own visuals (image, markers, overlay) are locationMap.css. */
+
+@media screen and (min-width: 1500px) {
+    /* Overrides the display:contents .tracker-section gets in itemContainers.css,
+       which would make #region-sidebar the flex item in the row instead of this.
+       Desktop only, so mobile's tab show/hide is untouched. */
+    #location-section {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        flex: 1 1 400px;
+        min-width: 0;
+    }
+
+    #location-stats-box {
+        margin: 0;
+        /* JS matches its width to the map's so the two read as one unit. */
+        align-self: center;
+    }
+
+    #location-map-container {
+        /* JS sets width and height (syncPanelHeight) to hit the map image's exact
+           aspect ratio; CSS aspect-ratio drifts the markers on ultrawide. This
+           just centers the box it made. */
+        align-self: center;
+        min-width: 0;
+    }
+}
+
+@media screen and (max-width: 1499px) {
+    #location-stats-box {
+        width: calc(100% - 20px);
+        max-width: 500px;
+        margin: 10px auto;
+    }
+}

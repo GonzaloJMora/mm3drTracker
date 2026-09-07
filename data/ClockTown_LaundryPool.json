@@ -1,6 +1,7 @@
 {
   "region_name": "Laundry Pool",
   "logic": "",
+  "map_coordinates": { "xPercent": 48.25, "yPercent": 51.27 },
   "item_checks": [
     {
       "id": "lp_stray_fairy",

@@ -1,6 +1,7 @@
 {
   "region_name": "West Clock Town",
   "logic": "",
+  "map_coordinates": { "xPercent": 48.25, "yPercent": 45.4 },
   "item_checks": [
     {
       "id": "wct_rosa_sisters",
@@ -10,7 +11,7 @@
     {
       "id": "wct_swordsman_school",
       "name": "Swordsman School",
-      "logic": "kokiri_sword|great_fairy_sword"
+      "logic": "kokiri_sword"
     },
     {
       "id": "wct_postman_game",
