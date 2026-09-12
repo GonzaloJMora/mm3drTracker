@@ -1,11 +1,12 @@
 # MM3D Randomizer Tracker — Diagrams
 
-Companion to [`ARCHITECTURE.md`](ARCHITECTURE.md). Four views:
+Companion to [`ARCHITECTURE.md`](ARCHITECTURE.md). Five views:
 
 1. [Components and data](#1-components-and-data)
 2. [The event bus](#2-the-event-bus)
 3. [Load / init sequence](#3-load--init-sequence)
 4. [Desktop: moving a region into the map overlay](#4-desktop-region--overlay-move)
+5. [The tooltip and logic stack](#5-the-tooltip-and-logic-stack)
 
 Components and events are drawn separately on purpose. One graph with both is
 twenty-odd crossing edges, where a wrong one is easier to miss than a right one is
@@ -38,6 +39,7 @@ flowchart TB
         IT["itemTracker.js"]
         LT["locationTracker.js"]
         LST["locationStatsTracker.js"]
+        LEG["locationLegend.js"]
         LM["locationMap.js"]
     end
     DL --> CONS
@@ -46,13 +48,14 @@ flowchart TB
         direction LR
         G[".grid-container<br/>.item-grid[data-grid]"]
         RDC["#region-dropdown-container<br/>.region-group"]
-        SB["#location-stats-box"]
+        SB["#location-summary-row<br/>stats box · legend"]
         MC["#location-map-container<br/>image · markers · overlay"]
     end
 
     IT --> G
     LT --> RDC
     LST --> SB
+    LEG --> SB
     LM --> MC
 
     GSM["gameStateManager.js<br/>window.GameState + F1 panel"]
@@ -69,6 +72,11 @@ flowchart TB
 Legend: solid arrow = reads from, or renders into. Dotted = moves a live DOM node
 rather than creating one.
 
+The three shared helpers — `logicParser.js`, `requirementsView.js`, `tooltip.js` —
+are left out here and drawn in §5. They point the opposite way to everything on
+this graph: the trackers call *them*, so putting them in this one costs four
+edges that cross it end to end.
+
 `locationPanelLayout.js` has no data dependency by design — the map's aspect ratio
 is handed to it on `locationMapReady` instead, so it can never be left waiting on
 a fetch before it can size anything.
@@ -77,13 +85,13 @@ a fetch before it can size anything.
 
 ## 2. The event bus
 
-Nine `CustomEvent`s on `window`. **Nothing observes the DOM** — there is no
-`MutationObserver` anywhere in the codebase, and `ARCHITECTURE.md`'s event bus
-section says why not.
+Every event is a `CustomEvent` on `window`. **Nothing observes the DOM** —
+there is no `MutationObserver` anywhere in the codebase, and `ARCHITECTURE.md`'s
+event bus section says why not.
 
-The ninth, `trackerDataReady`, is left out of this graph: it is the one-to-four
-fan-out already drawn in §1, and drawing it here costs four long edges that cross
-everything else. What follows is what happens *after* load.
+`trackerDataReady` is left out of this graph: it is the fan-out to every consumer
+already drawn in §1, and drawing it here costs a long edge per consumer, each
+crossing everything else. What follows is what happens *after* load.
 
 ```mermaid
 flowchart TB
@@ -92,25 +100,35 @@ flowchart TB
     IT["itemTracker.js"]
     LT["locationTracker.js"]
     LST["locationStatsTracker.js"]
+    LEG["locationLegend.js"]
     LM["locationMap.js"]
     LPL["locationPanelLayout.js"]
+    TT["tooltip.js"]
 
     GSM -- "trackerStateUpdated" --> DBG
     GSM -- "trackerStateUpdated" --> LT
+    GSM -- "trackerStateUpdated" --> TT
 
     LT -- "trackerChecksUpdated" --> LST
+    LT -- "trackerChecksUpdated" --> TT
     LT -- "regionsRendered" --> LST
     LT -- "regionsRendered" --> LM
     LT -- "regionStatusChanged" --> LM
 
     IT -- "itemGridsReady" --> LPL
     LST -- "locationStatsBoxReady" --> LPL
+    LEG -- "locationLegendReady" --> LPL
     LM -- "locationMapReady" --> LPL
     LPL -- "locationMapResized" --> LM
 ```
 
 Payloads are deliberately not on the edges — they live in the event bus table in
 `ARCHITECTURE.md`, and repeating them here costs more legibility than it buys.
+
+`tooltip.js` listens to both state events for one reason: what sits under a
+stationary pointer changes without the pointer moving. Clicking an item advances
+that slot and re-runs the sweep, so an open tooltip would otherwise keep
+describing the state before the click.
 
 Two of these are worth reading twice:
 
@@ -127,7 +145,7 @@ Two of these are worth reading twice:
 
 Two files also listen off this bus, to browser events rather than to each other.
 `locationPanelLayout.js` re-runs its sizing on `window.load`, on `resize`, and
-from a `ResizeObserver` on `.grid-container`. `locationMap.js` re-fits an open
+from a `ResizeObserver` on `.grid-container` and the summary row. `locationMap.js` re-fits an open
 overlay on `resize`, and closes one on a `matchMedia` change into mobile — that
 last listener is the only thing handing a checked-out region back to the list when
 the window narrows across the breakpoint, so it is load-bearing despite not being
@@ -150,34 +168,41 @@ sequenceDiagram
     participant IT as itemTracker.js
     participant LT as locationTracker.js
     participant LST as locationStatsTracker.js
+    participant LEG as locationLegend.js
     participant LM as locationMap.js
     participant LPL as locationPanelLayout.js
 
-    DL->>DL: fetch config, Items, manifest, then every region file
-    GSM->>GSM: build the F1 panel at parse time, items still empty
-    LT->>LT: register trackerStateUpdated at parse time, no regions yet
-    Note over DL: waits for the fetches AND DOMContentLoaded, then fires trackerDataReady once
+    DL->>DL: fetch config, Items,<br/>manifest, every region file
+    GSM->>GSM: build F1 panel<br/>(items still empty)
+    LT->>LT: register trackerStateUpdated<br/>(no regions yet)
+    Note over DL: waits for the fetches AND<br/>DOMContentLoaded, then fires<br/>trackerDataReady once
     DL-->>IT: trackerDataReady
     IT->>IT: validateGridSlots
     IT->>GSM: GameState.init(items, config)
-    GSM-->>LT: trackerStateUpdated, first broadcast (sweeps zero regions)
-    IT->>IT: render one grid per config.grids key
+    GSM-->>LT: trackerStateUpdated<br/>(sweeps zero regions)
+    IT->>IT: render one grid<br/>per config.grids key
     IT-->>LPL: itemGridsReady
+    IT->>IT: register the item<br/>tooltip builder
     DL-->>LT: trackerDataReady
-    LT->>LT: render accordions in manifest order, skipping any region it cannot render
+    LT->>LT: register the check<br/>tooltip builder
+    LT->>LT: render accordions in manifest order,<br/>skipping any region it cannot render
     LT-->>LM: regionsRendered
     LT-->>LST: regionsRendered
-    LT->>LT: validateLogicTokens + validateCheckIds, then the first evaluateAllRegions sweep
+    LT->>LT: validateLogicTokens + validateCheckIds,<br/>then the first evaluateAllRegions sweep
     LT-->>LST: trackerChecksUpdated
     DL-->>LST: trackerDataReady
     LST->>LST: build the stats box and count
     LST-->>LPL: locationStatsBoxReady
+    DL-->>LEG: trackerDataReady
+    LEG->>LEG: build the legend box<br/>from config.legend
+    LEG-->>LPL: locationLegendReady
     DL-->>LM: trackerDataReady
-    LM->>LM: build container, then a marker per rendered region, then syncMarkerColors
+    LM->>LM: build the container
     LM-->>LPL: locationMapReady
     LPL->>LPL: syncPanelHeight
     LPL-->>LM: locationMapResized
-    Note over LPL: also re-runs on window.load, on resize, and from a ResizeObserver — the grid's rendered height settles independently of when the data arrives
+    LM->>LM: a marker per rendered region,<br/>then syncMarkerColors
+    Note over LPL: also re-runs on<br/>window.load, on resize,<br/>and from a ResizeObserver<br/>on the grid and the<br/>summary row, whose sizes<br/>settle independently of<br/>when the data arrives
 ```
 
 The validators and the region-dropping step all warn to the console and let
@@ -191,6 +216,10 @@ receiving files register their listeners inside their own `TrackerData.onReady`,
 which runs later in this sequence. Nothing is lost, because each does the
 equivalent work during its own init. Those listeners exist to catch a region
 rendered *after* load, which nothing does today.
+
+The load-time `locationMapResized` is the same: `locationPanelLayout.js` answers
+`locationMapReady` straight away, before `locationMap.js` has registered its
+listener. Nothing is lost there either, since no overlay can be open yet.
 
 ---
 
@@ -230,6 +259,56 @@ Consequences of the node moving:
   overlay. `locationStatsTracker.js` does exactly this.
 - Anything reacting to those checks changing must listen for
   `trackerChecksUpdated`, for the same reason (§2).
+- Anything binding to those checks must **delegate from `document`** rather than
+  listening per element. `tooltip.js` does, which is why a check hovered inside
+  the overlay behaves the same as one in the list, with nothing rebound on the
+  move.
 - `regionLookup` in `locationMap.js` is additive-only. Rebuilding it by
   re-scanning the container would silently drop whichever region is currently
   checked out, leaving that marker gray for good.
+
+---
+
+
+## 5. The tooltip and logic stack
+
+Three helpers that depend on nothing else, drawn apart from §1 because the arrows
+run the other way: the trackers call these rather than being fed by them.
+
+```mermaid
+flowchart TB
+    TT["<b>tooltip.js</b><br/>.tracker-tooltip<br/>position · delay · edge flip"]
+
+    IT["itemTracker.js<br/>builds: name + notes image"]
+    LT["locationTracker.js<br/>builds: requirements list"]
+
+    IT <-- "register('.item-slot')<br/>then built back on hover" --> TT
+    LT <-- "register('.region-check-item')<br/>hover, or pinned by its button" --> TT
+
+    LP["logicParser.js<br/>parse · evaluate · annotate"]
+    RV["requirementsView.js<br/>tree to bullet list"]
+
+    LT --> LP
+    LT --> RV
+    RV -. "reads the<br/>annotated tree" .-> LP
+```
+
+**The loop is the design.** A tracker registers a selector, and `tooltip.js`
+calls back into that tracker when one of its elements is hovered. So the tooltip
+owns position, delay and the edge flip, and knows nothing about items or logic;
+each tracker keeps its own knowledge and hands back a finished node. That is why
+one element serves both song notes and check requirements.
+
+`locationTracker.js` parses a check's logic with `logicParser.js` and annotates
+it against the current inventory, then `requirementsView.js` turns that annotated
+tree into the bullet list. The same parser evaluates the check for the sweep, so
+the tooltip cannot explain a check by different rules than the ones that colored
+it.
+
+Binding is delegated from `document`, not per element — the region a check lives
+in may have been moved into the map overlay (§4), and delegation survives that
+with nothing rebound.
+
+On touch there is no hover, so each check carries a button that pins the panel to
+the bottom of the screen. Same registration, same builder; only the placement and
+the dismissal differ. See ARCHITECTURE.md, *Tooltips*.

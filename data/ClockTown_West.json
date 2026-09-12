@@ -1,7 +1,7 @@
 {
   "region_name": "West Clock Town",
   "logic": "",
-  "map_coordinates": { "xPercent": 48.25, "yPercent": 45.4 },
+  "map_coordinates": { "xPercent": 48.35, "yPercent": 40.7 },
   "item_checks": [
     {
       "id": "wct_rosa_sisters",

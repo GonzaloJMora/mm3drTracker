@@ -208,6 +208,10 @@ main {
 
     .tab-btn {
         flex: 1;
+        /* A word wider than half the screen, at very large text, breaks instead of
+           pushing the other tab off it. */
+        min-width: 0;
+        overflow-wrap: break-word;
         padding: 12px;
         background-color: #262626;
         color: #fff;
@@ -256,7 +260,9 @@ main {
         background-color: #262626;
         border: 1px solid #444;
         color: #fff;
-        font-size: 1rem;
+        /* An icon in a fixed-size circle, not text: in px, so a large text
+           setting cannot push the arrow out of the circle. */
+        font-size: 16px;
         cursor: pointer;
         z-index: 60; /* above the pinned tabs */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);

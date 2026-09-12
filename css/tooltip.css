@@ -1,0 +1,95 @@
+/* Above the map overlay (z-index 20), since a hovered check can be inside it. */
+.tracker-tooltip {
+    position: fixed;
+    z-index: 100;
+    max-width: 340px;
+    padding: 8px 10px;
+    background-color: #1a1a1a;
+    border: 1px solid #555;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    font-size: 12px;
+    line-height: 1.45;
+    color: #ffffff;
+
+    /* The tooltip sits under the pointer it follows, so it must never be the
+       thing the pointer is over — that would fire mouseout on the real target
+       and flicker. */
+    pointer-events: none;
+}
+
+.tooltip-title {
+    font-weight: bold;
+}
+
+/* Song notes are wide and short, so the tooltip sizes to the image rather than
+   the image to the tooltip. Not .item-image: itemTracker.js counts those to
+   decide when the grids have settled, and the map sizes itself off that. */
+.tooltip-notes {
+    display: block;
+    margin-top: 6px;
+    max-width: 100%;
+    image-rendering: pixelated;
+}
+
+.tooltip-heading {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.tooltip-req-list {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.tooltip-req-list li {
+    margin: 1px 0;
+}
+
+/* The three states from logicParser.js: you have it, you need it, or a sibling
+   already covers it. */
+.tooltip-req-satisfied { color: #4da3ff; }
+.tooltip-req-blocking { color: #ff5555; }
+.tooltip-req-optional { color: #888888; }
+
+.tooltip-joiner {
+    color: #cccccc;
+}
+
+/* Trails the line rather than leading it, so the requirement reads first and the
+   verdict lands at the end. */
+.tooltip-mark {
+    margin-left: 6px;
+    font-weight: bold;
+}
+
+.tooltip-mark-met { color: #4da3ff; }
+.tooltip-mark-unmet { color: #ff5555; }
+
+.tooltip-none {
+    color: #888888;
+}
+
+/* Pinned to the bottom of the screen rather than to the row, so it lands in the
+   same place every time and never needs scrolling to. The row is named in the
+   panel's heading instead — see locationTracker.js. */
+.tracker-tooltip.docked {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    top: auto;
+    max-width: none;
+
+    /* A region-gated check can list a lot; the panel scrolls rather than
+       growing off the top of the screen. */
+    max-height: 40vh;
+    overflow-y: auto;
+
+    /* This one is tapped, unlike the hover tooltip. */
+    pointer-events: auto;
+}
+
+/* Back to top sits exactly where the panel docks. */
+body.tooltip-docked #back-to-top {
+    display: none;
+}

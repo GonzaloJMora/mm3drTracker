@@ -1,7 +1,7 @@
 {
   "region_name": "Stock Pot Inn",
   "logic": "",
-  "map_coordinates": { "xPercent": 53.75, "yPercent": 39.53 },
+  "map_coordinates": { "xPercent": 53.85, "yPercent": 34.83 },
   "item_checks": [
     {
       "id": "spi_reservation",
@@ -46,7 +46,7 @@
     {
       "id": "spi_anju_and_kafei",
       "name": "Anju and Kafei",
-      "logic": "kokiri_sword&hookshot&kafei_mask&(gibdo_mask|garo_mask)&letter_to_kafei&pendant_of_memories&ocarina_of_time&eponas_song"
+      "logic": "kafei_mask&letter_to_kafei&pendant_of_memories&ocarina_of_time&eponas_song&(gibdo_mask|garo_mask)&hookshot&(kokiri_sword|great_fairy_sword|goron_mask|zora_mask)"
     }
   ]
 }

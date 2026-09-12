@@ -1,7 +1,7 @@
 {
   "region_name": "East Clock Town",
   "logic": "",
-  "map_coordinates": { "xPercent": 53.75, "yPercent": 45.4 },
+  "map_coordinates": { "xPercent": 53.85, "yPercent": 40.7 },
   "item_checks": [
     {
       "id": "ect_chest",
@@ -66,7 +66,7 @@
     {
       "id": "ect_bombers_hideout_chest",
       "name": "Bombers' Hideout Chest",
-      "logic": "(bombers_code|bombers_notebook)&(bomb|blast_mask)"
+      "logic": "(bombers_code|deku_mask)&(bomb|blast_mask)"
     }
   ]
 }

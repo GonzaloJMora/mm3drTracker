@@ -92,6 +92,57 @@ function announceWhenImagesSettle() {
     });
 }
 
+// The slot's hover text and, for songs, the notes image that goes with it.
+// A progressive slot changes identity as it is cycled, so this is called again
+// from handleItemClick rather than only at render.
+//
+// aria-label rather than title: title would draw the browser's own tooltip on
+// top of ours, a second later and in a different place.
+function setSlotTooltip(slot, item) {
+    slot.dataset.tooltipName = item.name;
+    slot.setAttribute("aria-label", item.name);
+
+    if (item.notes_image) {
+        slot.dataset.tooltipImage = item.notes_image;
+    } else {
+        delete slot.dataset.tooltipImage;
+    }
+}
+
+// Inside onReady so this file does not depend on tooltip.js loading first.
+window.TrackerData.onReady(() => {
+    window.Tooltip.register(".item-slot", (slot) => {
+        const name = slot.dataset.tooltipName;
+        if (!name) return null;
+
+        const fragment = document.createDocumentFragment();
+
+        const title = document.createElement("div");
+        title.className = "tooltip-title";
+        title.textContent = name;
+        fragment.appendChild(title);
+
+        if (slot.dataset.tooltipImage) {
+            const notes = document.createElement("img");
+            // Not .item-image — announceWhenImagesSettle() counts those to decide
+            // when the grids have stopped growing, and the map sizes itself off it.
+            notes.className = "tooltip-notes";
+            notes.src = slot.dataset.tooltipImage;
+            notes.alt = "";
+            // The image has no height until it loads, so the first placement
+            // measures a box the wrong size and can leave the notes hanging off
+            // the bottom.
+            notes.addEventListener("load", () => window.Tooltip.reposition(), { once: true });
+            // A missing notes image drops to name-only rather than drawing the
+            // browser's broken-image glyph.
+            notes.addEventListener("error", () => notes.remove(), { once: true });
+            fragment.appendChild(notes);
+        }
+
+        return fragment;
+    });
+});
+
 function renderGrid(container, gridOrder, itemMap, progressions, item_counts) {
     container.innerHTML = "";
 
@@ -132,17 +183,17 @@ function renderGrid(container, gridOrder, itemMap, progressions, item_counts) {
             if (isProgressive) {
                 slot.dataset.stage = "-1";
                 img.src = itemMap[itemChain[0]].image;
-                slot.title = itemMap[itemChain[0]].name;
+                setSlotTooltip(slot, itemMap[itemChain[0]]);
             } else {
                 img.src = itemMap[slotId].image;
-                slot.title = itemMap[slotId].name;
+                setSlotTooltip(slot, itemMap[slotId]);
             }
 
             slot.appendChild(img);
         } else {
             slot.classList.add("bombers-code-slot");
             slot.dataset.count = "0";
-            slot.title = "Bomber's Code Digit " + slotId.at(-1);
+            setSlotTooltip(slot, { name: "Bomber's Code Digit " + slotId.at(-1) });
         }
 
         const counterNode = document.createElement("div");
@@ -274,7 +325,7 @@ function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCo
         if (currentStage === -1) {
             slot.classList.add("dimmed");
             imgElement.src = itemMap[chain[0]].image;
-            slot.title = itemMap[chain[0]].name;
+            setSlotTooltip(slot, itemMap[chain[0]]);
         } else {
             slot.classList.remove("dimmed");
             const activeItemId = chain[currentStage];
@@ -283,7 +334,7 @@ function handleItemClick(slot, imgElement, counterNode, isProgressive, hasItemCo
             // rather than throwing inside a click handler.
             if (itemMap[activeItemId]) {
                 imgElement.src = itemMap[activeItemId].image;
-                slot.title = itemMap[activeItemId].name;
+                setSlotTooltip(slot, itemMap[activeItemId]);
             }
         }
 

@@ -20,34 +20,117 @@
 #location-map-marker-layer {
     position: absolute;
     inset: 0;
+    /* So the marker's count can scale with the marker, which is sized as a
+       percentage of this layer. */
+    container-type: inline-size;
 }
 
 .location-map-marker {
+    /* Unrounded so a browser without round() still draws markers: inside a
+       custom property round() cannot fall back, and width goes invalid instead.
+       The @supports block below rounds it. */
+    --marker-size: clamp(15px, 2.5%, 28px);
     position: absolute;
-    width: clamp(15px, 2.5%, 28px);
+    width: var(--marker-size);
     height: auto;
     aspect-ratio: 1 / 1;
     transform: translate(-50%, -50%);
-    border-radius: 50%;
-    border: 2px solid #fff;
-    background-color: #888888; /* default/no-data state */
     cursor: pointer;
     padding: 0;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-    transition: transform 0.15s ease, background-color 0.4s ease;
+    border: 0;
+    background: none;
+
+    /* A transform rather than a width change: growing the box re-runs layout on
+       every frame and re-centers the count on a different subpixel each time,
+       which reads as the digits shaking as the marker grows. */
+    transition: transform 0.15s ease;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #121212;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    /* The halo only shows where a digit crosses the black outline; over the fill
+       it is invisible. */
+    text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+}
+
+/* Outline behind, fill in front, count above both. The shape lives in these two
+   rather than on the button so the button's box can stay unclipped — clip-path
+   would cut a two-digit count off with the corners of a shape that tapers. */
+.location-map-marker::before,
+.location-map-marker::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    clip-path: var(--status-shape, circle(50%));
+}
+
+.location-map-marker::after {
+    z-index: -2;
+    /* Black rather than white: the map is mostly pale sand and snow, and a white
+       outline vanishes into it — worst on the yellow markers. A filter rather
+       than a box-shadow, because filters apply after the clip. */
+    background-color: #000;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+}
+
+.location-map-marker::before {
+    z-index: -1;
+    /* The outline is whatever this inset leaves uncovered; style.css widens it
+       for the slanted shapes. */
+    inset: var(--status-outline, 2px);
+    /* Unfilled without a status, so a marker never passes for Checked. */
+    background-color: var(--status-color, transparent);
 }
 
 .location-map-marker:hover {
     transform: translate(-50%, -50%) scale(1.3);
-    z-index: 10; /* bring to front so the hover scale-up never sits behind a neighbor */
+    z-index: 10; /* bring to front so the hover grow never sits behind a neighbor */
 }
 
-/* Same status classes/colors already used on region headers. */
-.location-map-marker.inaccessible { background-color: #ff0000; }
-.location-map-marker.partialCompletion { background-color: #ebdc0b; }
-.location-map-marker.fullClear { background-color: #00c000; }
-.location-map-marker.vanilla { background-color: #9f0dda; }
-.location-map-marker.completed { background-color: #666666; }
+/* A counted marker needs a floor a plain dot does not: two digits are unreadable
+   at the size the map gives markers on a small screen. Only the floor moves.
+   Clock Town's markers already sit closer than 20px on the narrowest desktop
+   maps, so counted neighbors there touch; raising the whole scale would crowd
+   them at every width. */
+.location-map-marker.has-count {
+    --marker-size: clamp(20px, 2.5%, 28px);
+    font-size: 11px;
+    /* Fixed rather than the marker's height: 20px centers the count at every
+       size the map produces, and a line box as tall as the marker puts odd
+       sizes half a pixel off. */
+    line-height: 20px;
+}
+
+/* Whole pixels for the box and the type: a fractional marker centers a
+   fractional glyph, so a count sits a hair off its neighbors at one map width
+   and true at another. Gated because a percentage inside round() needs a newer
+   browser than the rest of the tracker. */
+@supports (width: round(clamp(15px, 2.5%, 28px), 1px)) {
+    .location-map-marker {
+        --marker-size: round(clamp(15px, 2.5%, 28px), 1px);
+    }
+
+    .location-map-marker.has-count {
+        --marker-size: round(clamp(20px, 2.5%, 28px), 1px);
+        /* 11 and 12 center exactly; 10, 13 and 15 sit half a pixel off. Keep
+           the ramp inside the exact sizes. */
+        font-size: round(clamp(11px, 1.4cqw, 12px), 1px);
+    }
+}
+
+/* A shape that tapers gives a two-digit count much less room than its width
+   suggests — the diamond is the tight one, since the space either side of the
+   center line falls away. Smaller type keeps both digits on the fill, and 9px is
+   one of the sizes that centers exactly.
+
+   After the @supports block on purpose: same specificity as .has-count, so the
+   later rule sets a two-digit count's size. */
+.location-map-marker.wide-count {
+    font-size: 9px;
+}
 
 .location-map-crosshair {
     position: absolute;
@@ -76,10 +159,23 @@
     z-index: 20;
 }
 
+/* Gives way first when very large text will not fit the titlebar, breaking inside
+   a word if it has to, so the count and the X stay inside it. */
+.location-map-overlay-title {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+/* Muted so the region name still leads. */
+.location-map-overlay-count {
+    margin-left: 8px;
+    font-weight: normal;
+    opacity: 0.75;
+}
+
 .location-map-overlay-titlebar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 8px 12px;
     background-color: #333;
     color: #fff;
@@ -97,6 +193,9 @@
     line-height: 1;
     cursor: pointer;
     padding: 2px 8px;
+    /* Pushed right rather than by space-between, which would strand the count
+       in the middle instead of beside the name. */
+    margin-left: auto;
 }
 
 /* The X lights up from anywhere on the titlebar, since all of it closes. */

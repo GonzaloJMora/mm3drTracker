@@ -1,5 +1,36 @@
-/* Where the stats box and map container sit in the location column.
-   The map's own visuals (image, markers, overlay) are locationMap.css. */
+/* Where the summary row (stats box + legend) and map container sit in the
+   location column. The map's own visuals (image, markers, overlay) are
+   locationMap.css; the two boxes style themselves. */
+
+/* The legend sits to the right of the stats box. Both boxes are as wide as their
+   own content and the pair is centered — on desktop that is centered over the
+   map, whose width the row is set to. */
+#location-summary-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 15px;
+    box-sizing: border-box;
+}
+
+/* Shrinkable, so a label wraps before the legend has to move under the stats
+   box. */
+#location-summary-row #location-stats-box,
+#location-summary-row #location-legend-box {
+    flex: 0 1 auto;
+}
+
+/* Set by locationPanelLayout.js when the two boxes do not fit side by side even
+   shrunk, which only large text causes. */
+#location-summary-row.stacked {
+    flex-direction: column;
+    align-items: center;
+}
+
+#location-summary-row.stacked #location-stats-box,
+#location-summary-row.stacked #location-legend-box {
+    max-width: 100%;
+}
 
 @media screen and (min-width: 1500px) {
     /* Overrides the display:contents .tracker-section gets in itemContainers.css,
@@ -13,10 +44,18 @@
         min-width: 0;
     }
 
-    #location-stats-box {
+    #location-summary-row {
+        /* The row's height at the default text size. The map is sized as if the
+           row were this tall, so larger text pushes the map down the page instead
+           of shrinking it. locationPanelLayout.js warns when this goes stale. */
+        --summary-row-reserve: 117px;
         margin: 0;
         /* JS matches its width to the map's so the two read as one unit. */
         align-self: center;
+    }
+
+    #location-stats-box {
+        margin: 0;
     }
 
     #location-map-container {
@@ -29,9 +68,15 @@
 }
 
 @media screen and (max-width: 1499px) {
-    #location-stats-box {
-        width: calc(100% - 20px);
-        max-width: 500px;
+    #location-summary-row {
+        width: fit-content;
+        max-width: 100%;
         margin: 10px auto;
+        gap: 10px;
+    }
+
+    #location-stats-box {
+        width: auto;
+        margin: 0;
     }
 }

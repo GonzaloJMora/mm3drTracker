@@ -3,6 +3,84 @@
    spells it out — change this, change all of them. */
 :root {
     --mobile-breakpoint: 1499px;
+
+    /* One definition per status. Region headers, check rows, map markers and the
+       legend all read these, so the legend cannot describe a color the map is
+       not using. */
+    --status-inaccessible: #ff0000;
+    --status-partial: #ebdc0b;
+    --status-accessible: #00c000;
+    --status-vanilla: #9f0dda;
+    --status-completed: #c8c8c8;
+
+    /* A shape per status so nothing depends on hue alone. Red-green is the most
+       common form of color blindness and it is exactly the distinction this
+       tracker leans on hardest.
+
+       Completed shares the circle with accessible, so lightness carries that one
+       pair instead: a pale gray against a saturated green. On the map they also
+       differ in that only accessible ever draws a count. */
+    --shape-inaccessible: polygon(50% 6.7%, 100% 93.3%, 0% 93.3%);
+    --shape-partial: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    --shape-accessible: circle(50%);
+    --shape-vanilla: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+    --shape-completed: circle(50%);
+
+    /* A map marker's outline is the gap its fill leaves inside it, and a slanted
+       edge keeps less of that gap than a straight one: it is measured square to
+       the edge, so the diamond keeps about 70% and the triangle's slopes about
+       85%. These two are inset further to compensate; every other shape uses
+       the default in locationMap.css. */
+    --shape-inaccessible-outline: 3px;
+    --shape-partial-outline: 3px;
+}
+
+/* The color and shape of a status are paired here and nowhere else. Every
+   surface below reads --status-color and --status-shape, and map markers also
+   read --status-outline, so adding a surface means consuming variables rather
+   than writing five more rules — and an element with no status class simply has
+   none of them. */
+.region-header.inaccessible,
+.region-check-item.inaccessible,
+.location-map-marker.inaccessible,
+.location-legend-swatch.inaccessible {
+    --status-color: var(--status-inaccessible);
+    --status-shape: var(--shape-inaccessible);
+    --status-outline: var(--shape-inaccessible-outline);
+}
+
+.region-header.partialCompletion,
+.location-map-marker.partialCompletion,
+.location-legend-swatch.partialCompletion {
+    --status-color: var(--status-partial);
+    --status-shape: var(--shape-partial);
+    --status-outline: var(--shape-partial-outline);
+}
+
+/* Regions roll up to fullClear; a single check is accessible. Same meaning. */
+.region-header.fullClear,
+.region-check-item.accessible,
+.location-map-marker.fullClear,
+.location-legend-swatch.fullClear {
+    --status-color: var(--status-accessible);
+    --status-shape: var(--shape-accessible);
+}
+
+.region-header.vanilla,
+.region-check-item.vanilla,
+.location-map-marker.vanilla,
+.location-legend-swatch.vanilla {
+    --status-color: var(--status-vanilla);
+    --status-shape: var(--shape-vanilla);
+}
+
+/* Last so a completed check wins over the accessibility it also carries. */
+.region-header.completed,
+.region-check-item.completed,
+.location-map-marker.completed,
+.location-legend-swatch.completed {
+    --status-color: var(--status-completed);
+    --status-shape: var(--shape-completed);
 }
 
 body {
@@ -22,6 +100,10 @@ body {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+header {
+    margin-bottom: 12px;
 }
 
 header img {

@@ -1,7 +1,7 @@
 {
   "region_name": "Laundry Pool",
   "logic": "",
-  "map_coordinates": { "xPercent": 48.25, "yPercent": 51.27 },
+  "map_coordinates": { "xPercent": 48.35, "yPercent": 46.57 },
   "item_checks": [
     {
       "id": "lp_stray_fairy",
@@ -10,7 +10,7 @@
     },
     {
       "id": "lp_guru_guru",
-      "name": "Bremen Mask",
+      "name": "Guru-Guru",
       "logic": ""
     },
     {

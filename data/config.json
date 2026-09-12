@@ -28,7 +28,7 @@
     ]
   },
   "progressions": {
-    "sword": ["kokiri_sword", "razor_sword", "guilded_sword"],
+    "sword": ["kokiri_sword", "razor_sword", "gilded_sword"],
     "shield": ["termina_shield", "mirror_shield"],
     "wallet": ["base_wallet", "adults_wallet", "giants_wallet"],
     "magic": ["magic_meter", "magic_meter_double"],
@@ -62,6 +62,20 @@
     "piece_id": "heart_piece",
     "container_id": "heart_container"
   },
+  "legend": [
+    { "status": "inaccessible", "label": "Inaccessible" },
+    { "status": "partialCompletion", "label": "Partially Accessible" },
+    { "status": "fullClear", "label": "Accessible" },
+    { "status": "completed", "label": "Checked" },
+    { "status": "vanilla", "label": "Not Randomized" }
+  ],
+  "logic_token_names": {
+    "hearts": "Hearts",
+    "boss_masks": "Boss Masks",
+    "total_masks": "Masks",
+    "bottle": "Bottle",
+    "bombers_code": "Bomber's Code"
+  },
   "bombers_code": {
     "digits": 5,
     "max_digit_value": 5
@@ -69,8 +83,8 @@
   "map": {
     "image": "images/TerminaMap.png",
     "alt": "Map of Termina",
-    "width": 1607,
-    "height": 753
+    "width": 1419,
+    "height": 694
   },
   "map_overlay": {
     "text_sizes": [

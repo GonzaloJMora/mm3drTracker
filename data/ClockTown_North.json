@@ -1,7 +1,7 @@
 {
   "region_name": "North Clock Town",
   "logic": "",
-  "map_coordinates": { "xPercent": 51, "yPercent": 39.53 },
+  "map_coordinates": { "xPercent": 51.1, "yPercent": 34.83 },
   "item_checks": [
     {
       "id": "nct_great_fairy_deku",

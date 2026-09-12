@@ -1,7 +1,7 @@
 {
   "region_name": "South Clock Town",
   "logic": "",
-  "map_coordinates": { "xPercent": 51, "yPercent": 51.27 },
+  "map_coordinates": { "xPercent": 51.1, "yPercent": 46.57 },
   "item_checks": [
     {
       "id": "sct_ocarina_of_time",

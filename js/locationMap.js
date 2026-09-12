@@ -128,15 +128,31 @@
         // own list of status names in step with it.
         markerEls.forEach((marker, regionName) => {
             const entry = regionLookup.get(regionName);
-            applyMarkerStatus(marker, entry ? (entry.headerBtn.dataset.status || "") : "");
+            const headerBtn = entry && entry.headerBtn;
+            applyMarkerStatus(
+                marker,
+                headerBtn ? (headerBtn.dataset.status || "") : "",
+                headerBtn ? Number(headerBtn.dataset.accessible) : 0
+            );
         });
     }
 
-    function applyMarkerStatus(marker, status) {
-        if (!marker || marker.dataset.status === status) return;
-        if (marker.dataset.status) marker.classList.remove(marker.dataset.status);
-        marker.dataset.status = status;
-        if (status) marker.classList.add(status);
+    // Keyed off the count, not the status: accessible > 0 is exactly the yellow
+    // and green markers, so neither this file nor its CSS lists status names.
+    function applyMarkerStatus(marker, status, accessible) {
+        if (!marker) return;
+
+        if (marker.dataset.status !== status) {
+            if (marker.dataset.status) marker.classList.remove(marker.dataset.status);
+            marker.dataset.status = status;
+            if (status) marker.classList.add(status);
+        }
+
+        const label = accessible > 0 ? String(accessible) : "";
+        if (marker.textContent !== label) marker.textContent = label;
+        marker.classList.toggle("has-count", label !== "");
+        // Two digits need a smaller type size to sit inside a shape that tapers.
+        marker.classList.toggle("wide-count", label.length > 1);
     }
 
     // ---------- Coordinate finder (shift+click, debug-panel-gated) ----------
@@ -195,8 +211,16 @@
         titlebar.className = "location-map-overlay-titlebar";
 
         const titleText = document.createElement("span");
+        titleText.className = "location-map-overlay-title";
         titleText.textContent = regionName;
         titlebar.appendChild(titleText);
+
+        // The moved-in region's own header is hidden in here, so the titlebar is
+        // the only place its counts can show.
+        const titleCount = document.createElement("span");
+        titleCount.className = "location-map-overlay-count";
+        titleCount.textContent = entry.headerBtn.dataset.counts || "";
+        titlebar.appendChild(titleCount);
 
         const closeBtn = document.createElement("button");
         closeBtn.type = "button";
@@ -519,7 +543,14 @@
         // region too — and that node has been moved out into the overlay, where a
         // watcher on the container could not see it.
         window.addEventListener("regionStatusChanged", (event) => {
-            applyMarkerStatus(markerEls.get(event.detail.regionName), event.detail.status);
+            const { regionName, status, accessible } = event.detail;
+            applyMarkerStatus(markerEls.get(regionName), status, accessible);
+
+            if (overlayEl && currentOverlayRegion === regionName) {
+                const countEl = overlayEl.querySelector(".location-map-overlay-count");
+                const entry = regionLookup.get(regionName);
+                if (countEl && entry) countEl.textContent = entry.headerBtn.dataset.counts || "";
+            }
         });
 
         // locationTracker.js is loaded first, so this has normally already fired

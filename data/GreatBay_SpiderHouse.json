@@ -1,7 +1,7 @@
 {
   "region_name": "Ocean Spider House",
   "logic": "ocarina_of_time&eponas_song",
-  "map_coordinates": { "xPercent": 32.6, "yPercent": 49.2 },
+  "map_coordinates": { "xPercent": 32.6, "yPercent": 44.5 },
   "item_checks": [
     {
       "id": "osh_entrance_left_wall",

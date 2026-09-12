@@ -7,7 +7,6 @@
     border-radius: 8px;
     padding: 12px 15px;
     box-sizing: border-box;
-    flex-shrink: 0;
 }
 
 #location-stats-box h3 {
@@ -15,6 +14,7 @@
     font-size: 1rem;
     border-bottom: 1px solid #333;
     padding-bottom: 6px;
+    overflow-wrap: break-word;
 }
 
 #location-stats-content {
@@ -26,11 +26,14 @@
 .location-stats-row {
     display: flex;
     justify-content: space-between;
+    gap: 8px;
     font-size: 0.9rem;
 }
 
 .location-stats-label {
     color: #aaa;
+    min-width: 0;
+    overflow-wrap: break-word;
 }
 
 .location-stats-value {

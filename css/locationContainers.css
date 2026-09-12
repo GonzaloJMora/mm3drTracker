@@ -42,23 +42,68 @@
     cursor: pointer;
     font-weight: bold;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 8px;
+}
+
+/* Pushed right rather than by space-between, which would strand the status
+   glyph away from the name it belongs to. */
+.region-header .region-arrow {
+    margin-left: auto;
 }
 
 .region-header:hover {
     background-color: #444;
 }
 
+/* Name and count share one flex item and flow as text, so large text wraps the
+   count onto the next line rather than pushing it past the header's edge. */
+.region-title {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+/* Reads as a detail of the region, not part of its name. The zero-width space is
+   the line-break opportunity between the two: a name runs straight into "(",
+   which the browser will not break on its own. */
+.region-count {
+    margin-left: 8px;
+    font-weight: normal;
+    opacity: 0.8;
+}
+
+.region-count::before {
+    content: "\200B";
+}
+
 /* The accordion arrows */
 .region-header .region-arrow::after { content: "\25BC"; }
 .region-header.expanded .region-arrow::after { content: "\25B2"; }
 
-.region-header.inaccessible { color: #ff0000; }
-.region-header.partialCompletion { color: #ebdc0b; }
-.region-header.fullClear { color: #00c000; }
-.region-header.vanilla { color: #9f0dda; }
-.region-header.completed { color: #888888; }
+/* Color and shape both come from the status pairing in style.css. A region with
+   no status yet has neither variable, so it keeps the default color and its
+   glyph stays transparent. */
+.region-header {
+    color: var(--status-color, #ffffff);
+}
+
+.region-header::before,
+.region-check-item::before {
+    content: "";
+    flex: 0 0 auto;
+    background-color: var(--status-color, transparent);
+    clip-path: var(--status-shape, circle(50%));
+}
+
+.region-header::before {
+    width: 12px;
+    height: 12px;
+}
+
+.region-check-item::before {
+    width: 10px;
+    height: 10px;
+}
 
 .region-content {
     display: none;
@@ -82,34 +127,95 @@
     user-select: none;
     border-radius: 6px;
     transition: background-color 0.2s ease, opacity 0.2s ease;
-    color: #e0e0e0;
+    color: var(--status-color, #e0e0e0);
 }
 
 .region-check-item:hover {
     background-color: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
+    /* Brightening only applies to a check with no status of its own — this rule
+       outranks the base color, so a plain white here would drop the status color
+       on hover, and touch leaves that hover state stuck after a tap. */
+    color: var(--status-color, #ffffff);
 }
 
-.region-check-item.inaccessible { color: #ff0000; }
-.region-check-item.accessible { color: #00c000; }
-.region-check-item.vanilla { color: #9f0dda; }
 .region-check-item.completed {
     opacity: 0.4;
+}
+
+/* On the name, not the row: the line would otherwise propagate into the info
+   button and strike its glyph too. */
+.region-check-item.completed .region-check-name {
     text-decoration: line-through;
-    color: #888888;
+}
+
+/* A single word wider than the row, which only very large text produces, breaks
+   instead of pushing the info button out of the row. */
+.region-check-name {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+/* The requirements button is touch-only: above the breakpoint hovering the row
+   does the same job. display:none rather than hidden because the row is moved
+   into the map overlay, where fitOverlayContent() measures what it contains. */
+.region-check-info {
+    display: none;
 }
 
 /* Mobile adjustments */
 @media screen and (max-width: 1499px) {
     .region-content.open {
-        columns: 260px;
+        /* Wide enough that the info button leaves room for the longer names just
+           below the breakpoint, where a narrower value squeezes in one more,
+           tighter column. */
+        columns: 270px;
         column-gap: 15px;
     }
 
     .region-check-item {
         break-inside: avoid; /* never split a check across two columns */
+        /* 8 rather than 12 to pay for the info button: a phone column has almost
+           no slack, and the narrower padding keeps most names on one line. */
+        padding-left: 8px;
+        padding-right: 8px;
     }
 
+    .region-check-info {
+        display: block;
+        flex: 0 0 auto;
+        margin-left: auto;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        position: relative;
+        border: 1px solid #666;
+        border-radius: 50%;
+        background: transparent;
+        color: #aaa;
+        font: bold 13px/1 Arial, sans-serif;
+        cursor: pointer;
+    }
+
+    .region-check-info::before {
+        content: "i";
+    }
+
+    /* The tap target is bigger than the circle. Paying for 44px of layout would
+       wrap several more names. */
+    .region-check-info::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 44px;
+        height: 44px;
+        transform: translate(-50%, -50%);
+    }
+
+    .region-check-info[aria-expanded="true"] {
+        border-color: #4da3ff;
+        color: #4da3ff;
+    }
 }
 
 /* Desktop shows the map instead; the list stays in the DOM as the holding area. */

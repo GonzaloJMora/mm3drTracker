@@ -1,0 +1,78 @@
+/* Styling for the legend box content. The element itself is created by
+   locationLegend.js; where it sits is locationPanelLayout.css. */
+
+#location-legend-box {
+    background-color: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 12px 15px;
+    box-sizing: border-box;
+}
+
+#location-legend-box h3 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 6px;
+    overflow-wrap: break-word;
+}
+
+/* Three columns so five entries take two rows, which keeps the box no taller
+   than the stats box beside it. The map reserves the row's height at the default
+   text size, so a third row here would outgrow that reserve. */
+#location-legend-content {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    gap: 4px 24px;
+    justify-content: start;
+}
+
+/* Under the stats box, one column. locationPanelLayout.js stacks the row when
+   large text will not fit side by side, and three columns would not fit either. */
+#location-summary-row.stacked #location-legend-content {
+    grid-template-columns: minmax(0, auto);
+}
+
+.location-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.location-legend-swatch {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    /* Color and shape both come from the status pairing in style.css, so the
+       swatch is drawn by the same two variables the markers use. */
+    background-color: var(--status-color, transparent);
+    clip-path: var(--status-shape, circle(50%));
+}
+
+.location-legend-label {
+    color: #ccc;
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+@media screen and (max-width: 1499px) {
+    /* One column: the box is sized by its content here, so a wider grid would
+       only widen the box rather than being given room to fill. */
+    #location-legend-content {
+        grid-template-columns: auto;
+        gap: 3px;
+    }
+
+    #location-legend-box {
+        padding: 10px 12px;
+    }
+
+    #location-legend-box h3 {
+        font-size: 0.95rem;
+    }
+
+    .location-legend-row {
+        font-size: 0.8rem;
+    }
+}

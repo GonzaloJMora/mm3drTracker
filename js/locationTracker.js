@@ -18,18 +18,7 @@ function evaluateAllRegions(inventory, hearts, bossMasks, totalMasks) {
             }
 
             // Combine regional route requirements with individual item checks
-            let finalLogic = "";
-            const regionLogic = region.entryLogic ? region.entryLogic.trim() : "";
-            const checkLogic = checkObj.logic ? checkObj.logic.trim() : "";
-
-            if (regionLogic !== "" && checkLogic !== "") {
-                finalLogic = `(${regionLogic}) & (${checkLogic})`;
-            } else if (regionLogic !== "") {
-                finalLogic = regionLogic;
-            } else {
-                finalLogic = checkLogic;
-            }
-
+            const finalLogic = combinedLogic(region.entryLogic, checkObj.logic);
             const isAvailable = canAccess(finalLogic, inventory, hearts, bossMasks, totalMasks);
 
             // Both rules here exist to stop the check text flickering on every
@@ -66,35 +55,112 @@ function specialTokenValues(hearts, bossMasks, totalMasks) {
     return { hearts: hearts, boss_masks: bossMasks, total_masks: totalMasks };
 }
 
-// Structural helper parsing logic lines dynamically without keeping state duplicates
-function canAccess(logicString, inventory, hearts, bossMasks, totalMasks) {
-    if (!logicString || logicString.trim() === "") return true;
-
-    // Normalizing custom logic gate characters to raw native JavaScript statements
-    let executableLogic = logicString
-        .replace(/&/g, " && ")
-        .replace(/\|/g, " || ");
-
-    // Must accept the same characters as validateLogicTokens(). If it doesn't, a
-    // token the validator names is left untouched here and reaches Function() as a
-    // bare identifier, throwing on every sweep — that is, on every click.
-    const tokenRegex = /\b[A-Za-z_][A-Za-z0-9_]*\b/g;
-
+// What a bare token is worth. The requirements tooltip resolves tokens through
+// this same function, so the two cannot disagree about why a check is red.
+function tokenResolver(inventory, hearts, bossMasks, totalMasks) {
     const specials = specialTokenValues(hearts, bossMasks, totalMasks);
 
-    executableLogic = executableLogic.replace(tokenRegex, (match) => {
-        if (Object.prototype.hasOwnProperty.call(specials, match)) return specials[match];
+    return (token) => {
+        if (Object.prototype.hasOwnProperty.call(specials, token)) return specials[token];
 
-        const value = inventory[match];
-        if (typeof value === "boolean") return value ? "true" : "false";
-        if (typeof value === "number") return value; 
-        return "false";
+        const value = inventory[token];
+        if (typeof value === "boolean") return value;
+        if (typeof value === "number") return value;
+
+        // An unknown token is not an error here — validateLogicTokens() has
+        // already named it once at load, and the check simply stays unreachable.
+        return false;
+    };
+}
+
+// A check's element to its display name, for the docked panel's heading. Held
+// rather than read back off the rendered row, so the panel does not depend on
+// how that row is marked up.
+const checkNames = new WeakMap();
+
+// A check's element to the logic that gates it. Held here rather than on the
+// element because a .region-group is moved into the map overlay and back, and a
+// WeakMap follows the node wherever it goes.
+const checkRequirements = new WeakMap();
+
+// Region entry and the check's own logic are one requirement, not two lists: you
+// need the region *and* the check, so they read as a single set of bullets.
+// A pair rather than one joined string, so LogicParser parses and names each part
+// on its own — a broken region string is reported once, not once per check.
+function combinedLogic(regionLogic, checkLogic) {
+    return [regionLogic, checkLogic];
+}
+
+// Names come from the item data, with config.logic_token_names covering the
+// derived tokens that have no Items.json entry (hearts, bottle, and friends).
+function tokenDisplayName(token) {
+    const data = window.TrackerData;
+    const item = data && data.items && data.items.find(entry => entry.id === token);
+    if (item && item.name) return item.name;
+
+    const names = (data && data.config && data.config.logic_token_names) || {};
+    // Own properties only: a token like `constructor` would otherwise find
+    // Object's and render its source. Falling back to the raw id keeps a typo
+    // visible in the tooltip instead of rendering a blank bullet.
+    const name = Object.prototype.hasOwnProperty.call(names, token) ? names[token] : "";
+    return name || token;
+}
+
+// Inside onReady so this file does not depend on tooltip.js loading first.
+window.TrackerData.onReady(() => {
+    window.Tooltip.register(".region-check-item", (element, context) => {
+        const logic = checkRequirements.get(element);
+        const fragment = document.createDocumentFragment();
+
+        // Docked at the bottom of the screen the panel is nowhere near the row it
+        // describes, so it has to name it. On hover the pointer is already on it.
+        const heading = document.createElement("div");
+        heading.className = "tooltip-heading";
+        heading.textContent = (context && context.pinned)
+            ? checkNames.get(element) || "Items Required"
+            : "Items Required";
+        fragment.appendChild(heading);
+
+        let tree = null;
+        let unreadable = false;
+        try {
+            tree = logic ? window.LogicParser.parse(logic) : null;
+        } catch (error) {
+            // Already named by LogicParser. Caught here rather than left to
+            // tooltip.js, which would close the panel instead of saying why.
+            unreadable = true;
+        }
+
+        if (!tree) {
+            const none = document.createElement("div");
+            none.className = "tooltip-none";
+            none.textContent = unreadable ? "Requirements could not be read" : "None";
+            fragment.appendChild(none);
+            return fragment;
+        }
+
+        const state = window.GameState;
+        const resolve = tokenResolver(
+            state.items, state.totalHearts, state.totalBossMasks, state.totalRegularMasks
+        );
+
+        const annotated = window.LogicParser.annotate(tree, resolve);
+        fragment.appendChild(window.RequirementsView.render(annotated, tokenDisplayName, resolve));
+        return fragment;
     });
+});
 
+// Structural helper parsing logic lines dynamically without keeping state duplicates
+function canAccess(logic, inventory, hearts, bossMasks, totalMasks) {
     try {
-        return Function(`"use strict"; return (${executableLogic});`)();
+        return window.LogicParser.evaluate(
+            logic,
+            tokenResolver(inventory, hearts, bossMasks, totalMasks)
+        );
     } catch (error) {
-        console.error(`Logic expression translation error: "${logicString}" translated into "${executableLogic}"`, error);
+        // A malformed logic string is a data bug, and this runs on every click,
+        // so it reports unreachable rather than taking the whole sweep down.
+        // LogicParser has already named it in the console.
         return false;
     }
 }
@@ -113,7 +179,7 @@ function validateLogicTokens(regions, config) {
     const unknown = new Map(); // token -> where it was seen
 
     const scan = (logic, where) => {
-        if (!logic) return;
+        if (typeof logic !== "string") return;
         (logic.match(/[A-Za-z_][A-Za-z0-9_]*/g) || []).forEach(token => {
             if (known.has(token)) return;
             if (!unknown.has(token)) unknown.set(token, []);
@@ -135,8 +201,8 @@ function validateLogicTokens(regions, config) {
         `Every check using one of these will stay unreachable no matter what you collect.`
     );
     unknown.forEach((places, token) => {
-        const chain = progressions[token];
-        const hint = chain && chain.length
+        const chain = Object.prototype.hasOwnProperty.call(progressions, token) ? progressions[token] : null;
+        const hint = Array.isArray(chain) && chain.length
             ? ` - "${token}" is a progression slot, not an item; name a stage instead, e.g. "${chain[0]}" for "any ${token}".`
             : "";
         console.warn(`  ${token}${hint}
@@ -299,12 +365,23 @@ function renderRegionDropdown(regionData, container, CHECK_GROUPS) {
     const headerBtn = document.createElement("button");
     headerBtn.classList.add("region-header");
 
+    // Name and count share one element so they wrap together like a sentence;
+    // as siblings, large text pushes the count past the header's edge.
+    const titleSpan = document.createElement("span");
+    titleSpan.classList.add("region-title");
+    headerBtn.appendChild(titleSpan);
+
     // Node by node rather than innerHTML: region_name is data, and everywhere else
     // a data string reaches the page it is set as text.
     const nameSpan = document.createElement("span");
     nameSpan.textContent = regionData.region_name;
-    headerBtn.appendChild(nameSpan);
-    headerBtn.appendChild(document.createTextNode(" "));
+    titleSpan.appendChild(nameSpan);
+
+    // Filled by determineRegionLocationAccessibility(); empty until the first
+    // sweep so a region never briefly reads as (0/0).
+    const countSpan = document.createElement("span");
+    countSpan.classList.add("region-count");
+    titleSpan.appendChild(countSpan);
 
     // The arrow glyph itself lives in CSS (.region-arrow::after) — this span is
     // just the hook. Keeps the ▼/▲ characters out of three different JS files.
@@ -326,31 +403,53 @@ function renderRegionDropdown(regionData, container, CHECK_GROUPS) {
         const itemDiv = document.createElement("div");
         itemDiv.classList.add("region-check-item");
         itemDiv.dataset.checkId = check.id;
-        itemDiv.textContent = check.name;
+        // The name is its own element so `completed` can strike the text without
+        // striking the info button — a decoration line propagates into
+        // descendants and cannot be turned off from inside them.
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "region-check-name";
+        nameSpan.textContent = check.name;
+        itemDiv.appendChild(nameSpan);
+        checkNames.set(itemDiv, check.name);
+
+        // Touch has no hover, so the requirements need a control of their own.
+        // Hidden above the breakpoint, where hovering the row already does it.
+        const infoBtn = document.createElement("button");
+        infoBtn.type = "button";
+        infoBtn.className = "region-check-info";
+        infoBtn.setAttribute("aria-label", `Requirements for ${check.name}`);
+        infoBtn.setAttribute("aria-expanded", "false");
+        infoBtn.addEventListener("click", (event) => {
+            // Without this the row's own handler marks the check complete.
+            event.stopPropagation();
+            window.Tooltip.togglePin(itemDiv);
+        });
+        itemDiv.appendChild(infoBtn);
 
         itemChecksRegistry.push({
             element: itemDiv,
             logic: check.logic
         });
 
+        // The same expression the sweep evaluates, so the tooltip can never
+        // explain a check by different rules than the ones that colored it.
+        checkRequirements.set(itemDiv, combinedLogic(regionData.logic, check.logic));
+
         // Updates layout counts when items click / toggle states
         itemDiv.addEventListener("click", () => {
             const isCompleted = itemDiv.classList.toggle("completed");
             const currentId = itemDiv.dataset.checkId;
 
+            // One location, however many rows show it: every row sharing this id,
+            // and every id in a check_group with it. Queried globally because a
+            // region's rows may be sitting in the map overlay.
+            const linkedIds = new Set([currentId]);
             CHECK_GROUPS.forEach(group => {
-                if (group.includes(currentId)) {
-                    group.forEach(linkedId => {
-                        const matchingElements = document.querySelectorAll(`div.region-check-item[data-check-id="${linkedId}"]`);
-                        matchingElements.forEach(el => {
-                            if (isCompleted) {
-                                el.classList.add("completed");
-                            } else {
-                                el.classList.remove("completed");
-                            }
-                        });
-                    });
-                }
+                if (group.includes(currentId)) group.forEach(id => linkedIds.add(id));
+            });
+            linkedIds.forEach(linkedId => {
+                document.querySelectorAll(`div.region-check-item[data-check-id="${CSS.escape(linkedId)}"]`)
+                    .forEach(el => el.classList.toggle("completed", isCompleted));
             });
 
             // Re-evaluate entire map visibility rules dynamically to properly update current and adjacent regions
@@ -380,6 +479,7 @@ function renderRegionDropdown(regionData, container, CHECK_GROUPS) {
         regionName: regionData.region_name,
         entryLogic: regionData.logic,
         headerBtn: headerBtn,
+        countEl: countSpan,
         groupEl: groupDiv,
         itemDivs: itemDivs,
         itemChecks: itemChecksRegistry
@@ -392,16 +492,25 @@ function determineRegionLocationAccessibility(region) {
     let hasGreen = false;
     let hasPurple = false;
 
+    // "How many can I go and do, out of how many are left here." A non-randomized
+    // check is neither, so it counts toward neither side — the same call
+    // locationStatsTracker.js makes.
+    let accessibleCount = 0;
+    let remainingCount = 0;
+
     region.itemDivs.forEach(check => {
         if (!check.classList.contains("completed")) {
+            if (check.classList.contains("vanilla")) {
+                hasPurple = true;
+                return;
+            }
+            remainingCount++;
             if (check.classList.contains("inaccessible")) {
                 hasRed = true;
             }
             if (check.classList.contains("accessible")) {
                 hasGreen = true;
-            }
-            if (check.classList.contains("vanilla")) {
-                hasPurple = true;
+                accessibleCount++;
             }
         }
     });
@@ -430,16 +539,38 @@ function determineRegionLocationAccessibility(region) {
     // data-status is both the contract locationMap.js mirrors onto its markers and
     // the record of which class was last applied, so neither file has to keep its
     // own list of status names.
-    if (headerBtn.dataset.status !== newStatus) {
+    const counts = `(${accessibleCount}/${remainingCount})`;
+    const statusMoved = headerBtn.dataset.status !== newStatus;
+    const countsMoved = headerBtn.dataset.counts !== counts;
+
+    if (statusMoved) {
         if (headerBtn.dataset.status) headerBtn.classList.remove(headerBtn.dataset.status);
         headerBtn.dataset.status = newStatus;
         headerBtn.classList.add(newStatus);
+    }
 
-        // Announced rather than watched for: the region whose marker was just
-        // clicked has been moved out into the overlay, where a watcher on the
-        // container could not see it, and its marker would hold a stale color.
+    if (countsMoved) {
+        headerBtn.dataset.counts = counts;
+        // The same count as a number, so nothing has to parse the display text.
+        headerBtn.dataset.accessible = accessibleCount;
+        if (region.countEl) region.countEl.textContent = counts;
+    }
+
+    // Counts move without the status moving — three accessible dropping to two is
+    // still partialCompletion — so both have to announce, or the marker and the
+    // overlay titlebar hold a stale number.
+    //
+    // Announced rather than watched for: the region whose marker was just clicked
+    // has been moved out into the overlay, where a watcher on the container could
+    // not see it.
+    if (statusMoved || countsMoved) {
         window.dispatchEvent(new CustomEvent("regionStatusChanged", {
-            detail: { regionName: region.regionName, status: newStatus }
+            detail: {
+                regionName: region.regionName,
+                status: newStatus,
+                accessible: accessibleCount,
+                remaining: remainingCount
+            }
         }));
     }
 }
