@@ -83,6 +83,15 @@
     --status-shape: var(--shape-completed);
 }
 
+/* iOS Safari enlarges wide blocks of text in landscape and doesn't always shrink
+   them back on rotating to portrait, which left the docked requirements panel
+   stuck at its landscape text size. 100%, not none: none blocks zooming in some
+   browsers. */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
 body {
     background-color: #121212;
     color: #ffffff;

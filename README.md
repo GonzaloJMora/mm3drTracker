@@ -88,6 +88,28 @@ edit — nothing in `js/` needs touching. Data that does not make sense is repor
 in the browser console as the page loads, naming the file and the entry, rather
 than failing quietly.
 
+### Workflow
+
+Nothing is pushed straight to `main`. Every change lands through a pull request:
+
+1. Branch off the latest `main`.
+2. Log what the branch changes as you go, with the branch changes script:
+   - **Windows:** double-click `scripts/logBranchChanges.bat`, or run `python scripts/logBranchChanges.py`
+   - **macOS / Linux:** `python3 scripts/logBranchChanges.py`
+3. Rebase onto the latest `main` before opening the pull request, and again if
+   `main` moves while it is open.
+4. Open a pull request into `main`.
+
+The script needs Python 3 and git. It asks for the changes one per line, finished
+with an empty line, then whether to add notes, and writes them to
+`documentation/unreleased/<branch>.md`. Run it again whenever there is more to
+log: it shows what the file already holds and adds to it. Commit the file with
+the work it describes. It is plain markdown, so correcting a line is an ordinary
+edit.
+
+Each branch gets a file of its own so that two pull requests open at the same time
+never edit the same one. The next release gathers them all into the changelog.
+
 ### Versioning
 
 Releases are numbered `x.y.z`:
@@ -110,30 +132,31 @@ script writes both.
 
 ### Releasing
 
-Run the release script once a release's changes are done, before the commit that
-ships them:
+A release is a pull request of its own, made once everything going into it has
+merged:
 
-- **Windows:** double-click `scripts/release.bat`, or run `python scripts/release.py`
-- **macOS / Linux:** `python3 scripts/release.py`
+1. Branch off the latest `main`.
+2. Run the release script:
+   - **Windows:** double-click `scripts/release.bat`, or run `python scripts/release.py`
+   - **macOS / Linux:** `python3 scripts/release.py`
+3. Review the result with `git diff`, commit it, and open a pull request.
 
-It needs Python 3 and nothing else. It asks, in order:
+The script needs Python 3 and nothing else. It lists the files waiting in
+`documentation/unreleased/` and asks whether this is a major, minor or hotfix
+release, each option showing its rule and the version it would produce. It then
+shows the finished entry and asks before writing anything. On yes it adds the
+entry, dated today, to the top of the changelog, deletes the files it read, and
+sets the new version in `data/version.json`. It never commits, tags or pushes. If
+no changes are logged, it stops and says so.
 
-1. **Major, minor or hotfix.** Each option shows its rule and the version it
-   would produce.
-2. **The changes, one per line.** Press Enter on an empty line when you're done.
-   A release needs at least one.
-3. **Whether to add notes.** If yes, they are entered the same way, one per line,
-   finished with an empty line.
+Merge the release pull request before anything else lands. A pull request that
+merges in between ships in the tagged commit, but its logged changes wait for the
+next release's entry.
 
-It then shows the finished entry and asks before writing anything. On yes it sets
-the new version in `data/version.json` and adds the entry, dated today, to the top
-of the changelog. It never commits, tags or pushes.
-
-Review the result with `git diff`, commit it, and push to `main`. The
-[release workflow](.github/workflows/release.yml) sees a version with no tag yet,
-tags that commit `vx.y.z`, and publishes a GitHub release with the changelog
-entry as its notes. If the changelog has no entry for the version, the workflow
-fails and nothing is tagged.
+Once it merges, the [release workflow](.github/workflows/release.yml) sees a
+version with no tag yet, tags that commit `vx.y.z`, and publishes a GitHub release
+with the changelog entry as its notes. If the changelog has no entry for the
+version, the workflow fails and nothing is tagged.
 
 Leave the `## Version: vx.y.z` lines in the changelog exactly as the script writes
 them: they are how the workflow finds an entry.
