@@ -87,7 +87,11 @@ body {
     background-color: #121212;
     color: #ffffff;
     font-family: Arial, sans-serif;
-    padding: 20px;
+
+    /* Clears the notch and home bar, which viewport-fit=cover (index.html) lets
+       the page run under. The insets are 0 on anything without them. */
+    padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+             max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
 
     /* Prevent the image from being dragged */
     -webkit-user-drag: none;
@@ -127,6 +131,19 @@ header img {
     header img {
         margin: 0 auto;
     }
+}
+
+/* ---------- Version footer ---------- */
+
+/* Selectable, unlike the rest of the page, so it can be pasted into a bug report. */
+#app-version {
+    margin-top: 16px;
+    font-size: 0.75rem;
+    color: #888888;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 /* ---------- Load failures (dataLoader.js) ---------- */

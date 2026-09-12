@@ -74,9 +74,9 @@
    same place every time and never needs scrolling to. The row is named in the
    panel's heading instead — see locationTracker.js. */
 .tracker-tooltip.docked {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     top: auto;
     max-width: none;
 

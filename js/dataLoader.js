@@ -17,6 +17,7 @@ window.TrackerData = {
     manifest: null,
     regions: [],   // region JSON objects, in manifest.json order
     failedRegions: [],  // manifest names that could not be read, if any
+    version: null,  // "x.y.z" from version.json; loaded on its own, so not covered by ready
     ready: false,
 
     // Race-free way to wait for the data: runs immediately if it's already here,
@@ -79,6 +80,21 @@ window.TrackerData = {
         };
     })();
 
+    // Kept apart from dataReady: a report that the core files failed to load is
+    // exactly the one that needs the version, so it can't depend on them.
+    const versionReady = fetchJson("data/version.json")
+        .then(data => {
+            const version = data && data.version;
+            if (typeof version !== "string" || !/^\d+\.\d+\.\d+$/.test(version)) {
+                throw new Error('data/version.json needs a "version" of the form x.y.z');
+            }
+            return version;
+        })
+        .catch(error => {
+            console.warn("dataLoader: no version to show, so the footer stays empty.", error);
+            return null;
+        });
+
     // ---------- Reporting a failure to the person looking at the page ----------
 
     // The console is the wrong audience on a deployed page, where a missing file
@@ -92,7 +108,7 @@ window.TrackerData = {
         return node;
     }
 
-    function showLoadFailure(error) {
+    function showLoadFailure(error, version) {
         const main = document.querySelector("main");
         if (!main) return;
 
@@ -109,9 +125,10 @@ window.TrackerData = {
             "deployed."));
         box.appendChild(block("p", "tracker-error-detail", [
             (error && error.message) || String(error),
+            `version: ${version ? `v${version}` : "unknown"}`,
             `page: ${window.location.href}`
         ].join("\n")));
-        box.appendChild(block("p", null, "Copy the two lines above into a bug report."));
+        box.appendChild(block("p", null, "Copy the lines above into a bug report."));
 
         main.appendChild(box);
     }
@@ -134,6 +151,12 @@ window.TrackerData = {
 
     // ---------- Init ----------
 
+    Promise.all([versionReady, domReady]).then(([version]) => {
+        window.TrackerData.version = version;
+        const footer = document.getElementById("app-version");
+        if (footer && version) footer.textContent = `v${version}`;
+    });
+
     Promise.all([dataReady, domReady])
         .then(([data]) => {
             Object.assign(window.TrackerData, data, { ready: true });
@@ -145,8 +168,9 @@ window.TrackerData = {
             // can render meaningfully, so say so loudly rather than failing quietly
             // in four different places.
             console.error("dataLoader: could not load tracker data, nothing will render", error);
-            // domReady rather than straight in: a fetch that rejects fast gets here
-            // before DOMContentLoaded, and there is no <main> to write into yet.
-            domReady.then(() => showLoadFailure(error));
+            // Waits for domReady rather than going straight in: a fetch that rejects
+            // fast gets here before DOMContentLoaded, and there is no <main> to write
+            // into yet. The version is waited for too, since it is part of the report.
+            Promise.all([versionReady, domReady]).then(([version]) => showLoadFailure(error, version));
         });
 })();

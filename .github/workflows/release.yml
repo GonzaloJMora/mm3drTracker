@@ -1,0 +1,55 @@
+# Tags and publishes a release when data/version.json names a version with no tag
+# yet, using that version's entry in documentation/changelog.md as the notes.
+# scripts/release.py reads both files, so the changelog format has one owner.
+# See README.md, Releasing.
+#
+# It runs on every push, not only pushes that touch version.json: a release that
+# failed for a missing changelog entry then goes out on the push that adds it.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: echo "version=$(python3 scripts/release.py version)" >> "$GITHUB_OUTPUT"
+
+      - name: Check for an existing tag
+        id: tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+            echo "v$VERSION is already tagged, so there is nothing to release."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Read changelog entry
+        if: steps.tag.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: python3 scripts/release.py notes "$VERSION" > "$RUNNER_TEMP/notes.md"
+
+      - name: Create release
+        if: steps.tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release create "v$VERSION" --target "$GITHUB_SHA" --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md"

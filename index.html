@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- viewport-fit=cover is what makes CSS env(safe-area-inset-*) read non-zero,
+         which the page needs to clear the iPhone notch and home bar. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#121212">
     <title>MM3D Randomizer Tracker</title>
     
@@ -50,6 +52,9 @@
             </div>
         </div>
     </main>
+
+    <!-- Filled from data/version.json by dataLoader.js. -->
+    <footer id="app-version"></footer>
 
     <!-- Mobile only (hidden by CSS above the breakpoint). -->
     <button id="back-to-top" type="button" aria-label="Back to top"></button>

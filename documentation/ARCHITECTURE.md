@@ -255,6 +255,7 @@ Other files read them off `window.TrackerData`; none of them call `fetch`.
 | `config.json` | `grids` (slot layout per grid — **each key becomes a rendered grid**), `progressions` (multi-stage items), `item_counts` (numeric or staged counters), `item_groups` (boss masks, bottles), `heart_rules`, `logic_token_names` (display names for the derived tokens that have no `Items.json` entry — `hearts`, `bottle` and friends), `legend` (the status swatches and their labels, in display order), `bombers_code`, `map` (image path + real pixel size), `map_overlay.text_sizes` (§12), `check_groups` (checks that grant the player the same exact item despite existing in multiple locations). | `TrackerData.config` | `itemTracker.js`, `gameStateManager.js` (via `init`), `locationTracker.js`, `locationStatsTracker.js`, `locationLegend.js`, `locationMap.js` |
 | `Items.json` | Array of `{ id, name, image, notes_image?, regular_mask? }`. `name` drives tooltips; `notes_image` is the song's button sequence, shown in the item tooltip (§14); `regular_mask: true` marks an item as counting toward `total_masks` (§9). | `TrackerData.items` | `itemTracker.js`, `gameStateManager.js` (via `init`), `locationTracker.js` (names in the requirements tooltip) |
 | `<Region>.json` | `region_name`, `logic` (region entry requirement), `map_coordinates: { xPercent, yPercent }`, `item_checks: [{ id, name, logic }]`. **`region_name` must be present and unique** — see §8. | `TrackerData.regions` (manifest order, unreadable files dropped) | `locationTracker.js` (accordion + logic), `locationMap.js` (marker position) |
+| `version.json` | `{ "version": "x.y.z" }`, written by `scripts/release.py` rather than by hand (README.md, *Releasing*). Fetched apart from the core files, so a report that they failed to load still carries the version. | `TrackerData.version` (null until it arrives, and if it cannot be read) | `dataLoader.js` (the `#app-version` footer and the load-error report) |
 
 Map marker positions live per-region in `map_coordinates`.
 
@@ -289,7 +290,8 @@ once, at load, and keep the rest of the app up.**
 
 | Check | Where | On failure |
 |---|---|---|
-| A core file (`config.json`, `Items.json`, `manifest.json`) cannot be read | `dataLoader.js` | Nothing can render, so `<main>` is replaced with `#tracker-load-error` — the cause and the page URL, in a selectable block meant to be pasted into a bug report. |
+| A core file (`config.json`, `Items.json`, `manifest.json`) cannot be read | `dataLoader.js` | Nothing can render, so `<main>` is replaced with `#tracker-load-error` — the cause, the version and the page URL, in a selectable block meant to be pasted into a bug report. |
+| `version.json` cannot be read, or has no `x.y.z` version | `dataLoader.js` | One warning. The footer stays empty and a load-error report says `version: unknown`; nothing else reads it. |
 | A region file cannot be read | `dataLoader.js` | That region is dropped and the rest load. Names of the dropped files land on `TrackerData.failedRegions` and in a `#tracker-region-warning` banner above the tracker. |
 | A grid slot names an item that is not in `Items.json` | `itemTracker.js` → `validateGridSlots()` | One warning naming grid, index, and for a progression the stage number. The slot draws as an `.empty-slot` so the six-column alignment holds and the other grids still render. |
 | A logic string uses a token that matches nothing in the item state | `locationTracker.js` → `validateLogicTokens()` | One warning naming the token and every check using it, plus the right stage id if it looks like a progression slot. The check resolves to `false`. |
@@ -834,6 +836,14 @@ and hidden back-to-top, with nothing drawn and nothing to close it.
 
 **The pinned panel is fixed, so scrolling does not strand it** — and dismissing
 on scroll is therefore wrong for it, though it stays right for the hover path.
+
+**Clearing the home bar depends on `viewport-fit=cover`.** The panel's offsets
+add `env(safe-area-inset-*)`, and on iPhone those only read non-zero because
+`index.html` asks for `viewport-fit=cover`. Without it they are 0, and the panel
+docks behind the home bar and under the screen's rounded corners. The same
+setting lets the rest of the page run under the notch and home bar, which is why
+`body` pads all four sides by the insets and the sticky mobile tabs pad their
+top.
 
 **The notes image must not be `.item-image`.** `itemTracker.js` counts those to
 decide when the grids have stopped growing, and `locationPanelLayout.js` sizes

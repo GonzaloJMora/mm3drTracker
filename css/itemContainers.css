@@ -203,6 +203,9 @@ main {
         z-index: 50;
         background-color: #121212;
         padding: 10px 0;
+        /* Stuck to the top, so in the home-screen app it has to cover the status
+           bar as well. */
+        padding-top: calc(10px + env(safe-area-inset-top, 0px));
         margin-bottom: 15px;
     }
 
@@ -252,8 +255,8 @@ main {
     #back-to-top {
         display: block;
         position: fixed;
-        right: 16px;
-        bottom: 16px;
+        right: calc(16px + env(safe-area-inset-right, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
         width: 46px;
         height: 46px;
         border-radius: 50%;
