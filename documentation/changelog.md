@@ -4,6 +4,21 @@
      The release workflow finds each one by its "## Version: vx.y.z" line, so leave
      those lines exactly as written. -->
 
+## Version: v0.12.2
+
+**Released:** 09/12/2026
+
+**Changes:**
+- fixed the item requirements popup on iPhone keeping its landscape text size after rotating back to portrait
+- added a branch changes script (scripts/logBranchChanges.py) that logs each branch's changes into documentation/unreleased/ as work goes
+- the release script now builds the changelog entry from documentation/unreleased/ and deletes those files, instead of asking for the changes
+- README.md now describes working on a branch and opening a pull request instead of pushing to main
+
+**Notes:**
+- each branch logs its own changes in a separate file, so pull requests open at the same time never conflict over the changelog
+
+---
+
 ## Version: v0.12.1
 
 **Released:** 09/12/2026
