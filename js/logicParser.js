@@ -5,8 +5,9 @@
 // same tree, so the tooltip and the tracker can never disagree about a check.
 //
 // The grammar is only what an additive tracker needs: `&`, `|`, `()`, and one
-// threshold test, `item >= count`. `|` binds loosest, then `&`, then the
-// comparison. See ARCHITECTURE.md, "Logic strings".
+// threshold test, `item >= count`, where the count is a number or a setting that
+// carries one. `|` binds loosest, then `&`, then the comparison. See
+// ARCHITECTURE.md, "Logic strings".
 (function () {
     "use strict";
 
@@ -83,6 +84,10 @@
         // one written the other way round, or a number standing on its own is a
         // data bug rather than an exotic rule — it fails here instead of
         // rendering as nonsense.
+        //
+        // The count is a number or the id of a setting that carries one
+        // (`boss_masks>=moon_remains_required`). It becomes a "setting" node, so it
+        // is looked up as a setting and never mistaken for an item.
         function parseComparison() {
             const left = parsePrimary();
             if (!peek() || peek().type !== "compare") return left;
@@ -93,11 +98,15 @@
             position++;
 
             const count = peek();
-            if (!count || count.type !== "number") {
-                throw new Error(`expected a number after >= ${where()}`);
+            if (count && count.type === "number") {
+                position++;
+                return { type: "compare", left, right: { type: "number", value: count.value } };
             }
-            position++;
-            return { type: "compare", left, right: { type: "number", value: count.value } };
+            if (count && count.type === "token") {
+                position++;
+                return { type: "compare", left, right: { type: "setting", id: count.value } };
+            }
+            throw new Error(`expected a number or a setting after >= ${where()}`);
         }
 
         function parsePrimary() {
@@ -174,7 +183,8 @@
     // Comparison operands need the value itself, not its truthiness — `hearts>=5`
     // has to see 5, not true.
     function valueOf(node, resolve) {
-        return node.type === "token" ? resolve(node.id) : node.value;
+        if (node.type === "number") return node.value;
+        return node.type === "setting" ? resolve(node.id, "setting") : resolve(node.id);
     }
 
     function isSatisfied(node, resolve) {

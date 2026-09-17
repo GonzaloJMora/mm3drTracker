@@ -1,14 +1,23 @@
 /* Above the map overlay (z-index 20), since a hovered check can be inside it. */
+/* Sized to its content, not to the room left of its current spot: shrink-to-fit
+   would measure a tooltip last placed near the right edge too narrow, and it
+   would change size as the pointer moved. */
 .tracker-tooltip {
     position: fixed;
     z-index: 100;
-    max-width: 340px;
+    width: max-content;
+    /* In rem like the text, so large text widens the tooltip rather than stacking
+       it into a column; and never wider than the window, less 8px a side and the
+       22px of padding and border outside this width. 100% rather than 100vw: on a
+       fixed element it leaves out the scrollbar, which 100vw counts. */
+    max-width: min(21.25rem, calc(100% - 38px));
     padding: 8px 10px;
     background-color: #1a1a1a;
     border: 1px solid #555;
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-    font-size: 12px;
+    /* rem, not px: a px size ignores the browser's text-size setting. */
+    font-size: 0.75rem;
     line-height: 1.45;
     color: #ffffff;
 
@@ -20,6 +29,12 @@
 
 .tooltip-title {
     font-weight: bold;
+}
+
+/* A line under an item's name, from the slot's data-tooltip-note (itemGrids.js):
+   on the settings page, what sets that slot. */
+.tooltip-note {
+    color: #bbbbbb;
 }
 
 /* Song notes are wide and short, so the tooltip sizes to the image rather than
@@ -37,9 +52,21 @@
     margin-bottom: 4px;
 }
 
+/* What a non-randomized check holds. The label takes the Not Randomized color, so
+   it reads as part of that status. */
+.tooltip-vanilla {
+    margin-bottom: 4px;
+}
+
+.tooltip-vanilla-label {
+    font-weight: bold;
+    color: var(--status-vanilla);
+}
+
 .tooltip-req-list {
     margin: 0;
-    padding-left: 18px;
+    /* In em so the bullets stay inside the panel as the text grows. */
+    padding-left: 1.5em;
 }
 
 .tooltip-req-list li {
@@ -59,7 +86,7 @@
 /* Trails the line rather than leading it, so the requirement reads first and the
    verdict lands at the end. */
 .tooltip-mark {
-    margin-left: 6px;
+    margin-left: 0.5em;
     font-weight: bold;
 }
 
@@ -78,6 +105,7 @@
     right: calc(12px + env(safe-area-inset-right, 0px));
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     top: auto;
+    width: auto;
     max-width: none;
 
     /* A region-gated check can list a lot; the panel scrolls rather than

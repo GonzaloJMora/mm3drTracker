@@ -11,62 +11,84 @@
     {
       "id": "ect_postbox",
       "name": "Postbox",
-      "logic": "postman_hat"
+      "logic": "postman_hat",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "ect_stray_fairy",
       "name": "Stray Fairy",
-      "logic": "deku_mask"
+      "logic": "deku_mask",
+      "vanilla_when": [{ "stray_fairies": "vanilla" }, { "clock_town_stray_fairy": "vanilla" }],
+      "vanilla_item": "clock_town_stray_fairy"
     },
     {
       "id": "ect_aroma_in_office",
       "name": "Mayor's Office Madame Aroma",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_anju_and_kafei": false },
+      "vanilla_item": "kafei_mask"
     },
     {
       "id": "ect_mayor_reward",
       "name": "Mayor Reward",
-      "logic": "couples_mask"
+      "logic": "couples_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "ect_milk_bar_gorman",
       "name": "Milk Bar Gorman",
-      "logic": "ocarina_of_time&romani_mask&deku_mask&goron_mask&zora_mask"
+      "logic": "ocarina_of_time&romani_mask&deku_mask&goron_mask&zora_mask",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "troupe_leader_mask"
     },
     {
       "id": "ect_milk_bar_aroma",
       "name": "Milk Bar Madame Aroma",
-      "logic": "kafei_mask&letter_to_mama"
+      "logic": "kafei_mask&letter_to_mama",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "chateau_romani"
     },
     {
-      "id": "ect_postman-freedom",
+      "id": "ect_postman_freedom",
       "name": "Postman's Freedom",
-      "logic": "letter_to_mama"
+      "logic": "letter_to_mama",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "postman_hat"
     },
     {
       "id": "ect_archery_1",
       "name": "Town Archery 1",
-      "logic": "bow"
+      "logic": "bow",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "Progressive Bow"
     },
     {
       "id": "ect_archery_2",
       "name": "Town Archery 2",
-      "logic": "bow"
+      "logic": "bow",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "ect_honey_and_darling_3_days",
       "name": "Honey and Darling 3 Days",
-      "logic": "bow&bomb"
+      "logic": "bow&bomb",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "ect_treasure_chest_game_goron",
       "name": "Treasure Chest Game (Goron)",
-      "logic": "goron_mask"
+      "logic": "goron_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "ect_bombers_hideout_chest",
       "name": "Bombers' Hideout Chest",
-      "logic": "(bombers_code|deku_mask)&(bomb|blast_mask)"
+      "logic": "(bombers_notebook|bombers_code|deku_mask)&(bomb|blast_mask)"
     }
   ]
 }

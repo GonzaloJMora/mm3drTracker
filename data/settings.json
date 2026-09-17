@@ -1,0 +1,540 @@
+{
+  "always_grants": { "wallet": "base_wallet" },
+  "starting_max": { "empty_bottle": 1 },
+  "sections": [
+    {
+      "name": "Major Items",
+      "groups": [
+        {
+          "settings": [
+            { "id": "shuffle_main_inventory", "name": "Shuffle Main Inventory", "class": "toggle", "default": true },
+            { "id": "shuffle_masks", "name": "Shuffle Masks", "class": "toggle", "default": true },
+            { "id": "shuffle_transformation", "name": "Shuffle Transformation", "class": "toggle", "default": false },
+            { "id": "starting_sword", "name": "Starting Sword", "class": "dropdown", "default": "kokiri_sword",
+              "options": [
+                { "id": "kokiri_sword", "name": "Kokiri Sword", "grants": { "sword": "kokiri_sword" } },
+                { "id": "razor_sword", "name": "Razor Sword", "grants": { "sword": "razor_sword" } },
+                { "id": "gilded_sword", "name": "Gilded Sword", "grants": { "sword": "gilded_sword" } },
+                { "id": "none", "name": "None" }
+              ] },
+            { "id": "starting_shield", "name": "Starting Shield", "class": "dropdown", "default": "termina_shield",
+              "options": [
+                { "id": "termina_shield", "name": "Termina Shield", "grants": { "shield": "termina_shield" } },
+                { "id": "mirror_shield", "name": "Mirror Shield", "grants": { "shield": "mirror_shield" } },
+                { "id": "none", "name": "None" }
+              ] },
+            { "id": "start_with_ocarina", "name": "Start With Ocarina", "class": "toggle", "default": true,
+              "grants": { "ocarina_of_time": true } },
+            { "id": "shuffle_pieces_of_heart", "name": "Shuffle Piece of Heart", "class": "toggle", "default": true,
+              "forced": [{ "when": { "item_pool": "plentiful" }, "value": true }] },
+            { "id": "shuffle_songs", "name": "Shuffle Songs", "class": "dropdown", "default": "off",
+              "options": [
+                { "id": "off", "name": "Off" },
+                { "id": "song_locations", "name": "Song Locations" },
+                { "id": "anywhere", "name": "Anywhere" }
+              ] },
+            { "id": "shuffle_song_of_soaring", "name": "Shuffle Song of Soaring", "class": "toggle", "default": false },
+            { "id": "shuffle_song_of_time", "name": "Shuffle Song of Time", "class": "toggle", "default": false },
+            { "id": "tokensanity", "name": "Tokensanity", "class": "toggle", "default": false },
+            { "id": "shuffle_fairy_rewards", "name": "Shuffle Fairy Rewards", "class": "dropdown", "default": "off",
+              "options": [
+                { "id": "off", "name": "Off" },
+                { "id": "great_fairies", "name": "Great Fairies" },
+                { "id": "anywhere", "name": "Anywhere" }
+              ] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Side Quest Items",
+      "groups": [
+        {
+          "settings": [
+            { "id": "shuffle_scrub_trades", "name": "Shuffle Scrub Trades", "class": "toggle", "default": false },
+            { "id": "shuffle_anju_and_kafei", "name": "Shuffle Anju and Kafei", "class": "toggle", "default": false },
+            { "id": "shuffle_tingle_maps", "name": "Shuffle Tingle Maps", "class": "toggle", "default": false },
+            { "id": "shuffle_notebook", "name": "Shuffle Notebook", "class": "toggle", "default": false },
+            { "id": "shuffle_cows", "name": "Shuffle Cows", "class": "toggle", "default": false },
+            { "id": "shuffle_moon_items", "name": "Shuffle Moon Items", "class": "toggle", "default": false },
+            { "id": "shuffle_fierce_deity", "name": "Shuffle Fierce Deity", "class": "toggle", "default": false }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dungeon Settings",
+      "groups": [
+        {
+          "settings": [
+            { "id": "maps_compasses", "name": "Maps/Compasses", "class": "dropdown", "default": "vanilla",
+              "options": [
+                { "id": "vanilla", "name": "Vanilla" },
+                { "id": "start_with", "name": "Start With", "grants": { "map_woodfall_temple": true, "compass_woodfall_temple": true, "map_snowhead_temple": true, "compass_snowhead_temple": true, "map_great_bay_temple": true, "compass_great_bay_temple": true, "map_stone_tower_temple": true, "compass_stone_tower_temple": true } },
+                { "id": "own_dungeon", "name": "Own Dungeon" },
+                { "id": "any_dungeon", "name": "Any Dungeon" },
+                { "id": "overworld", "name": "Overworld" },
+                { "id": "anywhere", "name": "Anywhere" }
+              ] },
+            { "id": "small_keys", "name": "Small Keys", "class": "dropdown", "default": "vanilla",
+              "options": [
+                { "id": "vanilla", "name": "Vanilla" },
+                { "id": "start_with", "name": "Start With", "grants": { "woodfall_small_key": 1, "snowhead_small_key": 3, "great_bay_small_key": 1, "stone_tower_small_key": 4 } },
+                { "id": "own_dungeon", "name": "Own Dungeon" },
+                { "id": "any_dungeon", "name": "Any Dungeon" },
+                { "id": "overworld", "name": "Overworld" },
+                { "id": "anywhere", "name": "Anywhere" }
+              ] },
+            { "id": "boss_keys", "name": "Boss Keys", "class": "dropdown", "default": "vanilla",
+              "options": [
+                { "id": "vanilla", "name": "Vanilla" },
+                { "id": "start_with", "name": "Start With", "grants": { "woodfall_big_key": true, "snowhead_big_key": true, "great_bay_big_key": true, "stone_tower_big_key": true } },
+                { "id": "own_dungeon", "name": "Own Dungeon" },
+                { "id": "any_dungeon", "name": "Any Dungeon" },
+                { "id": "overworld", "name": "Overworld" },
+                { "id": "anywhere", "name": "Anywhere" }
+              ] },
+            { "id": "stray_fairies", "name": "Stray Fairies", "class": "dropdown", "default": "vanilla",
+              "options": [
+                { "id": "vanilla", "name": "Vanilla" },
+                { "id": "start_with", "name": "Start With" },
+                { "id": "own_dungeon", "name": "Own Dungeon" },
+                { "id": "any_dungeon", "name": "Any Dungeon" },
+                { "id": "overworld", "name": "Overworld" },
+                { "id": "anywhere", "name": "Anywhere" }
+              ] },
+            { "id": "clock_town_stray_fairy", "name": "Clock Town Stray Fairy", "class": "dropdown", "default": "vanilla",
+              "options": [
+                { "id": "vanilla", "name": "Vanilla" },
+                { "id": "anywhere", "name": "Anywhere" }
+              ] },
+            { "id": "dungeon_rewards", "name": "Dungeon Rewards", "class": "dropdown", "default": "vanilla",
+              "options": [
+                { "id": "vanilla", "name": "Vanilla" },
+                { "id": "any_dungeon", "name": "Any Dungeon" },
+                { "id": "overworld", "name": "Overworld" },
+                { "id": "anywhere", "name": "Anywhere" }
+              ] },
+            { "id": "heart_containers", "name": "Heart Containers", "class": "dropdown", "default": "vanilla",
+              "options": [
+                { "id": "vanilla", "name": "Vanilla" },
+                { "id": "random", "name": "Random" }
+              ] },
+            { "id": "moon_remains_required", "name": "Moon Requirements", "class": "dropdown", "default": "vanilla",
+              "options": [
+                { "id": "vanilla", "name": "Vanilla", "value": 4 },
+                { "id": "3", "name": "3", "value": 3 },
+                { "id": "2", "name": "2", "value": 2 },
+                { "id": "1", "name": "1", "value": 1 },
+                { "id": "0", "name": "0", "value": 0 }
+              ] },
+            { "id": "majora_remains_required", "name": "Majora Requirements", "class": "dropdown", "default": "vanilla",
+              "options": [
+                { "id": "vanilla", "name": "Vanilla", "value": 4 },
+                { "id": "3", "name": "3", "value": 3 },
+                { "id": "2", "name": "2", "value": 2 },
+                { "id": "1", "name": "1", "value": 1 },
+                { "id": "0", "name": "0", "value": 0 }
+              ] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Item Pool Settings",
+      "groups": [
+        {
+          "settings": [
+            { "id": "item_pool", "name": "Item Pool", "class": "dropdown", "default": "balanced",
+              "options": [
+                { "id": "plentiful", "name": "Plentiful" },
+                { "id": "balanced", "name": "Balanced" },
+                { "id": "scarce", "name": "Scarce" },
+                { "id": "minimal", "name": "Minimal" }
+              ] },
+            { "id": "remove_double_defense", "name": "Remove Double Defense", "class": "toggle", "default": false }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Other Settings",
+      "groups": [
+        {
+          "settings": [
+            { "id": "skip_bombers_minigame", "name": "Skip Bombers' Minigame", "class": "toggle", "default": false,
+              "grants": { "bombers_code_digit_1": 1, "bombers_code_digit_2": 2, "bombers_code_digit_3": 3, "bombers_code_digit_4": 4, "bombers_code_digit_5": 5 } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Starting Inventory",
+      "view": "item_grids",
+      "groups": [
+        {
+          "name": "Inventory Options",
+          "settings": [
+            { "id": "starting_consumables", "name": "Start with Consumables", "class": "toggle", "default": false,
+              "grants": { "deku_stick": true, "deku_nut": true } },
+            { "id": "starting_stick_capacity", "name": "Stick Capacity", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "10", "name": "10", "grants": { "deku_stick": true } },
+                { "id": "20", "name": "20", "grants": { "deku_stick": true } },
+                { "id": "30", "name": "30", "grants": { "deku_stick": true } }
+              ] },
+            { "id": "starting_nut_capacity", "name": "Deku Nuts", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "20", "name": "20", "grants": { "deku_nut": true } },
+                { "id": "30", "name": "30", "grants": { "deku_nut": true } },
+                { "id": "40", "name": "40", "grants": { "deku_nut": true } }
+              ] }
+          ]
+        },
+        {
+          "name": "Main Inventory",
+          "settings": [
+            { "id": "starting_bombers_notebook", "name": "Bomber's Notebook", "class": "toggle", "default": false,
+              "grants": { "bombers_notebook": true },
+              "forced": [{ "when": { "starting_song_of_healing": true, "shuffle_notebook": false }, "value": true }] },
+            { "id": "starting_bomb_bag", "name": "Bomb Bag", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "20", "name": "20", "grants": { "bomb": 20 } },
+                { "id": "30", "name": "30", "grants": { "bomb": 30 } },
+                { "id": "40", "name": "40", "grants": { "bomb": 40 } }
+              ] },
+            { "id": "starting_bombchus", "name": "Bombchu", "class": "toggle", "default": false,
+              "grants": { "bombchu": true } },
+            { "id": "starting_hookshot", "name": "Hookshot", "class": "toggle", "default": false,
+              "grants": { "hookshot": true } },
+            { "id": "starting_bow", "name": "Bow", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "30", "name": "30", "grants": { "bow": 30 } },
+                { "id": "40", "name": "40", "grants": { "bow": 40 } },
+                { "id": "50", "name": "50", "grants": { "bow": 50 } }
+              ] },
+            { "id": "starting_fire_arrow", "name": "Fire Arrow", "class": "toggle", "default": false,
+              "grants": { "fire_arrow": true } },
+            { "id": "starting_ice_arrow", "name": "Ice Arrow", "class": "toggle", "default": false,
+              "grants": { "ice_arrow": true } },
+            { "id": "starting_light_arrow", "name": "Light Arrow", "class": "toggle", "default": false,
+              "grants": { "light_arrow": true } },
+            { "id": "starting_lens_of_truth", "name": "Lens of Truth", "class": "toggle", "default": false,
+              "grants": { "lens_of_truth": true } },
+            { "id": "starting_magic_beans", "name": "Magic Beans", "class": "toggle", "default": false,
+              "grants": { "magic_bean": true } },
+            { "id": "starting_pictograph_box", "name": "Pictograph Box", "class": "toggle", "default": false,
+              "grants": { "pictograph_box": true } },
+            { "id": "starting_powder_keg", "name": "Powder Keg", "class": "toggle", "default": false,
+              "grants": { "powder_keg": true } },
+            { "id": "starting_great_fairy_sword", "name": "Great Fairy's Sword", "class": "toggle", "default": false,
+              "grants": { "great_fairy_sword": true } },
+            { "id": "starting_bottle_1", "name": "Bottle Slot 1", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "empty_bottle", "name": "Empty Bottle", "grants": { "empty_bottle": 1 } },
+                { "id": "red_potion", "name": "Red Potion", "grants": { "red_potion": true } },
+                { "id": "green_potion", "name": "Green Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "blue_potion", "name": "Blue Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "fairy", "name": "Fairy", "grants": { "empty_bottle": 1 } },
+                { "id": "deku_princess", "name": "Deku Princess", "grants": { "deku_princess": true, "empty_bottle": 1 } },
+                { "id": "milk", "name": "Milk", "grants": { "milk": true } },
+                { "id": "half_milk", "name": "Half Milk", "grants": { "empty_bottle": 1 } },
+                { "id": "fish", "name": "Fish", "grants": { "empty_bottle": 1 } },
+                { "id": "bugs", "name": "Bugs", "grants": { "empty_bottle": 1 } },
+                { "id": "big_poe", "name": "Big Poe", "grants": { "empty_bottle": 1 } },
+                { "id": "spring_water", "name": "Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "hot_spring_water", "name": "Hot Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "zora_egg", "name": "Zora Egg", "grants": { "zora_egg": 1, "empty_bottle": 1 } },
+                { "id": "gold_dust", "name": "Gold Dust", "grants": { "gold_dust": true } },
+                { "id": "mushroom", "name": "Mushroom", "grants": { "empty_bottle": 1 } },
+                { "id": "seahorse", "name": "Seahorse", "grants": { "seahorse": true, "empty_bottle": 1 } },
+                { "id": "chateau_romani", "name": "Chateau Romani", "grants": { "chateau_romani": true } },
+                { "id": "mystery_milk", "name": "Mystery Milk", "grants": { "mystery_milk": true } },
+                { "id": "spoiled_mystery_milk", "name": "Spoiled Mystery Milk", "grants": { "empty_bottle": 1 } }
+              ] },
+            { "id": "starting_bottle_2", "name": "Bottle Slot 2", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "empty_bottle", "name": "Empty Bottle", "grants": { "empty_bottle": 1 } },
+                { "id": "red_potion", "name": "Red Potion", "grants": { "red_potion": true } },
+                { "id": "green_potion", "name": "Green Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "blue_potion", "name": "Blue Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "fairy", "name": "Fairy", "grants": { "empty_bottle": 1 } },
+                { "id": "deku_princess", "name": "Deku Princess", "grants": { "deku_princess": true, "empty_bottle": 1 } },
+                { "id": "milk", "name": "Milk", "grants": { "milk": true } },
+                { "id": "half_milk", "name": "Half Milk", "grants": { "empty_bottle": 1 } },
+                { "id": "fish", "name": "Fish", "grants": { "empty_bottle": 1 } },
+                { "id": "bugs", "name": "Bugs", "grants": { "empty_bottle": 1 } },
+                { "id": "big_poe", "name": "Big Poe", "grants": { "empty_bottle": 1 } },
+                { "id": "spring_water", "name": "Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "hot_spring_water", "name": "Hot Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "zora_egg", "name": "Zora Egg", "grants": { "zora_egg": 1, "empty_bottle": 1 } },
+                { "id": "gold_dust", "name": "Gold Dust", "grants": { "gold_dust": true } },
+                { "id": "mushroom", "name": "Mushroom", "grants": { "empty_bottle": 1 } },
+                { "id": "seahorse", "name": "Seahorse", "grants": { "seahorse": true, "empty_bottle": 1 } },
+                { "id": "chateau_romani", "name": "Chateau Romani", "grants": { "chateau_romani": true } },
+                { "id": "mystery_milk", "name": "Mystery Milk", "grants": { "mystery_milk": true } },
+                { "id": "spoiled_mystery_milk", "name": "Spoiled Mystery Milk", "grants": { "empty_bottle": 1 } }
+              ] },
+            { "id": "starting_bottle_3", "name": "Bottle Slot 3", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "empty_bottle", "name": "Empty Bottle", "grants": { "empty_bottle": 1 } },
+                { "id": "red_potion", "name": "Red Potion", "grants": { "red_potion": true } },
+                { "id": "green_potion", "name": "Green Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "blue_potion", "name": "Blue Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "fairy", "name": "Fairy", "grants": { "empty_bottle": 1 } },
+                { "id": "deku_princess", "name": "Deku Princess", "grants": { "deku_princess": true, "empty_bottle": 1 } },
+                { "id": "milk", "name": "Milk", "grants": { "milk": true } },
+                { "id": "half_milk", "name": "Half Milk", "grants": { "empty_bottle": 1 } },
+                { "id": "fish", "name": "Fish", "grants": { "empty_bottle": 1 } },
+                { "id": "bugs", "name": "Bugs", "grants": { "empty_bottle": 1 } },
+                { "id": "big_poe", "name": "Big Poe", "grants": { "empty_bottle": 1 } },
+                { "id": "spring_water", "name": "Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "hot_spring_water", "name": "Hot Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "zora_egg", "name": "Zora Egg", "grants": { "zora_egg": 1, "empty_bottle": 1 } },
+                { "id": "gold_dust", "name": "Gold Dust", "grants": { "gold_dust": true } },
+                { "id": "mushroom", "name": "Mushroom", "grants": { "empty_bottle": 1 } },
+                { "id": "seahorse", "name": "Seahorse", "grants": { "seahorse": true, "empty_bottle": 1 } },
+                { "id": "chateau_romani", "name": "Chateau Romani", "grants": { "chateau_romani": true } },
+                { "id": "mystery_milk", "name": "Mystery Milk", "grants": { "mystery_milk": true } },
+                { "id": "spoiled_mystery_milk", "name": "Spoiled Mystery Milk", "grants": { "empty_bottle": 1 } }
+              ] },
+            { "id": "starting_bottle_4", "name": "Bottle Slot 4", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "empty_bottle", "name": "Empty Bottle", "grants": { "empty_bottle": 1 } },
+                { "id": "red_potion", "name": "Red Potion", "grants": { "red_potion": true } },
+                { "id": "green_potion", "name": "Green Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "blue_potion", "name": "Blue Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "fairy", "name": "Fairy", "grants": { "empty_bottle": 1 } },
+                { "id": "deku_princess", "name": "Deku Princess", "grants": { "deku_princess": true, "empty_bottle": 1 } },
+                { "id": "milk", "name": "Milk", "grants": { "milk": true } },
+                { "id": "half_milk", "name": "Half Milk", "grants": { "empty_bottle": 1 } },
+                { "id": "fish", "name": "Fish", "grants": { "empty_bottle": 1 } },
+                { "id": "bugs", "name": "Bugs", "grants": { "empty_bottle": 1 } },
+                { "id": "big_poe", "name": "Big Poe", "grants": { "empty_bottle": 1 } },
+                { "id": "spring_water", "name": "Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "hot_spring_water", "name": "Hot Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "zora_egg", "name": "Zora Egg", "grants": { "zora_egg": 1, "empty_bottle": 1 } },
+                { "id": "gold_dust", "name": "Gold Dust", "grants": { "gold_dust": true } },
+                { "id": "mushroom", "name": "Mushroom", "grants": { "empty_bottle": 1 } },
+                { "id": "seahorse", "name": "Seahorse", "grants": { "seahorse": true, "empty_bottle": 1 } },
+                { "id": "chateau_romani", "name": "Chateau Romani", "grants": { "chateau_romani": true } },
+                { "id": "mystery_milk", "name": "Mystery Milk", "grants": { "mystery_milk": true } },
+                { "id": "spoiled_mystery_milk", "name": "Spoiled Mystery Milk", "grants": { "empty_bottle": 1 } }
+              ] },
+            { "id": "starting_bottle_5", "name": "Bottle Slot 5", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "empty_bottle", "name": "Empty Bottle", "grants": { "empty_bottle": 1 } },
+                { "id": "red_potion", "name": "Red Potion", "grants": { "red_potion": true } },
+                { "id": "green_potion", "name": "Green Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "blue_potion", "name": "Blue Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "fairy", "name": "Fairy", "grants": { "empty_bottle": 1 } },
+                { "id": "deku_princess", "name": "Deku Princess", "grants": { "deku_princess": true, "empty_bottle": 1 } },
+                { "id": "milk", "name": "Milk", "grants": { "milk": true } },
+                { "id": "half_milk", "name": "Half Milk", "grants": { "empty_bottle": 1 } },
+                { "id": "fish", "name": "Fish", "grants": { "empty_bottle": 1 } },
+                { "id": "bugs", "name": "Bugs", "grants": { "empty_bottle": 1 } },
+                { "id": "big_poe", "name": "Big Poe", "grants": { "empty_bottle": 1 } },
+                { "id": "spring_water", "name": "Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "hot_spring_water", "name": "Hot Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "zora_egg", "name": "Zora Egg", "grants": { "zora_egg": 1, "empty_bottle": 1 } },
+                { "id": "gold_dust", "name": "Gold Dust", "grants": { "gold_dust": true } },
+                { "id": "mushroom", "name": "Mushroom", "grants": { "empty_bottle": 1 } },
+                { "id": "seahorse", "name": "Seahorse", "grants": { "seahorse": true, "empty_bottle": 1 } },
+                { "id": "chateau_romani", "name": "Chateau Romani", "grants": { "chateau_romani": true } },
+                { "id": "mystery_milk", "name": "Mystery Milk", "grants": { "mystery_milk": true } },
+                { "id": "spoiled_mystery_milk", "name": "Spoiled Mystery Milk", "grants": { "empty_bottle": 1 } }
+              ] },
+            { "id": "starting_bottle_6", "name": "Bottle Slot 6", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "empty_bottle", "name": "Empty Bottle", "grants": { "empty_bottle": 1 } },
+                { "id": "red_potion", "name": "Red Potion", "grants": { "red_potion": true } },
+                { "id": "green_potion", "name": "Green Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "blue_potion", "name": "Blue Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "fairy", "name": "Fairy", "grants": { "empty_bottle": 1 } },
+                { "id": "deku_princess", "name": "Deku Princess", "grants": { "deku_princess": true, "empty_bottle": 1 } },
+                { "id": "milk", "name": "Milk", "grants": { "milk": true } },
+                { "id": "half_milk", "name": "Half Milk", "grants": { "empty_bottle": 1 } },
+                { "id": "fish", "name": "Fish", "grants": { "empty_bottle": 1 } },
+                { "id": "bugs", "name": "Bugs", "grants": { "empty_bottle": 1 } },
+                { "id": "big_poe", "name": "Big Poe", "grants": { "empty_bottle": 1 } },
+                { "id": "spring_water", "name": "Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "hot_spring_water", "name": "Hot Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "zora_egg", "name": "Zora Egg", "grants": { "zora_egg": 1, "empty_bottle": 1 } },
+                { "id": "gold_dust", "name": "Gold Dust", "grants": { "gold_dust": true } },
+                { "id": "mushroom", "name": "Mushroom", "grants": { "empty_bottle": 1 } },
+                { "id": "seahorse", "name": "Seahorse", "grants": { "seahorse": true, "empty_bottle": 1 } },
+                { "id": "chateau_romani", "name": "Chateau Romani", "grants": { "chateau_romani": true } },
+                { "id": "mystery_milk", "name": "Mystery Milk", "grants": { "mystery_milk": true } },
+                { "id": "spoiled_mystery_milk", "name": "Spoiled Mystery Milk", "grants": { "empty_bottle": 1 } }
+              ] },
+            { "id": "starting_bottle_7", "name": "Bottle Slot 7", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "empty_bottle", "name": "Empty Bottle", "grants": { "empty_bottle": 1 } },
+                { "id": "red_potion", "name": "Red Potion", "grants": { "red_potion": true } },
+                { "id": "green_potion", "name": "Green Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "blue_potion", "name": "Blue Potion", "grants": { "empty_bottle": 1 } },
+                { "id": "fairy", "name": "Fairy", "grants": { "empty_bottle": 1 } },
+                { "id": "deku_princess", "name": "Deku Princess", "grants": { "deku_princess": true, "empty_bottle": 1 } },
+                { "id": "milk", "name": "Milk", "grants": { "milk": true } },
+                { "id": "half_milk", "name": "Half Milk", "grants": { "empty_bottle": 1 } },
+                { "id": "fish", "name": "Fish", "grants": { "empty_bottle": 1 } },
+                { "id": "bugs", "name": "Bugs", "grants": { "empty_bottle": 1 } },
+                { "id": "big_poe", "name": "Big Poe", "grants": { "empty_bottle": 1 } },
+                { "id": "spring_water", "name": "Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "hot_spring_water", "name": "Hot Spring Water", "grants": { "empty_bottle": 1 } },
+                { "id": "zora_egg", "name": "Zora Egg", "grants": { "zora_egg": 1, "empty_bottle": 1 } },
+                { "id": "gold_dust", "name": "Gold Dust", "grants": { "gold_dust": true } },
+                { "id": "mushroom", "name": "Mushroom", "grants": { "empty_bottle": 1 } },
+                { "id": "seahorse", "name": "Seahorse", "grants": { "seahorse": true, "empty_bottle": 1 } },
+                { "id": "chateau_romani", "name": "Chateau Romani", "grants": { "chateau_romani": true } },
+                { "id": "mystery_milk", "name": "Mystery Milk", "grants": { "mystery_milk": true } },
+                { "id": "spoiled_mystery_milk", "name": "Spoiled Mystery Milk", "grants": { "empty_bottle": 1 } }
+              ] }
+          ]
+        },
+        {
+          "name": "Songs",
+          "settings": [
+            { "id": "starting_song_of_time", "name": "Song of Time", "class": "toggle", "default": false,
+              "grants": { "song_of_time": true } },
+            { "id": "starting_oath_to_order", "name": "Oath to Order", "class": "toggle", "default": false,
+              "grants": { "oath_to_order": true } },
+            { "id": "starting_eponas_song", "name": "Epona's Song", "class": "toggle", "default": false,
+              "grants": { "eponas_song": true } },
+            { "id": "starting_song_of_storms", "name": "Song of Storms", "class": "toggle", "default": false,
+              "grants": { "song_of_storms": true } },
+            { "id": "starting_sonata_of_awakening", "name": "Sonata of Awakening", "class": "toggle", "default": false,
+              "grants": { "sonata_of_awakening": true } },
+            { "id": "starting_goron_lullaby", "name": "Goron Lullaby", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "lullaby_intro", "name": "Lullaby Intro", "grants": { "goron_lullaby": "goron_lullaby_intro" } },
+                { "id": "goron_lullaby", "name": "Goron Lullaby", "grants": { "goron_lullaby": "goron_lullaby_full" } }
+              ] },
+            { "id": "starting_new_wave_bossa_nova", "name": "New Wave Bossa Nova", "class": "toggle", "default": false,
+              "grants": { "new_wave_bossa_nova": true } },
+            { "id": "starting_elegy_of_emptiness", "name": "Elegy of Emptiness", "class": "toggle", "default": false,
+              "grants": { "elegy_of_emptiness": true } },
+            { "id": "starting_song_of_healing", "name": "Song of Healing", "class": "toggle", "default": false,
+              "grants": { "song_of_healing": true } },
+            { "id": "starting_song_of_soaring", "name": "Song of Soaring", "class": "toggle", "default": false,
+              "grants": { "song_of_soaring": true } }
+          ]
+        },
+        {
+          "name": "Upgrades",
+          "settings": [
+            { "id": "starting_wallet", "name": "Wallet Upgrade", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "adults_wallet", "name": "Adult's Wallet", "grants": { "wallet": "adults_wallet" } },
+                { "id": "giants_wallet", "name": "Giant's Wallet", "grants": { "wallet": "giants_wallet" } }
+              ] },
+            { "id": "starting_health", "name": "Health", "class": "number", "default": 3, "min": 3, "max": 20 },
+            { "id": "starting_magic_meter", "name": "Magic Meter", "class": "dropdown", "default": "none",
+              "options": [
+                { "id": "none", "name": "None" },
+                { "id": "single", "name": "Single", "grants": { "magic": "magic_meter" } },
+                { "id": "double", "name": "Double", "grants": { "magic": "magic_meter_double" } }
+              ] }
+          ]
+        },
+        {
+          "name": "Boss Remains",
+          "settings": [
+            { "id": "starting_odolwa_remains", "name": "Odolwa's Remains", "class": "toggle", "default": false,
+              "grants": { "odolwa_remains": true } },
+            { "id": "starting_goht_remains", "name": "Goht's Remains", "class": "toggle", "default": false,
+              "grants": { "goht_remains": true } },
+            { "id": "starting_gyorg_remains", "name": "Gyorg's Remains", "class": "toggle", "default": false,
+              "grants": { "gyorg_remains": true } },
+            { "id": "starting_twinmold_remains", "name": "Twinmold's Remains", "class": "toggle", "default": false,
+              "grants": { "twinmold_remains": true } }
+          ]
+        },
+        {
+          "name": "Tokens and Fairies",
+          "settings": [
+            { "id": "starting_swamp_tokens", "name": "Swamp Skulltula Tokens", "class": "number", "default": 0, "min": 0, "max": 30,
+              "grants": { "swamp_skulltula_token": "value" } },
+            { "id": "starting_ocean_tokens", "name": "Ocean Skulltula Tokens", "class": "number", "default": 0, "min": 0, "max": 30,
+              "grants": { "ocean_skulltula_token": "value" } },
+            { "id": "starting_woodfall_strays", "name": "Woodfall Stray Fairies", "class": "number", "default": 0, "min": 0, "max": 15,
+              "grants": { "woodfall_stray_fairy": "value" } },
+            { "id": "starting_snowhead_strays", "name": "Snowhead Stray Fairies", "class": "number", "default": 0, "min": 0, "max": 15,
+              "grants": { "snowhead_stray_fairy": "value" } },
+            { "id": "starting_great_bay_strays", "name": "Great Bay Stray Fairies", "class": "number", "default": 0, "min": 0, "max": 15,
+              "grants": { "great_bay_stray_fairy": "value" } },
+            { "id": "starting_stone_tower_strays", "name": "Stone Tower Stray Fairies", "class": "number", "default": 0, "min": 0, "max": 15,
+              "grants": { "stone_tower_stray_fairy": "value" } }
+          ]
+        },
+        {
+          "name": "Masks",
+          "settings": [
+            { "id": "starting_deku_mask", "name": "Deku Mask", "class": "toggle", "default": false,
+              "grants": { "deku_mask": true },
+              "forced": [{ "when": { "starting_song_of_healing": true, "shuffle_transformation": false }, "value": true }] },
+            { "id": "starting_goron_mask", "name": "Goron Mask", "class": "toggle", "default": false,
+              "grants": { "goron_mask": true } },
+            { "id": "starting_zora_mask", "name": "Zora Mask", "class": "toggle", "default": false,
+              "grants": { "zora_mask": true } },
+            { "id": "starting_bunny_hood", "name": "Bunny Hood", "class": "toggle", "default": false,
+              "grants": { "bunny_hood": true } },
+            { "id": "starting_keaton_mask", "name": "Keaton Mask", "class": "toggle", "default": false,
+              "grants": { "keaton_mask": true } },
+            { "id": "starting_postmans_hat", "name": "Postman's Hat", "class": "toggle", "default": false,
+              "grants": { "postman_hat": true } },
+            { "id": "starting_all_night_mask", "name": "All-Night Mask", "class": "toggle", "default": false,
+              "grants": { "all_night_mask": true } },
+            { "id": "starting_blast_mask", "name": "Blast Mask", "class": "toggle", "default": false,
+              "grants": { "blast_mask": true } },
+            { "id": "starting_stone_mask", "name": "Stone Mask", "class": "toggle", "default": false,
+              "grants": { "stone_mask": true } },
+            { "id": "starting_great_fairy_mask", "name": "Great Fairy's Mask", "class": "toggle", "default": false,
+              "grants": { "great_fairy_mask": true } },
+            { "id": "starting_bremen_mask", "name": "Bremen Mask", "class": "toggle", "default": false,
+              "grants": { "bremen_mask": true } },
+            { "id": "starting_don_geros_mask", "name": "Don Gero's Mask", "class": "toggle", "default": false,
+              "grants": { "don_gero_mask": true } },
+            { "id": "starting_mask_of_scents", "name": "Mask of Scents", "class": "toggle", "default": false,
+              "grants": { "mask_of_scents": true } },
+            { "id": "starting_romanis_mask", "name": "Romani's Mask", "class": "toggle", "default": false,
+              "grants": { "romani_mask": true } },
+            { "id": "starting_troupe_leader_mask", "name": "Troupe Leader's Mask", "class": "toggle", "default": false,
+              "grants": { "troupe_leader_mask": true } },
+            { "id": "starting_kafei_mask", "name": "Kafei's Mask", "class": "toggle", "default": false,
+              "grants": { "kafei_mask": true } },
+            { "id": "starting_couples_mask", "name": "Couple's Mask", "class": "toggle", "default": false,
+              "grants": { "couples_mask": true } },
+            { "id": "starting_kamaros_mask", "name": "Kamaro's Mask", "class": "toggle", "default": false,
+              "grants": { "kamaro_mask": true } },
+            { "id": "starting_gibdo_mask", "name": "Gibdo Mask", "class": "toggle", "default": false,
+              "grants": { "gibdo_mask": true } },
+            { "id": "starting_garo_mask", "name": "Garo's Mask", "class": "toggle", "default": false,
+              "grants": { "garo_mask": true } },
+            { "id": "starting_captains_hat", "name": "Captain's Hat", "class": "toggle", "default": false,
+              "grants": { "captains_hat": true } },
+            { "id": "starting_giants_mask", "name": "Giant's Mask", "class": "toggle", "default": false,
+              "grants": { "giants_mask": true } },
+            { "id": "starting_fierce_deity_mask", "name": "Fierce Deity's Mask", "class": "toggle", "default": false,
+              "grants": { "fierce_deity_mask": true } },
+            { "id": "starting_mask_of_truth", "name": "Mask of Truth", "class": "toggle", "default": false,
+              "grants": { "mask_of_truth": true } }
+          ]
+        }
+      ]
+    }
+  ]
+}

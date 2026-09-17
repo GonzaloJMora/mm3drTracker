@@ -6,42 +6,58 @@
     {
       "id": "sct_ocarina_of_time",
       "name": "Ocarina of Time",
-      "logic": "(magic_meter&deku_mask)|bow|hookshot|zora_mask"
+      "logic": "(magic_meter&deku_mask)|bow|hookshot|zora_mask",
+      "vanilla_when": { "start_with_ocarina": true },
+      "vanilla_item": "ocarina_of_time"
     },
     {
       "id": "sct_song_of_time",
       "name": "Song of Time",
-      "logic": "(magic_meter&deku_mask)|bow|hookshot|zora_mask"
+      "logic": "(magic_meter&deku_mask)|bow|hookshot|zora_mask",
+      "vanilla_when": [{ "shuffle_songs": "off" }, { "shuffle_songs": ["song_locations", "anywhere"], "shuffle_song_of_time": false }],
+      "vanilla_item": "song_of_time"
     },
     {
       "id": "sct_deku_mask",
       "name": "Deku Mask",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_transformation": false },
+      "vanilla_item": "deku_mask"
     },
     {
       "id": "sct_song_of_healing",
       "name": "Song of Healing",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_songs": "off" },
+      "vanilla_item": "song_of_healing"
     },
     {
       "id": "sct_bombers_notebook",
-      "name": "Bombers Notebook",
-      "logic": ""
+      "name": "Bomber's Notebook",
+      "logic": "",
+      "vanilla_when": { "shuffle_notebook": false },
+      "vanilla_item": "bombers_notebook"
     },
     {
       "id": "sct_scrub_trade",
       "name": "Scrub Trade",
-      "logic": "moons_tear"
+      "logic": "moons_tear",
+      "vanilla_when": { "shuffle_scrub_trades": false },
+      "vanilla_item": "clock_town_title_deed"
     },
     {
       "id": "sct_postbox",
       "name": "Postbox",
-      "logic": "postman_hat"
+      "logic": "postman_hat",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "sct_clock_tower_hp",
       "name": "Clock Tower Heart Piece",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "sct_straw_roof_chest",
@@ -56,7 +72,9 @@
     {
       "id": "sct_bank_reward_1",
       "name": "Bank Reward 1",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "Progressive Wallet"
     },
     {
       "id": "sct_bank_reward_2",
@@ -66,7 +84,9 @@
     {
       "id": "sct_bank_reward_3",
       "name": "Bank Reward 3",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     }
   ]
 }

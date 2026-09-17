@@ -34,12 +34,12 @@
 
         // canonicalKey -> { completed: bool, accessible: bool }
         const canonical = new Map();
+        // Read at count time rather than kept from an event, so it can't be stale
+        // whichever order the listeners run in.
+        const skipVanilla = Boolean(window.TrackerView && window.TrackerView.hidesNonRandomized());
 
         items.forEach(item => {
-            // Vanilla checks are Phase 2 scaffolding — nothing sets the class
-            // yet, and they are excluded from all three stats until it does.
-            if (item.classList.contains("vanilla")) return;
-
+            if (skipVanilla && item.classList.contains("vanilla")) return;
             const checkId = item.dataset.checkId;
             const key = idToKey.get(checkId) || checkId;
 
@@ -153,7 +153,6 @@
     // same checks are still on the page.
     function startListening() {
         window.addEventListener("trackerChecksUpdated", scheduleUpdate);
-        window.addEventListener("regionsRendered", scheduleUpdate);
     }
 
     // ---------- Init ----------
@@ -165,9 +164,8 @@
         renderStats(computeStats());
         startListening();
 
-        // Positioning the box, sizing the panel, and splitting regions
-        // into columns are layout concerns owned by locationPanelLayout.js.
-        // Hand the element off via an event instead of a direct reference.
+        // Where the box sits is locationPanelLayout.js's business, so the element
+        // is handed off on an event instead of placed here.
         window.dispatchEvent(new CustomEvent("locationStatsBoxReady", {
             detail: { box: statsBoxEl }
         }));

@@ -1,0 +1,58 @@
+/* Beside the logo on desktop, under it on mobile. The header is capped like main
+   (style.css), so the buttons end where the tracker below them ends. */
+#tracker-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.toolbar-btn {
+    background-color: #262626;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    /* At the largest text sizes one word is wider than a phone. Breaking inside it
+       keeps the button on screen; break-word would not, because it leaves the
+       button's minimum width at that whole word. */
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+/* The label stays the same whether it is on or off, so the pressed state has to
+   carry it: the green the active mobile tab uses. */
+.toolbar-btn[aria-pressed="true"] {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.toolbar-btn:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+/* Show Only Accessible Checks belongs to the phone layout, where the region list is
+   all there is; the desktop map shows every region either way. */
+.toolbar-btn.phone-only {
+    display: none;
+}
+
+@media (hover: hover) {
+    .toolbar-btn:not(:disabled):hover {
+        border-color: #888;
+    }
+}
+
+@media screen and (max-width: 1499px) {
+    #tracker-toolbar {
+        justify-content: center;
+    }
+
+    .toolbar-btn.phone-only {
+        display: inline-block;
+    }
+}

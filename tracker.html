@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!-- data-requires-launch: opened without settings from index.html, launch.js sends
+     this page back there. -->
+<html lang="en" data-requires-launch>
+<head>
+    <meta charset="UTF-8">
+    <!-- viewport-fit=cover is what makes CSS env(safe-area-inset-*) read non-zero,
+         which the page needs to clear the iPhone notch and home bar. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#121212">
+    <title>MM3D Randomizer Tracker</title>
+    
+    <link rel="icon" type="image/png" href="images/icons/icon.png">
+    <link rel="icon" sizes="32x32" href="images/icons/favicon.ico">
+    <link rel="apple-touch-icon" href="images/icons/icon-180.png">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="apple-mobile-web-app-title" content="MM3D Randomizer Tracker">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/itemContainers.css">
+    <link rel="stylesheet" href="css/locationContainers.css">
+    <link rel="stylesheet" href="css/locationStats.css">
+    <link rel="stylesheet" href="css/locationLegend.css">
+    <link rel="stylesheet" href="css/locationPanelLayout.css">
+    <link rel="stylesheet" href="css/locationMap.css">
+    <link rel="stylesheet" href="css/tooltip.css">
+    <link rel="stylesheet" href="css/trackerToolbar.css">
+
+    <!-- In <head> so a redirect happens before the body draws. -->
+    <script src="js/launch.js"></script>
+</head>
+
+<body>
+
+    <header>
+        <img src="images/logo.png" alt="Majora's Mask 3D Randomizer Tracker">
+        <div id="tracker-toolbar">
+            <!-- data-view-toggle is the class trackerToolbar.js puts on <body>; data-storage-key is where the choice is saved. -->
+            <button type="button" id="toggle-non-randomized" class="toolbar-btn" aria-pressed="false"
+                    data-view-toggle="hide-non-randomized" data-storage-key="mm3drTracker.v0.hideNonRandomized">Hide Non-Randomized Checks</button>
+            <!-- Phone layout only (trackerToolbar.css). -->
+            <button type="button" id="toggle-only-accessible" class="toolbar-btn phone-only" aria-pressed="false"
+                    data-view-toggle="only-accessible" data-storage-key="mm3drTracker.v0.showOnlyAccessible">Show Only Accessible Checks</button>
+            <button type="button" id="export-tracker" class="toolbar-btn" disabled>Export</button>
+            <button type="button" id="launch-new-tracker" class="toolbar-btn">Launch New Tracker</button>
+        </div>
+    </header>
+
+    <!-- awaiting-data: hidden until dataLoader.js has the data and every file has drawn from it. -->
+    <main class="awaiting-data">
+        <!-- Mobile Tab Navigation (Hidden on Desktop) -->
+        <div class="mobile-tabs">
+            <button class="tab-btn active" data-tab="items" data-section="item-section">Item Tracker</button>
+            <button class="tab-btn" data-tab="locations" data-section="location-section">Locations</button>
+        </div>
+
+        <div class="tracker-layout-wrapper">
+            <!-- Item Tracker Section -->
+            <div id="item-section" class="tracker-section active-section">
+                <!-- One .item-grid per key in config.json grids, drawn by itemGrids.js for itemTracker.js -->
+                <div class="grid-container"></div>
+            </div>
+
+            <!-- Location Tracker Section -->
+            <div id="location-section" class="tracker-section">
+                <aside id="region-sidebar" class="region-sidebar">
+                    <div id="region-dropdown-container"></div>
+                </aside>
+            </div>
+        </div>
+    </main>
+
+    <!-- Filled from data/version.json by dataLoader.js. -->
+    <footer id="app-version"></footer>
+
+    <!-- Mobile only (hidden by CSS above the breakpoint). -->
+    <button id="back-to-top" type="button" aria-label="Back to top"></button>
+
+    <script src="js/dataLoader.js"></script>
+    <script src="js/logicParser.js"></script>
+    <script src="js/tooltip.js"></script>
+    <script src="js/requirementsView.js"></script>
+    <script src="js/gameStateManager.js"></script>
+    <script src="js/settingsState.js"></script>
+    <script src="js/trackerToolbar.js"></script>
+    <script src="js/itemGrids.js"></script>
+    <script src="js/itemTracker.js"></script>
+    <script src="js/locationTracker.js"></script>
+    <script src="js/locationStatsTracker.js"></script>
+    <script src="js/locationLegend.js"></script>
+    <script src="js/locationPanelLayout.js"></script>
+    <script src="js/locationMap.js"></script>
+    <script src="js/mobileTabManager.js"></script>
+</body>
+</html>

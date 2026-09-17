@@ -52,8 +52,13 @@
     margin-left: auto;
 }
 
-.region-header:hover {
-    background-color: #444;
+/* Hover only with a real pointer: a touch browser applies :hover on tap and keeps
+   it until the next tap somewhere else, so a tapped header would stay light gray
+   after closing. */
+@media (hover: hover) {
+    .region-header:hover {
+        background-color: #444;
+    }
 }
 
 /* Name and count share one flex item and flow as text, so large text wraps the
@@ -130,12 +135,15 @@
     color: var(--status-color, #e0e0e0);
 }
 
-.region-check-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    /* Brightening only applies to a check with no status of its own — this rule
-       outranks the base color, so a plain white here would drop the status color
-       on hover, and touch leaves that hover state stuck after a tap. */
-    color: var(--status-color, #ffffff);
+/* Pointer only, like the header's hover. */
+@media (hover: hover) {
+    .region-check-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        /* Brightening only applies to a check with no status of its own — this
+           rule outranks the base color, so a plain white here would drop the
+           status color on hover. */
+        color: var(--status-color, #ffffff);
+    }
 }
 
 .region-check-item.completed {
@@ -218,8 +226,9 @@
     }
 }
 
-/* Desktop shows the map instead; the list stays in the DOM as the holding area. */
-@media screen and (min-width: 1500px) {
+/* Desktop shows the map instead; the list stays in the DOM as the holding area.
+   Asked as "not the phone layout" — see the breakpoint note in style.css. */
+@media not all and (max-width: 1499px) {
     #region-sidebar {
         display: none;
     }

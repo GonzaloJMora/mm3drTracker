@@ -6,52 +6,65 @@
     {
       "id": "nct_great_fairy_deku",
       "name": "Clock Town Great Fairy (Deku)",
-      "logic": "clock_town_stray_fairy&deku_mask"
+      "logic": "clock_town_stray_fairy&deku_mask",
+      "vanilla_when": [{ "shuffle_main_inventory": false }, { "shuffle_fairy_rewards": "off" }],
+      "vanilla_item": "Progressive Magic Meter"
     },
     {
       "id": "nct_great_fairy_human",
       "name": "Clock Town Great Fairy (Human)",
-      "logic": "clock_town_stray_fairy"
+      "logic": "clock_town_stray_fairy",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "great_fairy_mask"
     },
     {
       "id": "nct_keaton_quiz",
       "name": "Keaton Quiz",
-      "logic": "keaton_mask"
+      "logic": "keaton_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "nct_deku_playground_3_days",
       "name": "Deku Playground 3 Days",
-      "logic": "deku_mask"
+      "logic": "deku_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "nct_tree_hp",
       "name": "Tree Heart Piece",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "nct_old_lady",
       "name": "Save Old Lady",
-      "logic": "kokiri_sword|zora_mask|goron_mask|great_fairy_sword"
+      "logic": "kokiri_sword|zora_mask|goron_mask|great_fairy_sword",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "blast_mask"
     },
     {
       "id": "nct_tingle_clock_town_map_buy",
       "name": "Tingle Clock Town Map",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_tingle_maps": false },
+      "vanilla_item": "Clock Town Map"
     },
     {
       "id": "nct_tingle_woodfall_map_buy",
       "name": "Tingle Woodfall Map",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_tingle_maps": false },
+      "vanilla_item": "Woodfall Map"
     },
     {
       "id": "nct_postbox",
       "name": "Postbox",
-      "logic": "postman_hat"
-    },
-    {
-      "id": "nct_bombers_minigame",
-      "name": "Bombers' Minigame",
-      "logic": "bow|hookshot|zora_mask|(deku_mask&magic_meter)"
+      "logic": "postman_hat",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     }
   ]
 }

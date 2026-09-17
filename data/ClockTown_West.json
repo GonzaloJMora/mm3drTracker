@@ -6,87 +6,121 @@
     {
       "id": "wct_rosa_sisters",
       "name": "Rosa Sisters",
-      "logic": "kamaro_mask"
+      "logic": "kamaro_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "wct_swordsman_school",
       "name": "Swordsman School",
-      "logic": "kokiri_sword"
+      "logic": "kokiri_sword",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "wct_postman_game",
       "name": "Postman Game",
-      "logic": "bunny_hood"
+      "logic": "bunny_hood",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "wct_all_night_mask_purchase",
-      "name": "All Night Mask Purchase",
-      "logic": "(kokiri_sword|zora_mask|goron_mask|great_fairy_sword)&giants_wallet"
+      "name": "All-Night Mask Purchase",
+      "logic": "(kokiri_sword|zora_mask|goron_mask|great_fairy_sword)&giants_wallet",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "all_night_mask"
     },
     {
       "id": "wct_bomb_shop_bombs",
       "name": "Bomb Shop Bombs Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "Bombs (10)"
     },
     {
       "id": "wct_bomb_shop_bombchu",
       "name": "Bomb Shop Bombchu Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "Bombchu (10)"
     },
     {
       "id": "wct_bomb_shop_bomb_bag",
       "name": "Bomb Shop Bomb Bag Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "Progressive Bomb Bag"
     },
     {
       "id": "wct_bomb_shop_big_bomb_bag",
       "name": "Bomb Shop Big Bomb Bag Purchase",
-      "logic": "kokiri_sword|zora_mask|goron_mask|great_fairy_sword"
+      "logic": "kokiri_sword|zora_mask|goron_mask|great_fairy_sword",
+      "vanilla_when": true,
+      "vanilla_item": "Progressive Bomb Bag"
     },
     {
       "id": "wct_bomb_shop_powder_keg",
       "name": "Bomb Shop Powder Keg Purchase",
-      "logic": "goron_mask&powder_keg"
+      "logic": "goron_mask&powder_keg",
+      "vanilla_when": true,
+      "vanilla_item": "powder_keg"
     },
     {
       "id": "wct_trading_post_item_1",
       "name": "Trading Post Item 1 Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "red_potion"
     },
     {
       "id": "wct_trading_post_item_2",
       "name": "Trading Post Item 2 Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "Green Potion"
     },
     {
       "id": "wct_trading_post_item_3",
       "name": "Trading Post Item 3 Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "termina_shield"
     },
     {
       "id": "wct_trading_post_item_4",
       "name": "Trading Post Item 4 Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "Fairy"
     },
     {
       "id": "wct_trading_post_item_5",
       "name": "Trading Post Item 5 Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "Deku Stick (1)"
     },
     {
       "id": "wct_trading_post_item_6",
       "name": "Trading Post Item 6 Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "Arrows (30)"
     },
     {
       "id": "wct_trading_post_item_7",
       "name": "Trading Post Item 7 Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "Deku Nut (10)"
     },
     {
       "id": "wct_trading_post_item_8",
       "name": "Trading Post Item 8 Purchase",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": true,
+      "vanilla_item": "Magic Bean"
     }
   ]
 }

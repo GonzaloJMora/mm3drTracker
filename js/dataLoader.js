@@ -1,5 +1,6 @@
 // dataLoader.js
-// The single place anything reads out of data/, loaded before every other script.
+// The single place anything reads out of data/, loaded ahead of every script but
+// launch.js.
 // Nothing else may fetch: let each file load what it needs and the same files get
 // pulled repeatedly, right inside the window where the panel sizing is trying to
 // measure a settled layout.
@@ -15,6 +16,7 @@ window.TrackerData = {
     config: null,
     items: null,
     manifest: null,
+    settings: null,
     regions: [],   // region JSON objects, in manifest.json order
     failedRegions: [],  // manifest names that could not be read, if any
     version: null,  // "x.y.z" from version.json; loaded on its own, so not covered by ready
@@ -32,6 +34,10 @@ window.TrackerData = {
 };
 
 (function () {
+    // The settings page marks this script with data-skip-regions: it needs the
+    // settings, not the region files. currentScript is only set while this runs.
+    const skipsRegions = Boolean(document.currentScript && document.currentScript.hasAttribute("data-skip-regions"));
+
     function fetchJson(path) {
         return fetch(path).then(res => {
             if (!res.ok) throw new Error(`${path} responded ${res.status}`);
@@ -48,10 +54,11 @@ window.TrackerData = {
     });
 
     const dataReady = (async () => {
-        const [config, items, manifest] = await Promise.all([
+        const [config, items, manifest, settings] = await Promise.all([
             fetchJson("data/config.json"),
             fetchJson("data/Items.json"),
-            fetchJson("data/manifest.json")
+            fetchJson("data/manifest.json"),
+            fetchJson("data/settings.json")
         ]);
 
         // Manifest order is the display order, and Promise.all preserves it
@@ -61,7 +68,7 @@ window.TrackerData = {
         // resolves to null and is dropped. Named rather than counted: a dropped
         // region just has no marker, which is a quiet way to lose one.
         const failedRegions = [];
-        const loaded = await Promise.all(
+        const loaded = skipsRegions ? [] : await Promise.all(
             manifest.map(fileName =>
                 fetchJson(`data/${fileName}`).catch(err => {
                     console.error(`dataLoader: failed to load region file ${fileName}`, err);
@@ -75,6 +82,7 @@ window.TrackerData = {
             config,
             items,
             manifest,
+            settings,
             regions: loaded.filter(region => region !== null),
             failedRegions
         };
@@ -120,7 +128,7 @@ window.TrackerData = {
         box.appendChild(block("h2", null, "The tracker could not load its data"));
         box.appendChild(block("p", null,
             "One of the files the tracker needs before it can draw anything could not " +
-            "be read, so the item grids, the locations and the map are all missing. " +
+            "be read, so nothing on this page can be shown. " +
             "This normally means a file under data/ is absent, misnamed, or was not " +
             "deployed."));
         box.appendChild(block("p", "tracker-error-detail", [
@@ -151,6 +159,14 @@ window.TrackerData = {
 
     // ---------- Init ----------
 
+    // <main> starts hidden (style.css, *Loading*). Every consumer draws inside its
+    // trackerDataReady listener, so once the event has been dispatched there is
+    // something to show.
+    function revealMain() {
+        const main = document.querySelector("main");
+        if (main) main.classList.remove("awaiting-data");
+    }
+
     Promise.all([versionReady, domReady]).then(([version]) => {
         window.TrackerData.version = version;
         const footer = document.getElementById("app-version");
@@ -162,15 +178,19 @@ window.TrackerData = {
             Object.assign(window.TrackerData, data, { ready: true });
             if (data.failedRegions.length) showRegionFailures(data.failedRegions);
             window.dispatchEvent(new CustomEvent("trackerDataReady", { detail: window.TrackerData }));
+            revealMain();
         })
         .catch(error => {
-            // config.json, Items.json or manifest.json failed — nothing downstream
-            // can render meaningfully, so say so loudly rather than failing quietly
-            // in four different places.
+            // config.json, Items.json, manifest.json or settings.json failed — nothing
+            // downstream can render meaningfully, so say so loudly rather than let
+            // every file fail quietly on its own.
             console.error("dataLoader: could not load tracker data, nothing will render", error);
             // Waits for domReady rather than going straight in: a fetch that rejects
             // fast gets here before DOMContentLoaded, and there is no <main> to write
             // into yet. The version is waited for too, since it is part of the report.
-            Promise.all([versionReady, domReady]).then(([version]) => showLoadFailure(error, version));
+            Promise.all([versionReady, domReady]).then(([version]) => {
+                revealMain();
+                showLoadFailure(error, version);
+            });
         });
 })();

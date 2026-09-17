@@ -4,6 +4,26 @@
      The release workflow finds each one by its "## Version: vx.y.z" line, so leave
      those lines exactly as written. -->
 
+## Version: v0.13.0
+
+**Released:** 09/16/2026
+
+**Changes:**
+- added a settings page as the new starting page: pick the settings your seed was generated with and your starting items, then launch a tracker that uses them
+- the tracker now starts with the items your settings give you, and those items can't be clicked below where they start
+- checks your settings and marks vanilla locations as not randomized, and their tooltip shows the item that's normally there
+- added a Hide Non-Randomized Checks button to the tracker
+- added a Show Only Accessible Checks button to the tracker's phone layout
+- added a Launch New Tracker button to the tracker, to go back and change the settings
+- added a script that serves the tracker to other devices on the same network, for testing on external devices (usually for testing on mobile)
+- the release script now finishes a release that stopped partway instead of putting the same changes in the changelog twice
+- fixed the release workflow reporting a bad version file as a missing changelog entry
+
+**Notes:**
+- settings last only for the browser tab they were picked in; a new tab starts from the settings page
+
+---
+
 ## Version: v0.12.2
 
 **Released:** 09/12/2026
