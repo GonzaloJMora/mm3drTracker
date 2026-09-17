@@ -17,9 +17,15 @@ import sys
 sys.dont_write_bytecode = True
 
 from release import (BULLET, ROOT, UNRELEASED_DIR, ReleaseError, ask, ask_yes_no,
-                     format_unreleased_file, plural, read_unreleased_file, rel, write_text)
+                     branch_of_unreleased_file, format_unreleased_file, plural,
+                     read_unreleased_file, rel, write_text)
 
 FINISH_HINT = "One per line. Press Enter on an empty line when you're done."
+
+# Windows reads these as devices whatever the extension, so nul.md is not a file.
+WINDOWS_DEVICE_NAMES = {"CON", "PRN", "AUX", "NUL",
+                        *(f"COM{number}" for number in range(1, 10)),
+                        *(f"LPT{number}" for number in range(1, 10))}
 
 
 def current_branch():
@@ -45,15 +51,20 @@ def file_for(branch):
     name = re.sub(r"[^A-Za-z0-9._-]+", "-", branch).strip("-.")
     if not name:
         raise ReleaseError(f'Could not make a file name out of the branch "{branch}".')
+    base, dot, rest = name.partition(".")
+    if base.upper() in WINDOWS_DEVICE_NAMES:
+        # On the part before the first dot, which is what Windows reads as the name.
+        name = f"{base}-branch{dot}{rest}"
     return UNRELEASED_DIR / f"{name}.md"
 
 
 def ask_list(label):
-    """One item per prompt until an empty line. A typed "- " bullet is dropped."""
+    """One item per prompt until an empty line. A typed "- " bullet is dropped, and
+    a bullet with nothing after it ends the list like an empty line."""
     items = []
     while True:
         item = BULLET.sub("", ask(f"{label} {len(items) + 1}: "))
-        if not item:
+        if not item or item in ("-", "*"):
             return items
         items.append(item)
 
@@ -62,6 +73,12 @@ def log_changes():
     branch = current_branch()
     path = file_for(branch)
     exists = path.exists()
+    # Two branch names can make one file name, like feature/foo and feature-foo. A
+    # file that doesn't name its branch predates the check and is taken as this one's.
+    started_by = branch_of_unreleased_file(path) if exists else None
+    if started_by is not None and started_by != branch:
+        raise ReleaseError(f'{rel(path)} was started by the branch "{started_by}", not "{branch}". '
+                           "Rename this branch so the two don't share a file.")
     # Read before asking anything, so a file that can't be read is reported
     # before the typing rather than after it.
     changes, notes = read_unreleased_file(path) if exists else ([], [])
@@ -93,7 +110,7 @@ def log_changes():
         return
 
     UNRELEASED_DIR.mkdir(parents=True, exist_ok=True)
-    write_text(path, format_unreleased_file(changes + new_changes, notes + new_notes))
+    write_text(path, format_unreleased_file(changes + new_changes, notes + new_notes, branch))
 
     print()
     print(f"Added {plural(len(new_changes), 'change')} and {plural(len(new_notes), 'note')} "
@@ -112,7 +129,7 @@ def main(args):
         return 1
     except (KeyboardInterrupt, EOFError):
         print()
-        print("Cancelled. Nothing was written.")
+        print("Canceled. Nothing was written.")
         return 1
     return 0
 

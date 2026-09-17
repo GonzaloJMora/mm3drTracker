@@ -39,6 +39,8 @@
         entries.forEach(entry => {
             const row = document.createElement("div");
             row.className = "location-legend-row";
+            // Lets CSS hide the Not Randomized row along with the checks it describes.
+            row.dataset.status = entry.status;
 
             // The status class is the whole contract: CSS colors the swatch from
             // the same custom property the markers and headers read.

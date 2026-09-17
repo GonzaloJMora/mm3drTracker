@@ -2,80 +2,190 @@
 
 Companion to [`ARCHITECTURE.md`](ARCHITECTURE.md). Five views:
 
-1. [Components and data](#1-components-and-data)
+1. [Pages, components and data](#1-pages-components-and-data)
 2. [The event bus](#2-the-event-bus)
 3. [Load / init sequence](#3-load--init-sequence)
 4. [Desktop: moving a region into the map overlay](#4-desktop-region--overlay-move)
 5. [The tooltip and logic stack](#5-the-tooltip-and-logic-stack)
 
-Components and events are drawn separately on purpose. One graph with both is
-twenty-odd crossing edges, where a wrong one is easier to miss than a right one is
-to read.
-
 ---
 
-## 1. Components and data
+## 1. Pages, components and data
 
-Who reads what, and who renders what. No events here — those are in §2.
+The two pages, then who reads what, then who renders what. No events here —
+those are in §2.
+
+### The two pages
+
+The settings page is where a visitor lands. The settings cross to the tracker in
+`sessionStorage`, which belongs to the tab, and come back the same way to prefill
+the settings page.
 
 ```mermaid
-flowchart TB
-    subgraph D["data/ — read by dataLoader.js and by nothing else"]
-        direction LR
+flowchart LR
+    SP["<b>index.html</b><br/>settings page"]
+    ST[("sessionStorage<br/>mm3drTracker.v0.launch")]
+    TR["<b>tracker.html</b><br/>tracker"]
+
+    SP -- "Launch New Tracker<br/>writes the picks" --> ST
+    ST -- "settingsState.js<br/>applies them" --> TR
+    TR -- "Launch New Tracker,<br/>after confirm()" --> SP
+    SP -- "picks can't be stored:<br/>after confirm(),<br/>?defaults" --> TR
+    TR -. "opened with nothing<br/>handed over" .-> SP
+```
+
+Legend: dotted = `launch.js` redirecting before the page draws. A tracker opened
+with `?defaults` never redirects, and opens on the default settings.
+
+### Who reads what
+
+Nothing reads `data/` but `dataLoader.js`, and every consumer waits for it through
+`TrackerData.onReady()`.
+
+```mermaid
+flowchart LR
+    subgraph D["data/"]
         CFG["config.json"]
         ITM["Items.json"]
         MAN["manifest.json"]
+        SET["settings.json"]
         REG["Region JSON Files"]
     end
 
     DL["<b>dataLoader.js</b><br/>window.TrackerData"]
-    CFG --> DL
-    ITM --> DL
-    MAN --> DL
-    REG --> DL
 
-    subgraph CONS["consumers — all via TrackerData.onReady()"]
-        direction LR
+    subgraph CONS["consumers"]
+        SS["settingsState.js"]
+        IG["itemGrids.js"]
         IT["itemTracker.js"]
         LT["locationTracker.js"]
         LST["locationStatsTracker.js"]
         LEG["locationLegend.js"]
         LM["locationMap.js"]
-    end
-    DL --> CONS
-
-    subgraph DOM["what they render"]
-        direction LR
-        G[".grid-container<br/>.item-grid[data-grid]"]
-        RDC["#region-dropdown-container<br/>.region-group"]
-        SB["#location-summary-row<br/>stats box · legend"]
-        MC["#location-map-container<br/>image · markers · overlay"]
+        SPJ["settingsPage.js"]
     end
 
-    IT --> G
+    CFG --> DL
+    ITM --> DL
+    MAN --> DL
+    SET --> DL
+    REG --> DL
+    DL --> SS
+    DL --> IG
+    DL --> IT
+    DL --> LT
+    DL --> LST
+    DL --> LEG
+    DL --> LM
+    DL --> SPJ
+```
+
+On the settings page `settingsState.js`, `itemGrids.js` and `settingsPage.js` wait
+for the data, and `dataLoader.js` leaves the region files out.
+
+### Who renders what
+
+On the tracker, what each file reads from the others:
+
+```mermaid
+%%{init: {"flowchart": {"rankSpacing": 15, "nodeSpacing": 25}}}%%
+flowchart LR
+    IT["itemTracker.js"]
+    LT["locationTracker.js"]
+    LST["locationStatsTracker.js"]
+    GSM["gameStateManager.js<br/>window.GameState"]
+    SS["settingsState.js<br/>window.SettingsState"]
+    TB["trackerToolbar.js<br/>window.TrackerView"]
+
+    IT -- "init()" --> GSM
+    IT -- "startingItems()" --> SS
+    GSM -- "Health setting" --> SS
+    LT -- "vanilla_when · counts" --> SS
+    LT -- "hides non-randomized?" --> TB
+    LST -- "hides non-randomized?" --> TB
+```
+
+And what each one renders into:
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 280}}}%%
+flowchart LR
+    IT["itemTracker.js"]
+    LT["locationTracker.js"]
+    LST["locationStatsTracker.js"]
+    LEG["locationLegend.js"]
+    LPL["locationPanelLayout.js<br/>no data dependency"]
+    LM["locationMap.js"]
+    MTM["mobileTabManager.js"]
+    TB["trackerToolbar.js"]
+
+    G[".grid-container<br/>.item-grid[data-grid]"]
+    RDC["#region-dropdown-container<br/>.region-group"]
+    SB["#location-summary-row<br/>stats box · legend"]
+    MC["#location-map-container<br/>image · markers · overlay"]
+    TABS[".mobile-tabs · .tracker-section<br/>#back-to-top"]
+    HDR["#tracker-toolbar<br/>view toggles on body"]
+
+    IT -- "itemGrids.js" --> G
     LT --> RDC
     LST --> SB
     LEG --> SB
-    LM --> MC
-
-    GSM["gameStateManager.js<br/>window.GameState + F1 panel"]
-    IT -- "init()" --> GSM
-
-    LPL["locationPanelLayout.js<br/>no data dependency"]
     LPL -- "places" --> SB
     LPL -- "sizes" --> MC
+    LM --> MC
     LM -. "moves a node" .-> MC
-
-    MTM["mobileTabManager.js"] --> TABS[".mobile-tabs · .tracker-section<br/>#back-to-top"]
+    MTM --> TABS
+    TB --> HDR
 ```
 
-Legend: solid arrow = reads from, or renders into. Dotted = moves a live DOM node
-rather than creating one.
+Legend: solid arrow = reads, calls or renders into. Dotted = moves a live DOM
+node rather than creating one.
+
+The settings page, in the same terms. What it reads:
+
+```mermaid
+%%{init: {"flowchart": {"rankSpacing": 15, "nodeSpacing": 25}}}%%
+flowchart LR
+    SPJ["settingsPage.js"]
+    IG["itemGrids.js<br/>window.ItemGrids"]
+    SS["settingsState.js<br/>window.SettingsState"]
+    GSM["gameStateManager.js<br/>window.GameState"]
+    TL["launch.js<br/>window.TrackerLaunch"]
+
+    IG -- "slotKind · slotValue" --> GSM
+    SPJ -- "init()" --> GSM
+    SS -- "slotKind()" --> GSM
+    SPJ -- "step · set" --> SS
+    SS -- "read()" --> TL
+    SPJ -- "write(picks)" --> TL
+```
+
+And what it renders into:
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 280}}}%%
+flowchart LR
+    SPJ["settingsPage.js"]
+    SC["settingControls.js<br/>window.SettingControls"]
+    IG["itemGrids.js"]
+    MTM["mobileTabManager.js"]
+
+    LIST["#settings-list<br/>every list section"]
+    GRIDS[".grid-container<br/>the tracker's grids"]
+    TABS[".mobile-tabs · .tracker-section<br/>#back-to-top"]
+
+    SPJ -- "create()" --> SC
+    SPJ -- "rows" --> LIST
+    SPJ -- "render()" --> IG
+    IG --> GRIDS
+    MTM --> TABS
+```
+
+The settings page's `init()` is not a tracker starting up: it re-runs on every
+change so the grids show the state the tracker will open with.
 
 The three shared helpers — `logicParser.js`, `requirementsView.js`, `tooltip.js` —
-are left out here and drawn in §5. They point the opposite way to everything on
-this graph: the trackers call *them*, so putting them in this one costs four
-edges that cross it end to end.
+are in §5.
 
 `locationPanelLayout.js` has no data dependency by design — the map's aspect ratio
 is handed to it on `locationMapReady` instead, so it can never be left waiting on
@@ -89,31 +199,65 @@ Every event is a `CustomEvent` on `window`. **Nothing observes the DOM** —
 there is no `MutationObserver` anywhere in the codebase, and `ARCHITECTURE.md`'s
 event bus section says why not.
 
-`trackerDataReady` is left out of this graph: it is the fan-out to every consumer
-already drawn in §1, and drawing it here costs a long edge per consumer, each
-crossing everything else. What follows is what happens *after* load.
+`trackerDataReady` reaches every consumer in §1, at load (§3). This is what
+happens *after* load.
+
+**State.** An item click, the toolbar, and the sweep they set off.
+
+An item changes:
 
 ```mermaid
 flowchart TB
     GSM["gameStateManager.js"]
     DBG["F1 debug panel"]
-    IT["itemTracker.js"]
     LT["locationTracker.js"]
-    LST["locationStatsTracker.js"]
-    LEG["locationLegend.js"]
-    LM["locationMap.js"]
-    LPL["locationPanelLayout.js"]
     TT["tooltip.js"]
 
     GSM -- "trackerStateUpdated" --> DBG
     GSM -- "trackerStateUpdated" --> LT
     GSM -- "trackerStateUpdated" --> TT
+```
+
+A view toggle flips, the tab switches, or the map overlay closes a region:
+
+```mermaid
+flowchart TB
+    TB["trackerToolbar.js"]
+    MTM["mobileTabManager.js"]
+    LT["locationTracker.js"]
+    LM["locationMap.js"]
+
+    TB -- "trackerViewChanged" --> LT
+    TB -- "trackerViewChanged" --> LM
+    MTM -- "mobileTabChanged" --> LT
+    LM -- "regionOverlayClosed" --> LT
+```
+
+The sweep finishes, or the regions first render:
+
+```mermaid
+flowchart TB
+    LT["locationTracker.js"]
+    LST["locationStatsTracker.js"]
+    TT["tooltip.js"]
+    LM["locationMap.js"]
 
     LT -- "trackerChecksUpdated" --> LST
     LT -- "trackerChecksUpdated" --> TT
-    LT -- "regionsRendered" --> LST
-    LT -- "regionsRendered" --> LM
     LT -- "regionStatusChanged" --> LM
+    LT -- "regionsRendered" --> LM
+```
+
+**Layout.** The item grids, both boxes and the map hand themselves to
+`locationPanelLayout.js`, which answers with the map's new size:
+
+```mermaid
+flowchart TB
+    IT["itemTracker.js"]
+    LST["locationStatsTracker.js"]
+    LEG["locationLegend.js"]
+    LM["locationMap.js"]
+    LPL["locationPanelLayout.js"]
 
     IT -- "itemGridsReady" --> LPL
     LST -- "locationStatsBoxReady" --> LPL
@@ -122,13 +266,18 @@ flowchart TB
     LPL -- "locationMapResized" --> LM
 ```
 
-Payloads are deliberately not on the edges — they live in the event bus table in
-`ARCHITECTURE.md`, and repeating them here costs more legibility than it buys.
+What each event carries is in the event bus table in `ARCHITECTURE.md`.
+
+The settings page has one event of its own: `settingsState.js` announces
+`settingsChanged` on every pick and on a reset, and `settingsPage.js` redraws its
+controls, counts, lock notes and grid slots.
 
 `tooltip.js` listens to both state events for one reason: what sits under a
 stationary pointer changes without the pointer moving. Clicking an item advances
 that slot and re-runs the sweep, so an open tooltip would otherwise keep
-describing the state before the click.
+describing the state before the click. The same redraw closes a tooltip whose
+check is no longer drawn, which is how one closes when a view toggle hides its
+check: the toggle sets off a sweep, and the sweep ends in `trackerChecksUpdated`.
 
 Two of these are worth reading twice:
 
@@ -143,13 +292,15 @@ Two of these are worth reading twice:
   the `ResizeObserver` on `.grid-container` resizes the map with no window resize
   involved.
 
-Two files also listen off this bus, to browser events rather than to each other.
+Some files also listen to the browser rather than to each other.
 `locationPanelLayout.js` re-runs its sizing on `window.load`, on `resize`, and
-from a `ResizeObserver` on `.grid-container` and the summary row. `locationMap.js` re-fits an open
-overlay on `resize`, and closes one on a `matchMedia` change into mobile — that
-last listener is the only thing handing a checked-out region back to the list when
-the window narrows across the breakpoint, so it is load-bearing despite not being
-drawn here.
+from a `ResizeObserver` on `.grid-container` and the summary row, and
+`locationMap.js` re-fits an open overlay on `resize`. Crossing the breakpoint is a
+`matchMedia` change: `locationMap.js` closes an open overlay, the only thing that
+hands a checked-out region back to the list when the window narrows;
+`locationPanelLayout.js` moves the summary row and the map; and on the settings
+page `settingsPage.js` moves the inventory options block. `tooltip.js` closes a
+pinned panel on `resize` once its button is no longer drawn.
 
 ---
 
@@ -157,52 +308,78 @@ drawn here.
 
 `dataLoader.js` fetches everything once and holds `trackerDataReady` until the
 data **and** `DOMContentLoaded` are both done. Consumers register via
-`TrackerData.onReady(...)` at parse time, so they fire in `index.html` script
+`TrackerData.onReady(...)` at parse time, so they fire in `tracker.html` script
 order and the sequence is deterministic.
 
+Before any of it, `launch.js` in the page head has sent a tracker with no settings
+handed over to the settings page. While the rest of the page parses,
+`gameStateManager.js` builds the empty F1 panel, `trackerToolbar.js` applies both
+saved view toggles, and `locationTracker.js` starts listening for
+`trackerStateUpdated`.
+
+**Settings and items.**
+
 ```mermaid
+%%{init: {"sequence": {"actorMargin": 25}}}%%
 sequenceDiagram
-    autonumber
     participant DL as dataLoader.js
+    participant SS as settingsState.js
     participant GSM as gameStateManager.js
     participant IT as itemTracker.js
+
+    DL->>DL: fetch every file<br/>in data/
+    Note over DL: waits for the fetches<br/>and DOMContentLoaded
+    DL-->>SS: trackerDataReady
+    SS->>SS: read settings.json,<br/>apply the picks
+    Note over IT: itemGrids.js registers<br/>the item tooltip
+    DL-->>IT: trackerDataReady
+    IT->>IT: validate the grid slots
+    IT->>SS: startingItems()
+    IT->>GSM: init(items, config,<br/>starting items)
+    GSM->>SS: the Health setting
+    Note over GSM: trackerStateUpdated:<br/>locationTracker.js sweeps<br/>no regions yet
+    IT->>IT: render one grid<br/>per config.grids key
+    Note over IT: itemGridsReady for<br/>locationPanelLayout.js
+```
+
+**Regions.**
+
+```mermaid
+%%{init: {"sequence": {"actorMargin": 25}}}%%
+sequenceDiagram
+    participant DL as dataLoader.js
     participant LT as locationTracker.js
+    participant LST as locationStatsTracker.js
+    participant LM as locationMap.js
+
+    DL-->>LT: trackerDataReady
+    LT->>LT: register the check<br/>tooltip builder
+    LT->>LT: render the regions in manifest<br/>order, skipping any that break
+    LT-->>LM: regionsRendered
+    LT->>LT: run every validator,<br/>then the first sweep
+    LT-->>LST: trackerChecksUpdated
+```
+
+**The boxes and the map.**
+
+```mermaid
+%%{init: {"sequence": {"actorMargin": 25}}}%%
+sequenceDiagram
     participant LST as locationStatsTracker.js
     participant LEG as locationLegend.js
     participant LM as locationMap.js
     participant LPL as locationPanelLayout.js
 
-    DL->>DL: fetch config, Items,<br/>manifest, every region file
-    GSM->>GSM: build F1 panel<br/>(items still empty)
-    LT->>LT: register trackerStateUpdated<br/>(no regions yet)
-    Note over DL: waits for the fetches AND<br/>DOMContentLoaded, then fires<br/>trackerDataReady once
-    DL-->>IT: trackerDataReady
-    IT->>IT: validateGridSlots
-    IT->>GSM: GameState.init(items, config)
-    GSM-->>LT: trackerStateUpdated<br/>(sweeps zero regions)
-    IT->>IT: render one grid<br/>per config.grids key
-    IT-->>LPL: itemGridsReady
-    IT->>IT: register the item<br/>tooltip builder
-    DL-->>LT: trackerDataReady
-    LT->>LT: register the check<br/>tooltip builder
-    LT->>LT: render accordions in manifest order,<br/>skipping any region it cannot render
-    LT-->>LM: regionsRendered
-    LT-->>LST: regionsRendered
-    LT->>LT: validateLogicTokens + validateCheckIds,<br/>then the first evaluateAllRegions sweep
-    LT-->>LST: trackerChecksUpdated
-    DL-->>LST: trackerDataReady
-    LST->>LST: build the stats box and count
+    LST->>LST: trackerDataReady:<br/>build the box, count
     LST-->>LPL: locationStatsBoxReady
-    DL-->>LEG: trackerDataReady
-    LEG->>LEG: build the legend box<br/>from config.legend
+    LEG->>LEG: trackerDataReady:<br/>build the legend
     LEG-->>LPL: locationLegendReady
-    DL-->>LM: trackerDataReady
-    LM->>LM: build the container
+    LM->>LM: trackerDataReady:<br/>build the container
     LM-->>LPL: locationMapReady
     LPL->>LPL: syncPanelHeight
     LPL-->>LM: locationMapResized
-    LM->>LM: a marker per rendered region,<br/>then syncMarkerColors
-    Note over LPL: also re-runs on<br/>window.load, on resize,<br/>and from a ResizeObserver<br/>on the grid and the<br/>summary row, whose sizes<br/>settle independently of<br/>when the data arrives
+    LM->>LM: a marker per region,<br/>then their colors
+    Note over LPL: also re-runs on load,<br/>resize and ResizeObserver
 ```
 
 The validators and the region-dropping step all warn to the console and let
@@ -210,12 +387,12 @@ everything else carry on — see `ARCHITECTURE.md`, *When the data is wrong*. Th
 handoff and the first sweep sit in a `finally`, so a region file that breaks
 mid-render costs that one region rather than everything after it.
 
-**Some arrows are drawn where they are sent, not where they land.** The two
-`regionsRendered` edges and the first `trackerChecksUpdated` reach nobody: both
+**Some arrows are drawn where they are sent, not where they land.** The
+`regionsRendered` edge and the first `trackerChecksUpdated` reach nobody: both
 receiving files register their listeners inside their own `TrackerData.onReady`,
 which runs later in this sequence. Nothing is lost, because each does the
-equivalent work during its own init. Those listeners exist to catch a region
-rendered *after* load, which nothing does today.
+equivalent work during its own init. Those listeners are there for a region
+rendered after load.
 
 The load-time `locationMapResized` is the same: `locationPanelLayout.js` answers
 `locationMapReady` straight away, before `locationMap.js` has registered its
@@ -246,7 +423,9 @@ open, then `fitOverlayContent()` picks the column count and text size.
 same marker again, another marker, or crossing to mobile: reset the accordion
 state, clear the inline styles `fitOverlayContent()` set, then put the node back
 **in front of its return anchor** — not on the end, which is invisible on desktop
-and obvious the moment you narrow the window.
+and obvious the moment you narrow the window. Last, it announces
+`regionOverlayClosed`, and `locationTracker.js` lets that region's kept rows go,
+as a header click would.
 
 The self-transition is a swap: clicking a different region's marker closes the
 current overlay (returning that region to the list) before opening the new one,
@@ -272,17 +451,17 @@ Consequences of the node moving:
 
 ## 5. The tooltip and logic stack
 
-Three helpers that depend on nothing else, drawn apart from §1 because the arrows
-run the other way: the trackers call these rather than being fed by them.
+Three helpers that depend on nothing else. The trackers call these, and they only
+call back into a tracker through a function that tracker handed them.
 
 ```mermaid
 flowchart TB
     TT["<b>tooltip.js</b><br/>.tracker-tooltip<br/>position · delay · edge flip"]
 
-    IT["itemTracker.js<br/>builds: name + notes image"]
+    IG["itemGrids.js<br/>builds: name + notes image"]
     LT["locationTracker.js<br/>builds: requirements list"]
 
-    IT <-- "register('.item-slot')<br/>then built back on hover" --> TT
+    IG <-- "register('.item-slot')<br/>then built back on hover" --> TT
     LT <-- "register('.region-check-item')<br/>hover, or pinned by its button" --> TT
 
     LP["logicParser.js<br/>parse · evaluate · annotate"]
@@ -293,14 +472,14 @@ flowchart TB
     RV -. "reads the<br/>annotated tree" .-> LP
 ```
 
-**The loop is the design.** A tracker registers a selector, and `tooltip.js`
-calls back into that tracker when one of its elements is hovered. So the tooltip
-owns position, delay and the edge flip, and knows nothing about items or logic;
-each tracker keeps its own knowledge and hands back a finished node. That is why
-one element serves both song notes and check requirements.
+**The loop is the design.** A file registers a selector, and `tooltip.js` calls
+back into that file when one of its elements is hovered. So the tooltip owns
+position, delay and the edge flip, and knows nothing about items or logic; each
+owner keeps its own knowledge and hands back a finished node. That is why one
+element serves both song notes and check requirements.
 
 `locationTracker.js` parses a check's logic with `logicParser.js` and annotates
-it against the current inventory, then `requirementsView.js` turns that annotated
+it against the current inventory and settings, then `requirementsView.js` turns that annotated
 tree into the bullet list. The same parser evaluates the check for the sweep, so
 the tooltip cannot explain a check by different rules than the ones that colored
 it.

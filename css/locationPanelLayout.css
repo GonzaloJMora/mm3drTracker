@@ -32,7 +32,8 @@
     max-width: 100%;
 }
 
-@media screen and (min-width: 1500px) {
+/* Desktop. Asked as "not the phone layout" — see the breakpoint note in style.css. */
+@media not all and (max-width: 1499px) {
     /* Overrides the display:contents .tracker-section gets in itemContainers.css,
        which would make #region-sidebar the flex item in the row instead of this.
        Desktop only, so mobile's tab show/hide is untouched. */

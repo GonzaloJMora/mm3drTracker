@@ -13,7 +13,7 @@
 //
 // Binding is delegated from document on purpose. A .region-group is *moved*
 // between the sidebar and the map overlay, and delegation survives that with no
-// rebinding — see ARCHITECTURE.md, desktop vs mobile.
+// rebinding — see ARCHITECTURE.md, *Desktop vs mobile — the 1500px split*.
 (function () {
     "use strict";
 
@@ -223,10 +223,22 @@
     });
 
     // The thing being described can change without the pointer moving: clicking
-    // an item slot advances it, and clicking anything re-runs the logic sweep.
-    // Redrawing in place beats a tooltip that quietly describes the last state.
-    const refresh = () => { if (activeTarget && tooltipEl && !tooltipEl.hidden) render(); };
+    // an item slot advances it, right-clicking steps it back, and clicking anything
+    // re-runs the logic sweep. Redrawing in place beats a tooltip that quietly
+    // describes the last state. It can also stop being drawn at all — Show Only
+    // Accessible Checks hides a check an item change put out of reach — and then the
+    // panel closes.
+    //
+    // The two listeners on document are the ones that see a slot after its own
+    // handler has redrawn it. trackerStateUpdated can arrive before that: the
+    // settings page announces the new state first and redraws its slots after.
+    const refresh = () => {
+        if (!activeTarget || !tooltipEl || tooltipEl.hidden) return;
+        if (activeTarget.getClientRects().length === 0) hide();
+        else render();
+    };
     document.addEventListener("click", refresh);
+    document.addEventListener("contextmenu", refresh);
     window.addEventListener("trackerStateUpdated", refresh);
     window.addEventListener("trackerChecksUpdated", refresh);
 

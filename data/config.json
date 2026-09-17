@@ -13,7 +13,7 @@
       "kamaro_mask", "gibdo_mask", "garo_mask", "captains_hat", "giants_mask", "fierce_deity_mask"
     ],
     "dungeon": [
-      "", "swamp_skulltula_token", "ocean_skulltula_token", "clock_town_stray_fairy", "seahorse", "zora_egg",
+      "swamp_skulltula_token", "ocean_skulltula_token", "clock_town_stray_fairy", "deku_princess", "seahorse", "zora_egg",
       "map_woodfall_temple", "compass_woodfall_temple", "woodfall_small_key", "woodfall_big_key", "woodfall_stray_fairy", "odolwa_remains",
       "map_snowhead_temple", "compass_snowhead_temple", "snowhead_small_key", "snowhead_big_key", "snowhead_stray_fairy", "goht_remains",
       "map_great_bay_temple", "compass_great_bay_temple", "great_bay_small_key", "great_bay_big_key", "great_bay_stray_fairy", "gyorg_remains",
@@ -57,7 +57,7 @@
     "bottles": ["red_potion", "gold_dust", "milk", "chateau_romani", "mystery_milk", "empty_bottle"]
   },
   "heart_rules": {
-    "starting_hearts": 3,
+    "starting_hearts_setting": "starting_health",
     "pieces_per_heart": 4,
     "piece_id": "heart_piece",
     "container_id": "heart_container"

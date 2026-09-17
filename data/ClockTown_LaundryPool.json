@@ -6,27 +6,37 @@
     {
       "id": "lp_stray_fairy",
       "name": "Stray Fairy",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": [{ "stray_fairies": "vanilla" }, { "clock_town_stray_fairy": "vanilla" }],
+      "vanilla_item": "clock_town_stray_fairy"
     },
     {
       "id": "lp_guru_guru",
       "name": "Guru-Guru",
-      "logic": ""
+      "logic": "",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "bremen_mask"
     },
     {
       "id": "lp_kafei_pendant",
       "name": "Kafei's Pendant",
-      "logic": "letter_to_kafei"
+      "logic": "letter_to_kafei",
+      "vanilla_when": { "shuffle_anju_and_kafei": false },
+      "vanilla_item": "pendant_of_memories"
     },
     {
       "id": "lp_keaton_mask",
       "name": "Keaton Mask",
-      "logic": "letter_to_kafei"
+      "logic": "letter_to_kafei",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "keaton_mask"
     },
     {
       "id": "lp_letter_to_mama",
-      "name": "Letter To Mama",
-      "logic": "letter_to_kafei"
+      "name": "Letter to Mama",
+      "logic": "letter_to_kafei",
+      "vanilla_when": { "shuffle_anju_and_kafei": false },
+      "vanilla_item": "letter_to_mama"
     }
   ]
 }

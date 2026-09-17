@@ -97,7 +97,8 @@
    them at every width. */
 .location-map-marker.has-count {
     --marker-size: clamp(20px, 2.5%, 28px);
-    font-size: 11px;
+    --count-size: 11px;
+    font-size: var(--count-size);
     /* Fixed rather than the marker's height: 20px centers the count at every
        size the map produces, and a line box as tall as the marker puts odd
        sizes half a pixel off. */
@@ -117,19 +118,16 @@
         --marker-size: round(clamp(20px, 2.5%, 28px), 1px);
         /* 11 and 12 center exactly; 10, 13 and 15 sit half a pixel off. Keep
            the ramp inside the exact sizes. */
-        font-size: round(clamp(11px, 1.4cqw, 12px), 1px);
+        --count-size: round(clamp(11px, 1.4cqw, 12px), 1px);
     }
 }
 
 /* A shape that tapers gives a two-digit count much less room than its width
    suggests — the diamond is the tight one, since the space either side of the
-   center line falls away. Smaller type keeps both digits on the fill, and 9px is
-   one of the sizes that centers exactly.
-
-   After the @supports block on purpose: same specificity as .has-count, so the
-   later rule sets a two-digit count's size. */
+   center line falls away. Which shapes taper, and the smaller size, belong to the
+   status pairing in style.css; a shape without one keeps the full count size. */
 .location-map-marker.wide-count {
-    font-size: 9px;
+    font-size: var(--status-wide-count, var(--count-size));
 }
 
 .location-map-crosshair {
@@ -259,7 +257,8 @@
 }
 
 /* ---------- Desktop only ---------- */
-@media screen and (min-width: 1500px) {
+/* Asked as "not the phone layout" — see the breakpoint note in style.css. */
+@media not all and (max-width: 1499px) {
     #location-map-container {
         display: block;
     }

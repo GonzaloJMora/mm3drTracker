@@ -1,0 +1,399 @@
+/* The settings page (settingsPage.js): the randomizer settings in one panel, and
+   the starting items as the tracker's grids, which itemContainers.css draws. On
+   desktop the two sit side by side; below the breakpoint they are tabs. */
+
+.settings-panel,
+.starting-extras {
+    box-sizing: border-box;
+    background-color: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 12px 18px;
+    overflow-wrap: anywhere;
+}
+
+/* The panel takes whatever width the grids leave. */
+.settings-panel {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.starting-items {
+    flex: none;
+    overflow-wrap: anywhere;
+}
+
+/* Sized to the grids rather than sizing them: width 0 keeps these out of the
+   section's max-content width, and min-width fills it back out. */
+.slot-legend,
+.starting-extras {
+    width: 0;
+    min-width: 100%;
+}
+
+.settings-panel h2,
+.starting-items h2 {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+}
+
+.starting-items h2 {
+    margin-bottom: 10px;
+}
+
+.settings-count {
+    font-size: 0.8rem;
+    font-weight: normal;
+    color: #8fd694;
+}
+
+/* Two columns where they fit, one where they don't. Rows never split across a
+   column, and a heading stays with its first row. */
+.settings-list,
+.starting-extras {
+    columns: 2 250px;
+    column-gap: 28px;
+}
+
+.starting-extras {
+    margin-top: 15px;
+}
+
+/* A group stays whole in its column, so a short section never reads as starting
+   halfway down the one beside it, while a long one (the inventory options) can
+   still run on between its groups. */
+.settings-group {
+    break-inside: avoid;
+}
+
+.settings-block h3 {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4px 10px;
+    margin: 16px 0 2px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #333;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9a9a9a;
+    break-after: avoid;
+}
+
+.settings-block:first-child h3 {
+    margin-top: 2px;
+}
+
+.settings-block h4 {
+    margin: 10px 0 2px;
+    font-size: 0.8rem;
+    color: #bbbbbb;
+    break-after: avoid;
+}
+
+.setting-row {
+    padding: 3px 0;
+    border-bottom: 1px solid #242424;
+    break-inside: avoid;
+}
+
+.setting-row label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 12px;
+    min-height: 30px;
+}
+
+/* The dot marks a setting that differs from its default. The name gives way before
+   its control does: it wraps onto two lines beside a dropdown, and only a control
+   too wide even for that drops below it. */
+.setting-name {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex: 1 1 6em;
+    min-width: 0;
+    color: #cfcfcf;
+}
+
+.setting-name::before {
+    content: "";
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.setting-row.changed .setting-name {
+    color: #ffffff;
+}
+
+.setting-row.changed .setting-name::before {
+    background-color: #4CAF50;
+}
+
+.setting-lock-note {
+    display: block;
+    padding: 0 0 4px 13px;
+    font-size: 0.8rem;
+    color: #aaaaaa;
+}
+
+.setting-lock-note[hidden] {
+    display: none;
+}
+
+/* 1rem at every width: a phone zooms into a field whose text is under 16px.
+   Safari also won't take typing in a field that inherits the page-wide
+   user-select: none. color-scheme is what darkens the parts CSS can't reach: a
+   dropdown's open list and its scrollbar, and the number spinner. */
+.setting-row select,
+.setting-row input[type="number"] {
+    color-scheme: dark;
+    max-width: 100%;
+    padding: 3px 6px;
+    font-size: 1rem;
+    background-color: #262626;
+    color: #ffffff;
+    border: 1px solid #444;
+    border-radius: 4px;
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+.setting-row input[type="number"] {
+    width: 4.5em;
+}
+
+/* A pointer like the sliders, slots and buttons; a number field keeps its text
+   cursor. */
+.setting-row select {
+    cursor: pointer;
+}
+
+.setting-row select:disabled {
+    cursor: default;
+}
+
+.setting-row :disabled {
+    opacity: 0.5;
+}
+
+/* ---------- Toggle slider (settingControls.js) ---------- */
+
+/* In px on purpose, like the back-to-top button: a control, not text, so a large
+   text setting can't push the knob out of its track. */
+.setting-switch {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 38px;
+    height: 22px;
+}
+
+.setting-switch input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.setting-row .setting-switch input:disabled {
+    opacity: 0;
+    cursor: default;
+}
+
+.setting-switch-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background-color: #3a3a3a;
+    border: 1px solid #4a4a4a;
+    transition: background-color 0.15s;
+}
+
+.setting-switch-track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #e8e8e8;
+    transition: transform 0.15s;
+}
+
+.setting-switch input:checked + .setting-switch-track {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.setting-switch input:checked + .setting-switch-track::after {
+    transform: translateX(16px);
+}
+
+.setting-switch input:disabled + .setting-switch-track {
+    opacity: 0.5;
+}
+
+.setting-switch input:focus-visible + .setting-switch-track {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .setting-switch-track,
+    .setting-switch-track::after {
+        transition: none;
+    }
+}
+
+/* ---------- Slot legend ---------- */
+
+/* Sample slots drawn with the grids' own classes, so a legend entry can't drift
+   from the slot it explains. Columns are sized in em, so larger text gets fewer,
+   wider columns instead of words broken a letter at a time. */
+.slot-legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11em), 1fr));
+    gap: 10px 18px;
+    box-sizing: border-box;
+    margin: 0 0 15px;
+    padding: 10px 14px;
+    list-style: none;
+    background-color: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    overflow-wrap: anywhere;
+}
+
+.slot-legend li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    color: #cccccc;
+}
+
+.slot-legend strong {
+    color: #ffffff;
+}
+
+.slot-legend .item-slot {
+    flex: none;
+    width: 36px;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* The wording follows the input rather than the window: a mouse clicks,
+   right-clicks and hovers, while a touchscreen only taps. */
+.on-touch {
+    display: none;
+}
+
+@media (hover: none) {
+    .on-pointer {
+        display: none;
+    }
+
+    .on-touch {
+        display: inline;
+    }
+}
+
+/* ---------- Slots (the grids themselves are itemContainers.css) ---------- */
+
+/* Drawn so the grids match the tracker, but not clickable: a slot another setting
+   fills in, and one no setting starts you with. */
+.item-slot.set-elsewhere,
+.item-slot.not-starting {
+    cursor: default;
+}
+
+.item-slot.set-elsewhere {
+    background-color: #1e1e1e;
+    border-style: dotted;
+    border-color: #6cb4ff;
+}
+
+/* A folded corner marks it as well as the dots, so it reads as a shape, not only
+   a color. Sized in percent so it scales with the slot, legend sample included,
+   and pulled out over the 1px border so no dots show around the fold. */
+.item-slot.set-elsewhere::after {
+    content: "";
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 26%;
+    aspect-ratio: 1 / 1;
+    border-top-right-radius: 6px;
+    color: #6cb4ff;
+    background: linear-gradient(to bottom left, currentColor 50%, transparent 50%);
+    pointer-events: none;
+    /* A gradient can't ease, but its color can: the same timing as the slot's own
+       border (itemContainers.css), so the fold and the dots turn gray together. */
+    transition: color 0.2s;
+}
+
+.item-slot.not-starting {
+    background-color: transparent;
+    border-color: #2a2a2a;
+}
+
+.item-slot.not-starting .item-image {
+    filter: grayscale(100%) opacity(14%);
+}
+
+@media (hover: hover) {
+    /* Hover grays the dots and the fold together. */
+    .item-slot.set-elsewhere:hover {
+        background-color: #1e1e1e;
+        border-color: #8a8a8a;
+    }
+
+    .item-slot.set-elsewhere:hover::after {
+        color: #8a8a8a;
+    }
+
+    .item-slot.not-starting:hover {
+        background-color: transparent;
+        border-color: #2a2a2a;
+    }
+}
+
+/* An outline, not a border: a thicker border would make this slot wider than the
+   ones beside it. */
+.item-slot.locked-on {
+    cursor: default;
+    outline: 2px dashed #8fd694;
+    outline-offset: -2px;
+}
+
+@media screen and (max-width: 1499px) {
+    .settings-panel,
+    .starting-items {
+        width: 100%;
+    }
+
+    /* Centered with the grids above them, which itemContainers.css caps. */
+    .starting-items {
+        max-width: 1015px;
+        margin: 0 auto;
+    }
+}

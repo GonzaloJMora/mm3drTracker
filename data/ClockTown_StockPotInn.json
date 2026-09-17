@@ -6,7 +6,9 @@
     {
       "id": "spi_reservation",
       "name": "Reservation",
-      "logic": "goron_mask"
+      "logic": "goron_mask",
+      "vanilla_when": { "shuffle_anju_and_kafei": false },
+      "vanilla_item": "room_key"
     },
     {
       "id": "spi_guest_room_chest",
@@ -21,32 +23,44 @@
     {
       "id": "spi_mystery_milk_delivery",
       "name": "Mystery Milk Delivery",
-      "logic": "mystery_milk"
+      "logic": "mystery_milk",
+      "vanilla_when": true,
+      "vanilla_item": "empty_bottle"
     },
     {
       "id": "spi_toilet_hand",
       "name": "Toilet Hand",
-      "logic": "clock_town_title_deed|swamp_title_deed|mountain_title_deed|ocean_title_deed|letter_to_kafei|letter_to_mama"
+      "logic": "clock_town_title_deed|swamp_title_deed|mountain_title_deed|ocean_title_deed|letter_to_kafei|letter_to_mama",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "spi_grandma_short_story",
       "name": "Anju's Grandma Short Story",
-      "logic": "all_night_mask"
+      "logic": "all_night_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "spi_grandma_long_story",
       "name": "Anju's Grandma Long Story",
-      "logic": "all_night_mask"
+      "logic": "all_night_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
     },
     {
       "id": "spi_midnight_meeting",
       "name": "Midnight Meeting",
-      "logic": "kafei_mask"
+      "logic": "kafei_mask",
+      "vanilla_when": { "shuffle_anju_and_kafei": false },
+      "vanilla_item": "letter_to_kafei"
     },
     {
       "id": "spi_anju_and_kafei",
       "name": "Anju and Kafei",
-      "logic": "kafei_mask&letter_to_kafei&pendant_of_memories&ocarina_of_time&eponas_song&(gibdo_mask|garo_mask)&hookshot&(kokiri_sword|great_fairy_sword|goron_mask|zora_mask)"
+      "logic": "kafei_mask&letter_to_kafei&pendant_of_memories&ocarina_of_time&eponas_song&(gibdo_mask|garo_mask)&hookshot&(kokiri_sword|great_fairy_sword|goron_mask|zora_mask)",
+      "vanilla_when": { "shuffle_anju_and_kafei": false },
+      "vanilla_item": "couples_mask"
     }
   ]
 }

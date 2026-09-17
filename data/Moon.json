@@ -1,8 +1,61 @@
 {
   "region_name": "The Moon",
-  "logic": "",
+  "logic": "boss_masks>=moon_remains_required&ocarina_of_time&oath_to_order",
   "map_coordinates": { "xPercent": 51.1, "yPercent": 40.7 },
   "item_checks": [
-
+    {
+      "id": "moon_odolwa_trial_heart_piece",
+      "name": "Odolwa Trial Heart Piece",
+      "logic": "song_of_time&total_masks>=1&deku_mask",
+      "vanilla_when": { "shuffle_moon_items": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "moon_goht_trial_heart_piece",
+      "name": "Goht Trial Heart Piece",
+      "logic": "song_of_time&total_masks>=2&goron_mask&magic_meter",
+      "vanilla_when": { "shuffle_moon_items": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "moon_gyorg_trial_heart_piece",
+      "name": "Gyorg Trial Heart Piece",
+      "logic": "song_of_time&total_masks>=3&zora_mask&magic_meter",
+      "vanilla_when": { "shuffle_moon_items": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "moon_twinmold_trial_garo_chest",
+      "name": "Twinmold Trial Garo Chest",
+      "logic": "song_of_time&total_masks>=4&(kokiri_sword|great_fairy_sword|goron_mask|zora_mask)&hookshot",
+      "vanilla_when": { "shuffle_moon_items": false },
+      "vanilla_item": "Arrows (30)"
+    },
+    {
+      "id": "moon_twinmold_trial_iron_knuckle_chest",
+      "name": "Twinmold Trial Iron Knuckle Chest",
+      "logic": "song_of_time&total_masks>=4&(kokiri_sword|great_fairy_sword|goron_mask|zora_mask)&hookshot",
+      "vanilla_when": { "shuffle_moon_items": false },
+      "vanilla_item": "Bombchu (10)"
+    },
+    {
+      "id": "moon_twinmold_trial_heart_piece",
+      "name": "Twinmold Trial Heart Piece",
+      "logic": "song_of_time&total_masks>=4&(kokiri_sword|great_fairy_sword|goron_mask|zora_mask)&hookshot&((bombchu&bomb&bow)|eponas_song|song_of_storms)",
+      "vanilla_when": { "shuffle_moon_items": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "moon_fierce_deitys_mask",
+      "name": "Fierce Deity's Mask",
+      "logic": "song_of_time&total_masks>=20&deku_mask&goron_mask&zora_mask&magic_meter&hookshot&((bombchu&bomb&bow&fire_arrow)|eponas_song|song_of_storms)",
+      "vanilla_when": { "shuffle_fierce_deity": false },
+      "vanilla_item": "fierce_deity_mask"
+    },
+    {
+      "id": "moon_majoras_mask_boss",
+      "name": "Majora's Mask",
+      "logic": "boss_masks>=majora_remains_required&(fierce_deity_mask|zora_mask|((kokiri_sword|great_fairy_sword|goron_mask)&(bow|hookshot|(deku_mask&magic_meter))))"
+    }
   ]
 }

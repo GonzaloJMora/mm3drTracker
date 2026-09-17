@@ -1,10 +1,15 @@
 window.GameState = {
     items: {},
+    // Slot id -> the stage or count the settings started it at. See slotRange().
+    floors: {},
     totalHearts: 3,
     totalBossMasks: 0,
     totalRegularMasks: 0,
     regularMaskIds: new Set(),
     config: null,
+    // The settings page runs init() again on every change to preview the starting
+    // items, so the data is checked on the first run only.
+    dataChecked: false,
 
     // Named groupings from config.json. They cut across the grids on purpose:
     // grids say where a slot is drawn, item_groups say what it means.
@@ -12,7 +17,79 @@ window.GameState = {
         return (this.config && this.config.item_groups && this.config.item_groups[name]) || [];
     },
 
-    init(itemsList, configData) {
+    // What kind of slot an id is. Read from config alone rather than this.config,
+    // so it works before init() — the settings grants need it that early.
+    slotKind(config, slotId) {
+        if (Object.prototype.hasOwnProperty.call(config.progressions, slotId)) return "progression";
+        const rule = Object.prototype.hasOwnProperty.call(config.item_counts, slotId)
+            ? config.item_counts[slotId]
+            : undefined;
+        if (Array.isArray(rule)) return "capacity";
+        if (Number.isInteger(rule)) return "counter";
+        if (slotId.startsWith("bombers_code_digit_")) return "digit";
+        return "toggle";
+    },
+
+    // A slot's current value, read back out of items: a stage from -1 (not owned)
+    // up, or a count from 0. A plain item is stage -1 or 0.
+    slotValue(slotId) {
+        const kind = this.slotKind(this.config, slotId);
+        if (kind === "counter" || kind === "digit") return this.items[slotId] || 0;
+        if (kind === "toggle") return this.items[slotId] ? 0 : -1;
+
+        const flags = kind === "progression"
+            ? this.config.progressions[slotId]
+            : this.config.item_counts[slotId].map(size => `${slotId}_${size}`);
+        let stage = -1;
+        flags.forEach((flag, index) => {
+            if (this.items[flag]) stage = index;
+        });
+        return stage;
+    },
+
+    // The values clicking can move a slot through. A starting item raises the
+    // bottom to what it was granted, so it can't be clicked away, and a slot whose
+    // bottom has reached its top is locked. A granted digit is fixed outright: a
+    // code is not something you count up from.
+    slotRange(slotId) {
+        const config = this.config;
+        const kind = this.slotKind(config, slotId);
+        let bottom = kind === "counter" || kind === "digit" ? 0 : -1;
+        let top = 0;
+        if (kind === "progression") top = config.progressions[slotId].length - 1;
+        else if (kind === "capacity") top = config.item_counts[slotId].length - 1;
+        else if (kind === "counter") top = config.item_counts[slotId];
+        else if (kind === "digit") top = config.bombers_code.max_digit_value;
+
+        if (Object.prototype.hasOwnProperty.call(this.floors, slotId)) {
+            bottom = this.floors[slotId];
+            if (kind === "digit") top = bottom;
+        }
+        return { kind, bottom, top };
+    },
+
+    // A granted starting value as the stage or count its slot takes, or null when
+    // it does not fit that slot.
+    startingValue(slotId, granted) {
+        const kind = this.slotKind(this.config, slotId);
+        if (kind === "progression") {
+            const stage = this.config.progressions[slotId].indexOf(granted);
+            return stage >= 0 ? stage : null;
+        }
+        if (!Object.prototype.hasOwnProperty.call(this.items, slotId)) return null;
+        if (kind === "capacity") {
+            const stage = this.config.item_counts[slotId].indexOf(granted);
+            return stage >= 0 ? stage : null;
+        }
+        if (kind === "counter" || kind === "digit") {
+            return Number.isInteger(granted) && granted > 0 ? granted : null;
+        }
+        return granted === true ? 0 : null;
+    },
+
+    // startingState is SettingsState.startingItems(): slot id -> what the settings
+    // start that slot at. Each one also becomes that slot's floor.
+    init(itemsList, configData, startingState = {}) {
         this.config = configData;
 
         // Tagged on the item in Items.json rather than read off config.grids.mask,
@@ -24,24 +101,28 @@ window.GameState = {
             itemsList.filter(item => item.regular_mask).map(item => item.id)
         );
 
-        if (!this.regularMaskIds.size) {
-            console.warn(
-                'GameState: nothing in Items.json is tagged "regular_mask", so total_masks ' +
-                "will always be 0 and every check gated on it stays unreachable."
-            );
-        }
+        if (!this.dataChecked) {
+            this.dataChecked = true;
 
-        // A slot in both would be treated as a progression but handed the counter
-        // rule as its chain, so the click silently does nothing. Nothing does this
-        // today, but it fails quietly enough to be worth naming.
-        Object.keys(this.config.progressions).forEach(slotId => {
-            if (Object.prototype.hasOwnProperty.call(this.config.item_counts, slotId)) {
+            if (!this.regularMaskIds.size) {
                 console.warn(
-                    `GameState: "${slotId}" is in both progressions and item_counts in config.json. ` +
-                    `Those are alternatives, not a combination, and clicking that slot will not work.`
+                    'GameState: nothing in Items.json is tagged "regular_mask", so total_masks ' +
+                    "will always be 0 and every check gated on it stays unreachable."
                 );
             }
-        });
+
+            // A slot in both would be treated as a progression but handed the counter
+            // rule as its chain, so the click silently does nothing — quiet enough to
+            // be worth naming.
+            Object.keys(this.config.progressions).forEach(slotId => {
+                if (Object.prototype.hasOwnProperty.call(this.config.item_counts, slotId)) {
+                    console.warn(
+                        `GameState: "${slotId}" is in both progressions and item_counts in config.json. ` +
+                        `Those are alternatives, not a combination, and clicking that slot will not work.`
+                    );
+                }
+            });
+        }
 
         itemsList.forEach(item => {
             this.items[item.id] = false;
@@ -70,6 +151,19 @@ window.GameState = {
         this.items["bombers_code"] = false;
         this.items["bottle"] = false;
 
+        this.floors = {};
+        Object.keys(startingState).forEach(slotId => {
+            const value = this.startingValue(slotId, startingState[slotId]);
+            if (value === null) {
+                console.warn(`GameState: "${slotId}" can't start at ${JSON.stringify(startingState[slotId])}, so it starts empty.`);
+                return;
+            }
+            const kind = this.slotKind(this.config, slotId);
+            const counted = kind === "counter" || kind === "digit";
+            this.applySlot(slotId, counted ? null : value, counted ? value : null);
+            this.floors[slotId] = value;
+        });
+
         this.calculateHearts();
         this.calculateBossMasks();
         this.calculateRegularMasks();
@@ -79,6 +173,13 @@ window.GameState = {
     },
 
     updateItemState(slotId, stageIndex, currentCount) {
+        this.applySlot(slotId, stageIndex, currentCount);
+        this.broadcastChange();
+    },
+
+    // Everything updateItemState does except announcing it, so init() can set a
+    // run of starting slots and announce once.
+    applySlot(slotId, stageIndex, currentCount) {
         const isProgression = this.config.progressions.hasOwnProperty(slotId);
         const countRule = this.config.item_counts[slotId];
 
@@ -128,17 +229,19 @@ window.GameState = {
         if (this.group("bottles").includes(slotId)) {
             this.checkForBottle();
         }
-
-        this.broadcastChange();
     },
 
     calculateHearts() {
-        // starting_hearts / pieces_per_heart live in config.json but are really
-        // randomizer settings; Phase 2 folds this block into the settings model.
+        // The base is the rando's Health setting, which heart_rules names. It sets
+        // your starting hearts without taking any from the pool, so it can't be a
+        // grant on the counters.
         const rules = this.config.heart_rules;
+        const settings = window.SettingsState;
+        const health = settings ? settings.get(rules.starting_hearts_setting) : undefined;
+        const starting = typeof health === "number" ? health : 0;
         const pieces = this.items[rules.piece_id] || 0;
         const containers = this.items[rules.container_id] || 0;
-        this.totalHearts = rules.starting_hearts + Math.floor(pieces / rules.pieces_per_heart) + containers;
+        this.totalHearts = starting + Math.floor(pieces / rules.pieces_per_heart) + containers;
     },
 
     calculateBossMasks() {
@@ -199,6 +302,10 @@ window.GameState = {
         }));
     }
 };
+
+// Console helpers live on this one object instead of on window. Each file adds
+// its own, so nothing here has to know what they are.
+window.TrackerDebug = {};
 
 // Debug Overlay Panel (Draggable & Toggleable via F1)
 (function createDebugPanel() {
@@ -289,6 +396,32 @@ window.GameState = {
                 </div>`;
             });
         }
+
+        const settings = window.SettingsState;
+        if (settings) {
+            // Ids and values come from settings.json, so they are escaped.
+            const escape = text => String(text).replace(/[&<>"]/g, ch =>
+                ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+            const header = label =>
+                `<div style="margin-top:8px; border-bottom:1px dashed #444; padding-bottom:4px;"><strong>${label}</strong></div>`;
+            const row = (key, value) => `<div style="display:flex; justify-content:space-between;">
+                    <span style="color:#aaa;">${escape(key)}:</span>
+                    <span style="color:#55ff55; font-weight:bold;">${escape(value)}</span>
+                </div>`;
+
+            // Only what differs from its default or is locked: the full list is
+            // long enough to bury the few settings that matter.
+            html += header("Settings (changed or locked):");
+            const changed = settings.list().filter(entry => entry.forced || entry.value !== entry.default);
+            html += changed.length
+                ? changed.map(entry => row(entry.id, entry.forced ? `${entry.value} (locked)` : entry.value)).join("")
+                : `<div style="color:#888;">(All defaults)</div>`;
+
+            html += header("Starting Items:");
+            html += Object.entries(settings.startingItems()).sort()
+                .map(([slot, value]) => row(slot, value)).join("");
+        }
+
         content.innerHTML = html;
     });
 })();

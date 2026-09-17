@@ -10,7 +10,7 @@ main {
 
     /* Cap and center the layout. Past this width the map stops growing and the
        gap between it and the item grids just opens up. */
-    max-width: 1880px;
+    max-width: var(--layout-max-width);
     margin-inline: auto;
 }
 
@@ -80,6 +80,12 @@ main {
     pointer-events: none;
 }
 
+/* A starting item with nothing left to cycle through. Still hoverable, so its
+   tooltip works. */
+.item-slot.locked {
+    cursor: default;
+}
+
 .item-slot .item-image {
     filter: grayscale(0%) brightness(100%);
 }
@@ -110,14 +116,18 @@ main {
     color: #ffffffcb;
 }
 
-.item-slot.bombers-code-slot:hover {
-    background-color: #333;
-    border-color: #888;
-}
+/* Hover only with a real pointer: a touch browser keeps :hover on whatever was
+   tapped last, so a tapped slot would stay highlighted. */
+@media (hover: hover) {
+    .item-slot.bombers-code-slot:hover {
+        background-color: #333;
+        border-color: #888;
+    }
 
-.item-slot:hover {
-    background-color: #333;
-    border-color: #888;
+    .item-slot:hover {
+        background-color: #333;
+        border-color: #888;
+    }
 }
 
 .item-image {
@@ -283,9 +293,11 @@ main {
         pointer-events: auto;
     }
 
-    #back-to-top:hover {
-        background-color: #333;
-        border-color: #888;
+    @media (hover: hover) {
+        #back-to-top:hover {
+            background-color: #333;
+            border-color: #888;
+        }
     }
 
     #back-to-top::after {

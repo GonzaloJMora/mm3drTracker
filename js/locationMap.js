@@ -137,8 +137,8 @@
         });
     }
 
-    // Keyed off the count, not the status: accessible > 0 is exactly the yellow
-    // and green markers, so neither this file nor its CSS lists status names.
+    // Keyed off the count, not the status: accessible > 0 is exactly the yellow,
+    // green and purple markers, so neither this file nor its CSS lists status names.
     function applyMarkerStatus(marker, status, accessible) {
         if (!marker) return;
 
@@ -300,8 +300,19 @@
     // comes from the width, row count from the item count — CSS can do neither,
     // because it cannot count children.
     function fitOverlayContent(overlay, contentDiv) {
-        const items = Array.from(contentDiv.children);
-        if (!items.length) return;
+        // Only the checks actually drawn. A hidden one takes no grid cell and
+        // measures zero: counted, it plans rows nobody sees, and as the first check
+        // it reads as nothing measurable at all.
+        const items = Array.from(contentDiv.children).filter(el => el.getClientRects().length > 0);
+        if (!items.length) {
+            // Nothing shown: drop the last fit, so the box covers just the map again.
+            contentDiv.style.gridTemplateColumns = "";
+            contentDiv.style.gridTemplateRows = "";
+            contentDiv.style.overflowY = "";
+            overlay.style.bottom = "";
+            overlay.style.height = "";
+            return;
+        }
 
         const sizes = (window.TrackerData.config.map_overlay || {}).text_sizes || [];
         if (!sizes.length) return;
@@ -428,7 +439,14 @@
 
         if (overlayEl) overlayEl.remove();
         overlayEl = null;
+        const closedRegion = currentOverlayRegion;
         currentOverlayRegion = null;
+
+        // Closing here closes the region as much as its header does, and
+        // locationTracker.js lets that region's kept rows go on it.
+        window.dispatchEvent(new CustomEvent("regionOverlayClosed", {
+            detail: { regionName: closedRegion }
+        }));
     }
 
 
@@ -445,7 +463,7 @@
         img.draggable = false;
 
         // The panel sizing uses the dimensions from config.json so it can run
-        // immediately instead of waiting on a 2MB download. Once the image is
+        // immediately instead of waiting on the full-size image. Once the image is
         // actually here, confirm the two agree — if they ever drift apart the
         // markers creep off position, which is a miserable bug to track down.
         img.addEventListener("load", () => {
@@ -509,7 +527,7 @@
     window.TrackerData.onReady(({ config, regions }) => {
       // Anything thrown in here lands before locationMapReady is dispatched, so
       // the container, the markers and every listener below would be lost
-      // together — off one bad key in config.json, which Phase 2 will rewrite.
+      // together — off one bad key in config.json.
       try {
         const problem = mapConfigProblem(config.map);
         if (problem) throw new Error(problem);
@@ -563,7 +581,7 @@
         });
 
         // An open overlay was measured against the map's old size, so it has to be
-        // fitted again. Two triggers:
+        // fitted again. Three triggers:
         //   - locationMapResized, once locationPanelLayout.js has written the new
         //     size. Listening for that rather than racing it on "resize" makes
         //     this correct whichever file registered first, and it is the only
@@ -571,9 +589,11 @@
         //   - resize, because the height budget reads the viewport: a height-only
         //     change moves the budget while the map stays put, so nothing would be
         //     announced.
+        //   - trackerViewChanged, because hiding non-randomized checks changes how
+        //     many rows the open region has to fit.
         // Not scroll — the budget is in document coordinates so it can't move with
         // the page, and refitting mid-scroll would resize text under the reader.
-        // The guard collapses both into one refit when they coincide.
+        // The guard collapses triggers that coincide into one refit.
         let refitScheduled = false;
         function scheduleRefit() {
             if (refitScheduled) return;
@@ -592,16 +612,13 @@
         }
         window.addEventListener("resize", scheduleRefit);
         window.addEventListener("locationMapResized", scheduleRefit);
+        window.addEventListener("trackerViewChanged", scheduleRefit);
 
         const mql = window.matchMedia(MOBILE_BREAKPOINT);
         const onBreakpointChange = () => {
             if (mql.matches) closeOverlay(); // hand the region back to the mobile list
         };
-        if (mql.addEventListener) {
-            mql.addEventListener("change", onBreakpointChange);
-        } else {
-            mql.addListener(onBreakpointChange);
-        }
+        mql.addEventListener("change", onBreakpointChange);
       } catch (error) {
         // No locationMapReady on this path, on purpose — a half-built container is
         // worse than none, and locationPanelLayout.js already handles none.

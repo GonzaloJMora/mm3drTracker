@@ -48,10 +48,17 @@
             // count you already have is the part being asked about.
             const owned = resolve(node.left.id);
             const have = typeof owned === "number" ? owned : Number(Boolean(owned));
-            return `${nameFor(node.left.id)} ${have}/${node.right.value}`;
+            const target = targetOf(node, resolve);
+            return `${nameFor(node.left.id)} ${have}/${typeof target === "number" ? target : "?"}`;
         }
 
         return nameFor(node.id);
+    }
+
+    // A setting's number is read as the tooltip draws. One with no number shows as
+    // "?", and the comparison it belongs to is unmet.
+    function targetOf(node, resolve) {
+        return node.right.type === "setting" ? resolve(node.right.id, "setting") : node.right.value;
     }
 
     // One bullet per thing you need. Nested & is flattened because the region's
@@ -62,11 +69,43 @@
         return annotated.children.flatMap(bulletTerms);
     }
 
+    // Counts of one item among the bullets merge into the highest, since that is
+    // the one the check needs: the Moon's entry asks for moon_remains_required and
+    // Majora's own logic for majora_remains_required, which would otherwise be two
+    // "Boss Masks" lines. Inside an | the counts are alternatives, so only bullets
+    // merge. A target that can't be read wins, because its comparison is unmet.
+    function mergeCounts(terms, resolve) {
+        const kept = [];
+        const byItem = new Map();
+
+        terms.forEach(term => {
+            if (term.node.type !== "compare") {
+                kept.push(term);
+                return;
+            }
+            const item = term.node.left.id;
+            const current = byItem.get(item);
+            if (!current) {
+                byItem.set(item, term);
+                kept.push(term);
+                return;
+            }
+            const currentTarget = targetOf(current.node, resolve);
+            const target = targetOf(term.node, resolve);
+            if (typeof currentTarget === "number" && (typeof target !== "number" || target > currentTarget)) {
+                kept[kept.indexOf(current)] = term;
+                byItem.set(item, term);
+            }
+        });
+
+        return kept;
+    }
+
     function render(annotated, nameFor, resolve) {
         const list = document.createElement("ul");
         list.className = "tooltip-req-list";
 
-        const terms = bulletTerms(annotated);
+        const terms = mergeCounts(bulletTerms(annotated), resolve);
 
         terms.forEach(term => {
             const item = document.createElement("li");

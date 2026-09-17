@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#121212">
     <title>MM3D Randomizer Tracker</title>
-    
+
     <link rel="icon" type="image/png" href="images/icons/icon.png">
     <link rel="icon" sizes="32x32" href="images/icons/favicon.ico">
     <link rel="apple-touch-icon" href="images/icons/icon-180.png">
@@ -16,39 +16,74 @@
 
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/itemContainers.css">
-    <link rel="stylesheet" href="css/locationContainers.css">
-    <link rel="stylesheet" href="css/locationStats.css">
-    <link rel="stylesheet" href="css/locationLegend.css">
-    <link rel="stylesheet" href="css/locationPanelLayout.css">
-    <link rel="stylesheet" href="css/locationMap.css">
     <link rel="stylesheet" href="css/tooltip.css">
+    <link rel="stylesheet" href="css/trackerToolbar.css">
+    <link rel="stylesheet" href="css/settingsPage.css">
+
+    <script src="js/launch.js"></script>
 </head>
 
 <body>
 
     <header>
         <img src="images/logo.png" alt="Majora's Mask 3D Randomizer Tracker">
+        <!-- settingsPage.js enables Reset to Defaults and Launch New Tracker once the
+             settings have loaded. The two load buttons stay disabled until there is saving. -->
+        <div id="tracker-toolbar">
+            <button type="button" id="reset-settings" class="toolbar-btn" disabled>Reset to Defaults</button>
+            <button type="button" id="load-autosave" class="toolbar-btn" disabled>Load From Autosave</button>
+            <button type="button" id="load-file" class="toolbar-btn" disabled>Load From File</button>
+            <button type="button" id="launch-new-tracker" class="toolbar-btn" disabled>Launch New Tracker</button>
+        </div>
     </header>
 
-    <main>
+    <!-- awaiting-data: hidden until dataLoader.js has the data and every file has drawn from it. -->
+    <main class="awaiting-data">
         <!-- Mobile Tab Navigation (Hidden on Desktop) -->
         <div class="mobile-tabs">
-            <button class="tab-btn active" data-tab="items" data-section="item-section">Item Tracker</button>
-            <button class="tab-btn" data-tab="locations" data-section="location-section">Locations</button>
+            <button class="tab-btn active" data-tab="settings" data-section="settings-section">Settings</button>
+            <button class="tab-btn" data-tab="starting" data-section="starting-section">Starting Items</button>
         </div>
 
         <div class="tracker-layout-wrapper">
-            <!-- Item Tracker Section -->
-            <div id="item-section" class="tracker-section active-section">
-                <!-- One .item-grid per key in config.json grids, built by itemTracker.js -->
-                <div class="grid-container"></div>
+            <div id="settings-section" class="tracker-section active-section">
+                <section class="settings-panel" aria-labelledby="settings-panel-title">
+                    <h2 id="settings-panel-title">Randomizer Settings</h2>
+                    <!-- Every section of settings.json but the item grids one, built by settingsPage.js.
+                         On desktop the item grids section's other settings end this list too. -->
+                    <div id="settings-list" class="settings-list"></div>
+                </section>
             </div>
 
-            <!-- Location Tracker Section -->
-            <div id="location-section" class="tracker-section">
-                <aside id="region-sidebar" class="region-sidebar">
-                    <div id="region-dropdown-container"></div>
-                </aside>
+            <div id="starting-section" class="tracker-section">
+                <section class="starting-items" aria-labelledby="starting-items-title">
+                    <h2 id="starting-items-title">Starting Items</h2>
+                    <!-- What the four kinds of slot mean, drawn with the grids' own slot classes.
+                         The wording follows the input: .on-pointer for a mouse, .on-touch for a touchscreen. -->
+                    <ul class="slot-legend" aria-label="What the slots mean">
+                        <li>
+                            <span class="item-slot"><img class="item-image" src="images/Bow.png" alt=""></span>
+                            <span><span class="on-pointer"><strong>Click</strong> to start with it or step it up; right-click steps back</span><span class="on-touch"><strong>Tap</strong> to start with it or step it up</span></span>
+                        </li>
+                        <li>
+                            <span class="item-slot set-elsewhere"><img class="item-image" src="images/SwampSmallKey.png" alt=""></span>
+                            <span><strong>Set by another setting</strong><span class="on-pointer">; hover to see which</span></span>
+                        </li>
+                        <li>
+                            <span class="item-slot locked-on"><img class="item-image" src="images/DekuMask.png" alt=""></span>
+                            <span><strong>Locked on</strong> by another setting</span>
+                        </li>
+                        <li>
+                            <span class="item-slot not-starting"><img class="item-image" src="images/MoonsTear.png" alt=""></span>
+                            <span><strong>Not a starting item</strong></span>
+                        </li>
+                    </ul>
+                    <!-- One .item-grid per key in config.json grids, built by itemGrids.js -->
+                    <div class="grid-container"></div>
+                    <!-- The item grids section's settings that no slot shows, in the phone layout.
+                         On desktop settingsPage.js moves them into the settings panel instead. -->
+                    <div id="starting-extras" class="starting-extras"></div>
+                </section>
             </div>
         </div>
     </main>
@@ -59,17 +94,13 @@
     <!-- Mobile only (hidden by CSS above the breakpoint). -->
     <button id="back-to-top" type="button" aria-label="Back to top"></button>
 
-    <script src="js/dataLoader.js"></script>
-    <script src="js/logicParser.js"></script>
+    <script src="js/dataLoader.js" data-skip-regions></script>
     <script src="js/tooltip.js"></script>
-    <script src="js/requirementsView.js"></script>
     <script src="js/gameStateManager.js"></script>
-    <script src="js/itemTracker.js"></script>
-    <script src="js/locationTracker.js"></script>
-    <script src="js/locationStatsTracker.js"></script>
-    <script src="js/locationLegend.js"></script>
-    <script src="js/locationPanelLayout.js"></script>
-    <script src="js/locationMap.js"></script>
+    <script src="js/settingsState.js"></script>
+    <script src="js/settingControls.js"></script>
+    <script src="js/itemGrids.js"></script>
+    <script src="js/settingsPage.js"></script>
     <script src="js/mobileTabManager.js"></script>
 </body>
 </html>

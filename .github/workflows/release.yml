@@ -26,18 +26,30 @@ jobs:
 
       - name: Read version
         id: version
-        run: echo "version=$(python3 scripts/release.py version)" >> "$GITHUB_OUTPUT"
+        # Its own assignment, so a bad version.json fails this step. Inside the echo
+        # the exit status is lost, and the failure surfaces two steps later as a
+        # missing changelog entry.
+        run: |
+          version=$(python3 scripts/release.py version)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Check for an existing tag
         id: tag
         env:
           VERSION: ${{ steps.version.outputs.version }}
+        # --exit-code gives 2 when no tag matches. Any other failure is git not
+        # answering, and reading that as "no tag" would try to release anyway.
         run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+          status=0
+          git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null || status=$?
+          if [ "$status" -eq 0 ]; then
             echo "v$VERSION is already tagged, so there is nothing to release."
             echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
+          elif [ "$status" -eq 2 ]; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "git ls-remote failed with exit $status, so whether v$VERSION is tagged is unknown."
+            exit "$status"
           fi
 
       - name: Read changelog entry

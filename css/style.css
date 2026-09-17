@@ -1,8 +1,17 @@
 /* The breakpoint. JS reads it from here so the two can't disagree about where
-   mobile starts. @media can't read a custom property, so every query below still
-   spells it out — change this, change all of them. */
+   mobile starts. @media can't read a custom property, so every query still spells
+   it out — change this, change all of them.
+
+   Desktop-only blocks ask "not all and (max-width: 1499px)" rather than
+   "min-width: 1500px". With display scaling or browser zoom the page can be
+   1499.2px wide, which neither of those two numbers claims; asked as "not the phone
+   layout", every width is one layout or the other, and JS asks the same way. */
 :root {
     --mobile-breakpoint: 1499px;
+
+    /* Where main stops growing. The header caps at the same width, so the toolbar
+       ends where the tracker below it ends. */
+    --layout-max-width: 1880px;
 
     /* One definition per status. Region headers, check rows, map markers and the
        legend all read these, so the legend cannot describe a color the map is
@@ -10,7 +19,7 @@
     --status-inaccessible: #ff0000;
     --status-partial: #ebdc0b;
     --status-accessible: #00c000;
-    --status-vanilla: #9f0dda;
+    --status-vanilla: #c084fc;
     --status-completed: #c8c8c8;
 
     /* A shape per status so nothing depends on hue alone. Red-green is the most
@@ -19,7 +28,7 @@
 
        Completed shares the circle with accessible, so lightness carries that one
        pair instead: a pale gray against a saturated green. On the map they also
-       differ in that only accessible ever draws a count. */
+       differ in that a completed marker never draws a count. */
     --shape-inaccessible: polygon(50% 6.7%, 100% 93.3%, 0% 93.3%);
     --shape-partial: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     --shape-accessible: circle(50%);
@@ -27,19 +36,23 @@
     --shape-completed: circle(50%);
 
     /* A map marker's outline is the gap its fill leaves inside it, and a slanted
-       edge keeps less of that gap than a straight one: it is measured square to
-       the edge, so the diamond keeps about 70% and the triangle's slopes about
-       85%. These two are inset further to compensate; every other shape uses
-       the default in locationMap.css. */
+       edge keeps less of that gap than a straight one, because it is measured
+       square to the edge. The diamond and the triangle are inset further to
+       compensate; every other shape uses the default in locationMap.css. */
     --shape-inaccessible-outline: 3px;
     --shape-partial-outline: 3px;
+
+    /* A two-digit count on a shape that tapers has less room than the marker's
+       width suggests, so it drops to this size — one that centers exactly. The
+       square doesn't taper, so its pairing leaves it out and keeps the full size. */
+    --shape-tapered-wide-count: 9px;
 }
 
 /* The color and shape of a status are paired here and nowhere else. Every
    surface below reads --status-color and --status-shape, and map markers also
-   read --status-outline, so adding a surface means consuming variables rather
-   than writing five more rules — and an element with no status class simply has
-   none of them. */
+   read --status-outline and --status-wide-count, so adding a surface means
+   consuming variables rather than writing five more rules — and an element with
+   no status class simply has none of them. */
 .region-header.inaccessible,
 .region-check-item.inaccessible,
 .location-map-marker.inaccessible,
@@ -47,6 +60,7 @@
     --status-color: var(--status-inaccessible);
     --status-shape: var(--shape-inaccessible);
     --status-outline: var(--shape-inaccessible-outline);
+    --status-wide-count: var(--shape-tapered-wide-count);
 }
 
 .region-header.partialCompletion,
@@ -55,6 +69,7 @@
     --status-color: var(--status-partial);
     --status-shape: var(--shape-partial);
     --status-outline: var(--shape-partial-outline);
+    --status-wide-count: var(--shape-tapered-wide-count);
 }
 
 /* Regions roll up to fullClear; a single check is accessible. Same meaning. */
@@ -64,6 +79,7 @@
 .location-legend-swatch.fullClear {
     --status-color: var(--status-accessible);
     --status-shape: var(--shape-accessible);
+    --status-wide-count: var(--shape-tapered-wide-count);
 }
 
 .region-header.vanilla,
@@ -74,6 +90,35 @@
     --status-shape: var(--shape-vanilla);
 }
 
+/* A non-randomized check you can't reach yet is red like any other, and turns
+   purple once you can. :not(.completed) keeps completed winning, which this
+   selector would otherwise outrank. */
+.region-check-item.vanilla.inaccessible:not(.completed) {
+    --status-color: var(--status-inaccessible);
+    --status-shape: var(--shape-inaccessible);
+}
+
+/* Hide Non-Randomized Checks (trackerToolbar.js). Here because it names a status;
+   the counts leave these checks out on their own. */
+body.hide-non-randomized .region-check-item.vanilla,
+body.hide-non-randomized .location-legend-row[data-status="vanilla"] {
+    display: none;
+}
+
+/* Show Only Accessible Checks (trackerToolbar.js), in the phone layout only, so a
+   window widened past the breakpoint shows everything again. It hides and never
+   counts. .keep-shown is a row a tap would have hidden, kept while its region is
+   still open, which locationTracker.js lets go once the region closes. */
+@media screen and (max-width: 1499px) {
+    body.only-accessible .region-check-item.inaccessible:not(.keep-shown),
+    body.only-accessible .region-check-item.completed:not(.keep-shown),
+    body.only-accessible .region-group.nothing-accessible:not(.keep-shown),
+    body.only-accessible .location-legend-row[data-status="inaccessible"],
+    body.only-accessible .location-legend-row[data-status="completed"] {
+        display: none;
+    }
+}
+
 /* Last so a completed check wins over the accessibility it also carries. */
 .region-header.completed,
 .region-check-item.completed,
@@ -81,6 +126,7 @@
 .location-legend-swatch.completed {
     --status-color: var(--status-completed);
     --status-shape: var(--shape-completed);
+    --status-wide-count: var(--shape-tapered-wide-count);
 }
 
 /* iOS Safari enlarges wide blocks of text in landscape and doesn't always shrink
@@ -90,6 +136,11 @@
 html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+
+    /* Phones zoom on a double tap, and quick taps on an item slot set that off.
+       manipulation turns it off while keeping pinch zoom and scrolling;
+       user-scalable=no would take pinch zoom too, and iOS ignores it anyway. */
+    touch-action: manipulation;
 }
 
 body {
@@ -97,8 +148,8 @@ body {
     color: #ffffff;
     font-family: Arial, sans-serif;
 
-    /* Clears the notch and home bar, which viewport-fit=cover (index.html) lets
-       the page run under. The insets are 0 on anything without them. */
+    /* Clears the notch and home bar, which viewport-fit=cover (in each page's
+       viewport meta) lets the page run under. The insets are 0 on anything without them. */
     padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
              max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
 
@@ -115,13 +166,24 @@ body {
     user-select: none;
 }
 
+/* Capped and centered like main, so the toolbar lines up with the tracker rather
+   than the window's edge. Logo left, toolbar right; stacked on mobile. */
 header {
     margin-bottom: 12px;
+    max-width: var(--layout-max-width);
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
 }
 
 header img {
     height: 150px;
     display: block;
+    /* A flex item shrinks by default, and the logo would squash to make room for
+       the toolbar. */
+    flex-shrink: 0;
 
     /* Prevent the image from being dragged */
     -webkit-user-drag: none;
@@ -137,8 +199,30 @@ header img {
 }
 
 @media screen and (max-width: 1499px) {
+    header {
+        flex-direction: column;
+    }
+
     header img {
         margin: 0 auto;
+    }
+}
+
+/* ---------- Loading ---------- */
+
+/* Everything in main is drawn from data/, so it stays hidden until dataLoader.js
+   has the data and every file has drawn from it; a refresh then never shows empty
+   boxes filling in. visibility rather than display, so layout code can still
+   measure. The animation shows the page anyway if the scripts never run at all,
+   rather than leaving it blank. */
+main.awaiting-data {
+    visibility: hidden;
+    animation: reveal-if-stuck 0s linear 8s forwards;
+}
+
+@keyframes reveal-if-stuck {
+    to {
+        visibility: visible;
     }
 }
 
@@ -193,10 +277,12 @@ header img {
     margin-bottom: 0;
 }
 
-/* Both mean "something is missing but the rest works", so they look the same.
-   Full width to take their own row in main's flex layout. */
+/* All mean "something is missing but the rest works", so they look the same.
+   Full width to take their own row in main's flex layout. The settings page's
+   storage warning is settingsPage.js's. */
 #tracker-region-warning,
-#tracker-map-warning {
+#tracker-map-warning,
+#settings-storage-warning {
     width: 100%;
     box-sizing: border-box;
     margin: 0 0 15px 0;

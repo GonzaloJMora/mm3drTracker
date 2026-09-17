@@ -285,12 +285,7 @@
             placeMapContainer();
             syncPanelHeight();
         };
-        if (mql.addEventListener) {
-            mql.addEventListener("change", onBreakpointChange);
-        } else {
-            // Safari <14 fallback
-            mql.addListener(onBreakpointChange);
-        }
+        mql.addEventListener("change", onBreakpointChange);
 
         window.addEventListener("resize", scheduleHeightSync);
         observeLayout();
