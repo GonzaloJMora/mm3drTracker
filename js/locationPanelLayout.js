@@ -1,8 +1,8 @@
 // locationPanelLayout.js
-// Positions the summary row (stats box + legend) and the map container, and keeps
-// the desktop map sized to the item grid's height. Every piece arrives here via
-// events — the tracking logic, the stats numbers, the legend and the map itself
-// belong to other files.
+// Positions the summary row (stats box + legend) and the map container, keeps the
+// desktop map sized to the item grid's height, and scales the desktop grids up on
+// windows that have room. Every piece arrives here via events — the tracking
+// logic, the stats numbers, the legend and the map itself belong to other files.
 
 (function () {
     // Read from css/style.css so JS and CSS can't disagree about where mobile
@@ -18,9 +18,9 @@
     let summaryRowEl = null;
     let resizeObserver = null;
 
-    // The stats box and the legend sit side by side, and the map sits under the
-    // pair. Owning the row here keeps both of those files free of any knowledge
-    // of the other.
+    // The stats box and the legend sit side by side, in the header on desktop and
+    // above the tabs on a phone. Owning the row here keeps both of those files free
+    // of any knowledge of the other.
     function ensureSummaryRow() {
         if (summaryRowEl) return summaryRowEl;
         summaryRowEl = document.createElement("div");
@@ -29,8 +29,8 @@
         return summaryRowEl;
     }
 
-    // Either box can arrive first, and a missing legend is not fatal, so the row
-    // is filled in whatever order the events land.
+    // Either box can arrive first, and either can be missing, so the row is filled
+    // with whatever has landed.
     function fillSummaryRow() {
         const row = ensureSummaryRow();
         if (statsBoxEl && statsBoxEl.parentElement !== row) row.appendChild(statsBoxEl);
@@ -42,6 +42,7 @@
     // that stacked goes back once there is room again.
     function fitSummaryRow() {
         const row = summaryRowEl;
+        if (!row) return;
         row.classList.remove("stacked");
         const rowRect = row.getBoundingClientRect();
         const overflows = [statsBoxEl, legendBoxEl].some(box => {
@@ -55,7 +56,7 @@
     // ---------- Positioning ----------
 
     function placeSummaryRow() {
-        if (!statsBoxEl) return;
+        if (!statsBoxEl && !legendBoxEl) return;
         fillSummaryRow();
         const row = summaryRowEl;
 
@@ -71,15 +72,20 @@
                 main.insertBefore(row, main.firstChild);
             }
         } else {
-            const locationSection = document.getElementById("location-section");
-            if (locationSection && locationSection.firstChild !== row) {
-                locationSection.insertBefore(row, locationSection.firstChild);
+            // Between the logo and the toolbar, which leaves the map the whole
+            // location column.
+            const header = document.querySelector("header");
+            const toolbar = document.getElementById("tracker-toolbar");
+            if (header && toolbar && row.parentElement !== header) {
+                header.insertBefore(row, toolbar);
             }
         }
     }
 
+    // Needs nothing from the summary row: a progress box that failed to build must
+    // not cost the map as well.
     function placeMapContainer() {
-        if (!mapContainerEl || !summaryRowEl) return;
+        if (!mapContainerEl) return;
 
         const locationSection = document.getElementById("location-section");
         if (!locationSection) return;
@@ -95,9 +101,9 @@
             return;
         }
 
-        // Desktop: right after the summary row.
-        if (summaryRowEl.nextSibling !== mapContainerEl) {
-            locationSection.insertBefore(mapContainerEl, summaryRowEl.nextSibling);
+        // Desktop: first in the column.
+        if (locationSection.firstChild !== mapContainerEl) {
+            locationSection.insertBefore(mapContainerEl, locationSection.firstChild);
         }
     }
 
@@ -115,45 +121,111 @@
     // any data dependency, so it can never be left waiting on a fetch.
     let mapAspectRatio = null;
 
-    // The reserve is kept by hand in locationPanelLayout.css, so check it the
-    // first time the page is at the default text size: a restyled row that
-    // outgrows it is named instead of quietly moving the map off the grid's edge.
-    let reserveChecked = false;
-    function checkReserve(reserve) {
-        if (reserveChecked || summaryRowEl.classList.contains("stacked")) return;
-        if (getComputedStyle(document.documentElement).fontSize !== "16px") return;
-        reserveChecked = true;
+    // ---------- Scale (desktop only) ----------
 
-        const actual = summaryRowEl.getBoundingClientRect().height;
-        if (Math.abs(actual - reserve) > 2) {
-            console.warn(
-                `locationPanelLayout: the summary row is ${Math.round(actual)}px tall at the ` +
-                `default text size, but --summary-row-reserve in css/locationPanelLayout.css ` +
-                `is ${reserve}px. Set it to match, or the map's bottom edge drifts off the item grid's.`
-            );
+    // The grids are drawn this many times their base size (--ui-scale in
+    // css/style.css), and the map, sized against the grids' height, follows.
+    let appliedScale = 1;
+
+    function writeScale(scale, layoutWidth) {
+        const root = document.documentElement;
+        if (scale !== appliedScale) {
+            appliedScale = scale;
+            root.style.setProperty("--ui-scale", String(scale));
         }
+        if (layoutWidth) root.style.setProperty("--layout-max-width", `${Math.ceil(layoutWidth)}px`);
+        else root.style.removeProperty("--layout-max-width");
     }
 
+    // Only the logo counts: its height is fixed, while the rest of the header grows
+    // with the browser's text size and wraps with its width, which this scale sets,
+    // so measuring all of it would feed the scale back into itself. Large text
+    // pushes the map down the page instead.
+    function headerHeightForScale(header) {
+        const logo = header.querySelector("img");
+        const height = logo ? logo.getBoundingClientRect().height : 0;
+        return height > 0 ? height : header.getBoundingClientRect().height;
+    }
+
+    // The largest scale, from 1 up, at which the grids and a full-height map fit
+    // the window side by side and the page does not need to scroll. False when the
+    // grids are not measurable yet.
+    //
+    // Part of the grids doesn't scale (their slot borders stay 1px), so their size
+    // is a fixed part plus a scaled part. Both are read by measuring at scale 1 and
+    // 2 rather than divided down from the current scale, which would make the answer
+    // depend on the size the window was resized from. The real scale goes back in
+    // the same script, so neither reading is ever painted.
+    function applyScale(gridContainer) {
+        const root = document.documentElement;
+        const sizeAt = scale => {
+            root.style.setProperty("--ui-scale", String(scale));
+            return gridContainer.getBoundingClientRect();
+        };
+        const one = sizeAt(1);
+        const two = sizeAt(2);
+        root.style.setProperty("--ui-scale", String(appliedScale));
+
+        if (one.width < MIN_SANE_PX || one.height < MIN_SANE_PX) return false;
+        const grid = {
+            width: { per: two.width - one.width, fixed: 2 * one.width - two.width },
+            height: { per: two.height - one.height, fixed: 2 * one.height - two.height }
+        };
+        if (!(grid.width.per > 0) || !(grid.height.per > 0)) return false;
+
+        const px = (style, name) => parseFloat(style[name]) || 0;
+        const body = getComputedStyle(document.body);
+        const header = document.querySelector("header");
+        const footer = document.getElementById("app-version");
+        const wrapper = document.querySelector(".tracker-layout-wrapper");
+        const gap = wrapper ? px(getComputedStyle(wrapper), "columnGap") : 0;
+
+        const availableWidth = document.body.clientWidth - px(body, "paddingLeft") - px(body, "paddingRight");
+        const above = header ? headerHeightForScale(header) + px(getComputedStyle(header), "marginBottom") : 0;
+        const below = footer ? footer.getBoundingClientRect().height + px(getComputedStyle(footer), "marginTop") : 0;
+        const availableHeight = document.documentElement.clientHeight
+            - px(body, "paddingTop") - px(body, "paddingBottom") - px(body, "marginTop") - px(body, "marginBottom")
+            - above - below;
+
+        // The map is as tall as the grids, so its width follows their height.
+        const layoutWidth = s => grid.width.fixed + grid.width.per * s
+            + (grid.height.fixed + grid.height.per * s) * mapAspectRatio + gap;
+        const byWidth = (availableWidth - layoutWidth(0)) / (grid.width.per + grid.height.per * mapAspectRatio);
+        const byHeight = (availableHeight - grid.height.fixed) / grid.height.per;
+        // Floored to two places: a scale that moves by a hair on every pass would
+        // keep the observers below firing.
+        const scale = Math.max(1, Math.floor(Math.min(byWidth, byHeight) * 100) / 100);
+
+        writeScale(scale, layoutWidth(scale));
+        return true;
+    }
+
+    // A change in what the page needs can add or remove the vertical scrollbar
+    // partway through a pass, which changes the width every measurement above was
+    // taken against. One more pass settles it.
     function syncPanelHeight() {
+        const startWidth = document.documentElement.clientWidth;
+        fitPanels();
+        if (document.documentElement.clientWidth !== startWidth) scheduleHeightSync();
+    }
+
+    function fitPanels() {
         const isMobile = window.matchMedia(MOBILE_BREAKPOINT).matches;
 
         if (isMobile) {
+            writeScale(1, 0);
             if (mapContainerEl) {
                 mapContainerEl.style.height = "";
                 mapContainerEl.style.width = "";
             }
-            // Mobile width comes from CSS; drop any desktop width we set.
-            if (summaryRowEl) {
-                summaryRowEl.style.width = "";
-                fitSummaryRow();
-            }
+            fitSummaryRow();
             lastMapWidth = lastMapHeight = null;
             return;
         }
 
         const gridContainer = document.querySelector(".grid-container");
         const locationSection = document.getElementById("location-section");
-        if (!gridContainer || !summaryRowEl || !locationSection) return;
+        if (!gridContainer || !locationSection) return;
 
         // No map to size against, but the row still has to fit its text.
         if (!mapContainerEl || !mapAspectRatio) {
@@ -161,21 +233,17 @@
             return;
         }
 
-        // Read the gap off the element rather than mirroring the CSS value.
-        const gap = parseFloat(getComputedStyle(locationSection).rowGap) || 0;
+        if (!applyScale(gridContainer)) return;
+
         const totalTarget = gridContainer.getBoundingClientRect().height;
         const maxWidth = locationSection.getBoundingClientRect().width;
 
         // See MIN_SANE_PX.
         if (totalTarget < MIN_SANE_PX || maxWidth < MIN_SANE_PX) return;
 
-        // Sized against the row's reserved height, not its measured one: larger
-        // text makes the row taller, and that pushes the map down the page rather
-        // than shrinking it. Measured only if the stylesheet did not load.
-        const reserve = parseFloat(
-            getComputedStyle(summaryRowEl).getPropertyValue("--summary-row-reserve")
-        ) || summaryRowEl.getBoundingClientRect().height;
-        const maxHeight = Math.max(totalTarget - reserve - gap, MIN_SANE_PX);
+        // The summary row is in the header, so the map gets the item grids' whole
+        // height.
+        const maxHeight = Math.max(totalTarget, MIN_SANE_PX);
 
         // Fit the map's aspect ratio inside (maxWidth x maxHeight). Both
         // dimensions are set explicitly because CSS aspect-ratio doesn't resolve
@@ -188,12 +256,9 @@
             mapHeight = maxWidth / mapAspectRatio;
         }
 
-        // Keep the summary row no wider than the map so the two read as one unit
-        // — on 21:9 the column is much wider than the map. Ahead of the guard
-        // below, because the row re-fits its text even when the map has not moved.
-        summaryRowEl.style.width = `${mapWidth}px`;
+        // Ahead of the guard below, because the row re-fits its text even when the
+        // map has not moved.
         fitSummaryRow();
-        checkReserve(reserve);
 
         // Skip redundant writes so the ResizeObserver can't feed back into itself.
         if (mapWidth === lastMapWidth && mapHeight === lastMapHeight) return;
@@ -279,13 +344,12 @@
     window.addEventListener("load", syncPanelHeight);
 
     document.addEventListener("DOMContentLoaded", () => {
-        const mql = window.matchMedia(MOBILE_BREAKPOINT);
         const onBreakpointChange = () => {
             placeSummaryRow();
             placeMapContainer();
             syncPanelHeight();
         };
-        mql.addEventListener("change", onBreakpointChange);
+        window.matchMedia(MOBILE_BREAKPOINT).addEventListener("change", onBreakpointChange);
 
         window.addEventListener("resize", scheduleHeightSync);
         observeLayout();

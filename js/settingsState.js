@@ -153,7 +153,6 @@
     function grantRank({ slot, value }) {
         const kind = window.GameState.slotKind(config, slot);
         if (kind === "progression") return config.progressions[slot].indexOf(value);
-        if (kind === "capacity") return config.item_counts[slot].indexOf(value);
         if (kind === "counter" || kind === "digit") return value;
         return 0;
     }
@@ -253,9 +252,9 @@
     // ---------- Starting items ----------
 
     // Every grant that applies, merged into one starting state of slot id -> the
-    // value that slot starts at. Counters add, progressions and capacities keep
-    // their highest stage, digits their highest number, and a plain item is on if
-    // anything grants it. starting_max then caps the slots it names.
+    // value that slot starts at. Counters add, progressions keep their highest
+    // stage, digits their highest number, and a plain item is on if anything
+    // grants it. starting_max then caps the slots it names.
     function startingItems() {
         const state = {};
 
@@ -265,8 +264,8 @@
 
             if (kind === "counter") {
                 if (value > 0) state[slot] = Math.min((current || 0) + value, config.item_counts[slot]);
-            } else if (kind === "progression" || kind === "capacity") {
-                const stages = kind === "progression" ? config.progressions[slot] : config.item_counts[slot];
+            } else if (kind === "progression") {
+                const stages = config.progressions[slot];
                 if (current === undefined || stages.indexOf(value) > stages.indexOf(current)) state[slot] = value;
             } else if (kind === "digit") {
                 state[slot] = Math.max(current || 0, value);
@@ -288,12 +287,9 @@
     // ---------- Reading settings.json ----------
 
     // Each entry is [where, problem]; the problem says what gets ignored.
+    // dataLoader.js has already stopped the load on a settings.json with no
+    // "sections" list.
     function readSettings(data, problems) {
-        if (!data || !Array.isArray(data.sections)) {
-            problems.push(["settings.json", 'has no "sections" list, so there are no settings']);
-            return;
-        }
-
         data.sections.forEach((section, s) => {
             if (!section || typeof section.name !== "string" || !Array.isArray(section.groups)) {
                 problems.push([`sections[${s}]`, 'needs a "name" and a "groups" list, and is skipped']);
@@ -423,7 +419,7 @@
 
     // Only a grid slot can be granted, because a grant is what that slot starts at.
     function grantProblem(gridSlots, slot, value, setting) {
-        if (!gridSlots.has(slot)) return "is not a slot in any config.json grid";
+        if (!gridSlots.has(slot)) return "is not a slot in any grid in config/grids.json";
         const kind = window.GameState.slotKind(config, slot);
 
         if (value === "value") {
@@ -441,11 +437,7 @@
             const stages = config.progressions[slot];
             return stages.includes(value) ? null : `needs one of its stages (${stages.join(", ")})`;
         }
-        if (kind === "capacity") {
-            const sizes = config.item_counts[slot];
-            return sizes.includes(value) ? null : `needs one of its sizes (${sizes.join(", ")})`;
-        }
-        const top = config.bombers_code.max_digit_value;
+        const top = config.digit_slots.max_value;
         return Number.isInteger(value) && value >= 1 && value <= top ? null : `needs a digit from 1 to ${top}`;
     }
 
@@ -578,17 +570,6 @@
         });
     }
 
-    function checkHeartRules(problems) {
-        const id = config.heart_rules && config.heart_rules.starting_hearts_setting;
-        const setting = settings.get(id);
-        if (!setting || setting.class !== "number") {
-            problems.push([
-                "config.json heart_rules.starting_hearts_setting",
-                `names ${JSON.stringify(id)}, which is not a number setting, so hearts start from 0`
-            ]);
-        }
-    }
-
     function report(problems) {
         if (!problems.length) return;
         console.warn(
@@ -611,7 +592,6 @@
             () => readSlotRoles(problems),
             () => readAllForced(problems),
             () => readStartingMax(data.settings, problems),
-            () => checkHeartRules(problems),
             () => applyHandoff(problems)
         ].forEach(step => {
             try {

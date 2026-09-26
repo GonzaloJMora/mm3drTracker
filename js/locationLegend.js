@@ -1,6 +1,6 @@
 // locationLegend.js
 // The legend box only: what each status color means. Entries and their order
-// come from config.json's "legend"; the colors themselves are CSS, keyed off the
+// come from config/legend.json's "legend"; the colors themselves are CSS, keyed off the
 // same status class the region headers and map markers use.
 //
 // It builds its own box and hands it over on "locationLegendReady"; where that
@@ -66,7 +66,7 @@
         // A tracker with no legend is usable; one that dies here is not.
         if (!entries.length) {
             console.warn(
-                'locationLegend: config.json has no "legend" entries, so the ' +
+                'locationLegend: config/legend.json has no "legend" entries, so the ' +
                 "legend box is not drawn."
             );
             return;

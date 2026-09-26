@@ -18,8 +18,7 @@
 }
 
 /* Three columns so five entries take two rows, which keeps the box no taller
-   than the stats box beside it. The map reserves the row's height at the default
-   text size, so a third row here would outgrow that reserve. */
+   than the stats box beside it, and the header no taller than its logo. */
 #location-legend-content {
     display: grid;
     grid-template-columns: repeat(3, auto);

@@ -1,8 +1,45 @@
 {
   "region_name": "Pinnacle Rock",
-  "logic": "",
+  "logic": "ocarina_of_time&eponas_song&zora_mask",
   "map_coordinates": { "xPercent": 17.4, "yPercent": 40.5 },
   "item_checks": [
-
+    {
+      "id": "pr_seahorse_reunion",
+      "name": "Seahorse Reunion",
+      "logic": "magic_meter&seahorse",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "pr_upper_chest",
+      "name": "Upper Chest",
+      "logic": "magic_meter&seahorse"
+    },
+    {
+      "id": "pr_lower_chest",
+      "name": "Lower Chest",
+      "logic": "magic_meter&seahorse"
+    },
+    {
+      "id": "pr_zora_egg_1",
+      "name": "Zora Egg 1",
+      "logic": "magic_meter&seahorse&bottle",
+      "vanilla_when": true,
+      "vanilla_item": "zora_egg"
+    },
+    {
+      "id": "pr_zora_egg_2",
+      "name": "Zora Egg 2",
+      "logic": "magic_meter&seahorse&bottle",
+      "vanilla_when": true,
+      "vanilla_item": "zora_egg"
+    },
+    {
+      "id": "pr_zora_egg_3",
+      "name": "Zora Egg 3",
+      "logic": "magic_meter&seahorse&bottle",
+      "vanilla_when": true,
+      "vanilla_item": "zora_egg"
+    }
   ]
 }

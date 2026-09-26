@@ -52,6 +52,12 @@
     margin-bottom: 4px;
 }
 
+/* The gap only separates the heading from what follows. A map marker's tooltip is
+   just the heading, and keeping it there sits the name high in the box. */
+.tooltip-heading:last-child {
+    margin-bottom: 0;
+}
+
 /* What a non-randomized check holds. The label takes the Not Randomized color, so
    it reads as part of that status. */
 .tooltip-vanilla {
@@ -63,14 +69,86 @@
     color: var(--status-vanilla);
 }
 
-.tooltip-req-list {
-    margin: 0;
-    /* In em so the bullets stay inside the panel as the text grows. */
-    padding-left: 1.5em;
+/* What is still short, beside the heading (locationTracker.js). */
+.tooltip-count {
+    margin-left: 8px;
+    font-weight: normal;
+    color: #999999;
 }
 
-.tooltip-req-list li {
-    margin: 1px 0;
+.tooltip-count-met {
+    color: #4da3ff;
+}
+
+/* The requirements: one chip per thing you need, wrapping to the panel's width
+   (requirementsView.js). In rem so large text grows them with the rest. */
+.tooltip-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+}
+
+.tooltip-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    padding: 2px 8px;
+    border: 1px solid;
+    /* Not a pill: a long label wraps to a second line inside it. */
+    border-radius: 12px;
+    min-width: 0;
+}
+
+.tooltip-chip-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* The mark leads a chip, and is smaller than the text beside it. */
+.tooltip-chip .tooltip-mark {
+    margin: 0;
+    font-size: 0.85em;
+}
+
+.tooltip-chip-met {
+    border-color: #2b4d73;
+    background-color: #101e2c;
+}
+
+.tooltip-chip-unmet {
+    border-color: #6e2c2c;
+    background-color: #2a1414;
+}
+
+.tooltip-chip-spare {
+    border-color: #444444;
+    background-color: #1e1e1e;
+}
+
+/* An "Any one of": its ways to meet it, side by side in a dashed group. */
+.tooltip-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 4px;
+    padding: 3px 5px;
+    border: 1px dashed #666666;
+    border-radius: 12px;
+}
+
+.tooltip-group-met {
+    border-color: #2b4d73;
+}
+
+.tooltip-route-label {
+    padding-inline: 4px;
+    font-size: 0.85em;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #bbbbbb;
 }
 
 /* The three states from logicParser.js: you have it, you need it, or a sibling
@@ -92,6 +170,7 @@
 
 .tooltip-mark-met { color: #4da3ff; }
 .tooltip-mark-unmet { color: #ff5555; }
+.tooltip-mark-spare { color: #888888; }
 
 .tooltip-none {
     color: #888888;

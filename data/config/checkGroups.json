@@ -1,0 +1,13 @@
+{
+  "check_groups": [
+    ["ect_postbox", "nct_postbox", "sct_postbox"],
+    ["ect_stray_fairy", "lp_stray_fairy"],
+    ["nct_keaton_quiz", "mr_keaton_quiz", "mv_keaton_quiz"],
+    ["nct_tingle_woodfall_map_buy", "rss_tingle_woodfall_map_buy"],
+    ["rss_tingle_snowhead_map_buy", "ti_tingle_snowhead_map_buy"],
+    ["mr_tingle_romani_ranch_map_buy", "ti_tingle_romani_ranch_map_buy"],
+    ["mr_tingle_great_bay_map_buy", "gbc_tingle_great_bay_map_buy"],
+    ["gbc_tingle_stone_tower_map_buy", "ic_tingle_stone_tower_map_buy"],
+    ["nct_tingle_clock_town_map_buy", "ic_tingle_clock_town_map_buy"]
+  ]
+}

@@ -1,8 +1,59 @@
 {
   "region_name": "Mountain Village",
-  "logic": "",
+  "logic": "bow&(bomb_bag|blast_mask|goron_mask|(magic_meter&fire_arrow))",
   "map_coordinates": { "xPercent": 49.8, "yPercent": 25.8 },
   "item_checks": [
-
+    {
+      "id": "mv_frog_choir",
+      "name": "Frog Choir",
+      "logic": "goht_defeated&laundry_frog&swamp_frog&woodfall_frog&great_bay_frog&don_gero_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "mv_hungry_goron",
+      "name": "Hungry Goron",
+      "logic": "goron_mask&magic_meter&((bow&fire_arrow)|(ocarina_of_time&goron_lullaby_intro&deku_stick))",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "don_gero_mask"
+    },
+    {
+      "id": "mv_waterfall_chest",
+      "name": "Waterfall Chest",
+      "logic": "goht_defeated&lens_of_truth&magic_meter"
+    },
+    {
+      "id": "mv_keaton_quiz",
+      "name": "Keaton Quiz",
+      "logic": "goht_defeated&keaton_mask&(kokiri_sword|great_fairy_sword)",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "mv_darmani",
+      "name": "Darmani",
+      "logic": "lens_of_truth&magic_meter&ocarina_of_time&song_of_healing",
+      "vanilla_when": { "shuffle_transformation": false },
+      "vanilla_item": "goron_mask"
+    },
+    {
+      "id": "mv_razor_sword_upgrade",
+      "name": "Razor Sword Upgrade",
+      "logic": "adults_wallet&kokiri_sword&(hot_spring_water|goht_defeated|(magic_meter&fire_arrow))",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "Progressive Sword"
+    },
+    {
+      "id": "mv_gilded_sword_upgrade",
+      "name": "Gilded Sword Upgrade",
+      "logic": "gold_dust&adults_wallet&kokiri_sword&(hot_spring_water|goht_defeated|(magic_meter&fire_arrow))",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "Progressive Sword"
+    },
+    {
+      "id": "mv_spring_water_grotto",
+      "name": "Spring Water Grotto",
+      "logic": "goht_defeated"
+    }
   ]
 }

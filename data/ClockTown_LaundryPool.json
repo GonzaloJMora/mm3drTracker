@@ -1,19 +1,17 @@
 {
   "region_name": "Laundry Pool",
   "logic": "",
-  "map_coordinates": { "xPercent": 48.35, "yPercent": 46.57 },
+  "map_coordinates": { "xPercent": 47.58, "yPercent": 47.9 },
   "item_checks": [
     {
       "id": "lp_stray_fairy",
       "name": "Stray Fairy",
-      "logic": "",
-      "vanilla_when": [{ "stray_fairies": "vanilla" }, { "clock_town_stray_fairy": "vanilla" }],
+      "vanilla_when": { "clock_town_stray_fairy": "vanilla" },
       "vanilla_item": "clock_town_stray_fairy"
     },
     {
       "id": "lp_guru_guru",
       "name": "Guru-Guru",
-      "logic": "",
       "vanilla_when": { "shuffle_masks": false },
       "vanilla_item": "bremen_mask"
     },

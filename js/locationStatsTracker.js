@@ -1,6 +1,6 @@
 // locationStatsTracker.js
 // The location-progress box only: counting checked / accessible / remaining,
-// deduped via config.json's check_groups, and rendering them. It builds its own
+// deduped via config/checkGroups.json's check_groups, and rendering them. It builds its own
 // box and hands it over on "locationStatsBoxReady"; where that box sits is
 // locationPanelLayout.js's problem.
 
@@ -25,7 +25,7 @@
     // ---------- Stat computation ----------
 
     function computeStats() {
-        // Built once - check_groups comes from config.json and never changes.
+        // Built once - check_groups comes from config/checkGroups.json and never changes.
         if (!canonicalKeyMap) canonicalKeyMap = buildCanonicalKeyMap(checkGroupsCache);
         const idToKey = canonicalKeyMap;
         // Global, not scoped to #region-dropdown-container — a region's checks

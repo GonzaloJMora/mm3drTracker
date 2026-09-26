@@ -1,6 +1,7 @@
-# MM3D Randomizer Tracker — Architecture
+# Randomizer Tracker — Architecture
 
-A browser-based item/location tracker for Majora's Mask 3D randomizer runs.
+A browser-based item/location tracker for randomizer runs. Which game it tracks is
+its `data/`.
 Vanilla JS, no build step, no framework, no package manager, no modules.
 
 It does need to be **served over HTTP** rather than opened off disk — there is no
@@ -42,7 +43,7 @@ that. `python -m http.server` in the repo root is enough.
    live `GameState`.
 3. **Data lives in `data/*.json`, never in JS.** No hardcoded arrays/objects of
    game data at the top of a JS file. A list belongs in the JSON file that
-   logically owns it (a region's own file, `config.json`, `Items.json`). This is
+   logically owns it (a region's own file, a file in `config/`, `Items.json`). This is
    a hard rule.
 
 ---
@@ -109,14 +110,16 @@ will open with: every change re-runs `GameState.init` with
 answers to comes from the grants, not from a list (`SettingsState.slotSettings`):
 
 - **A setting that grants one slot and nothing else controls it.** Clicking the
-  slot steps through that setting's choices in the slot's own order (no sword,
-  Kokiri, Razor, Gilded), and right-clicking steps back. When several choices
-  look alike in the slot, like the stick capacities, the slot shows the chosen
-  one's name. Sword, Shield and Ocarina are Major Items settings that work this
-  way too, so their slot and their row change together.
+  slot steps through that setting's choices in the slot's own order, from the one
+  that grants nothing up the slot's stages, and right-clicking steps back. When
+  several choices look alike in the slot, the slot shows the chosen one's name. The
+  slot and the setting's row are one value, so they always change together.
+  (In Majora's Mask, the sword slot steps through no sword, Kokiri, Razor and
+  Gilded, and the stick capacities are the choices that look alike.)
 - **A slot granted only by settings that grant other slots too, or by a number,
-  is filled in but not clicked:** maps and keys, bottle contents, the Bomber's
-  code, the token and stray fairy counts. Its tooltip names what sets it.
+  is filled in but not clicked.** Its tooltip names what sets it. (In Majora's
+  Mask: maps and keys, bottle contents, the Bomber's code, and the token and stray
+  fairy counts.)
 - **A slot no setting grants is drawn faded**, so the grids still match the
   tracker.
 
@@ -142,14 +145,12 @@ header
  └─ #tracker-toolbar            (Hide Non-Randomized Checks, Show Only Accessible Checks on phones, Export, Launch New Tracker)
 main
  ├─ #tracker-map-warning        (only if the map could not be built)
+ ├─ #tracker-logic-warning      (only if locationFlags.json or logicHelpers.json failed to load)
  ├─ #tracker-region-warning     (only if a region file failed to load)
  ├─ .mobile-tabs                (visible ≤ 1499px only)
  └─ .tracker-layout-wrapper
      ├─ #item-section  > .grid-container > one .item-grid[data-grid] per config.grids key
      └─ #location-section
-         ├─ #location-summary-row      (built by locationPanelLayout.js)
-         │   ├─ #location-stats-box    (built by locationStatsTracker.js)
-         │   └─ #location-legend-box   (built by locationLegend.js)
          ├─ #location-map-container    (built by locationMap.js)
          └─ #region-sidebar > #region-dropdown-container   (region list)
 footer#app-version              (the version, from data/version.json)
@@ -158,12 +159,13 @@ footer#app-version              (the version, from data/version.json)
 
 The order inside `#location-section` is the runtime one, not the source one:
 `#region-sidebar` is the only child in `tracker.html`, and `locationPanelLayout.js`
-inserts the summary row and the map ahead of it. On mobile the summary row is
-moved out to `<main>` entirely, above the tab bar, so it stays visible on both
-tabs.
+inserts the map ahead of it. The same file places `#location-summary-row` (the
+stats box from `locationStatsTracker.js` and the legend from `locationLegend.js`):
+in `header`, between the logo and the toolbar, on desktop, and on mobile in `<main>`
+above the tab bar, so it stays visible on both tabs.
 
 - **Item tracker** (left): four grids of clickable item slots.
-- **Location tracker** (right): on desktop, the Termina map with per-region
+- **Location tracker** (right): on desktop, the game's map with per-region
   markers + an overlay; on mobile, the accordion region list.
 
 ---
@@ -178,19 +180,19 @@ loads `launch.js`, `dataLoader.js`, `tooltip.js`, `gameStateManager.js`,
 | File | Owns | Key globals / DOM |
 |---|---|---|
 | `launch.js` | **In `<head>`, on both pages.** Reads and writes the settings handed from the settings page to the tracker, in `sessionStorage`, and says whether storage works at all, by trying a write: a browser can read storage and still refuse to write it. On a page marked `data-requires-launch` (the tracker), goes to `index.html` before the body draws when nothing was handed over, unless the address has `?defaults` (§2, *Pages*). | `window.TrackerLaunch` |
-| `dataLoader.js` | **The first script in the body**, so only `launch.js` runs before it. The only file that reads `data/`. Fetches `config.json`, `Items.json`, `manifest.json`, `settings.json` and every region file exactly once, then announces them with `trackerDataReady`. Its script tag on the settings page carries `data-skip-regions`, which leaves the region files out. Renders the two load-failure messages (§8). | `window.TrackerData`, `#tracker-load-error`, `#tracker-region-warning` |
+| `dataLoader.js` | **The first script in the body**, so only `launch.js` runs before it. The only file that reads `data/`. Fetches `config.json` and the files it lists, `Items.json`, `manifest.json`, `settings.json`, every region file, `locationFlags.json` and `logicHelpers.json` exactly once, then announces them with `trackerDataReady`. Its script tag on the settings page carries `data-skip-regions`, which leaves out the region files, `locationFlags.json` and `logicHelpers.json`. Renders the three load-failure messages (§8). | `window.TrackerData`, `#tracker-load-error`, `#tracker-region-warning`, `#tracker-logic-warning` |
 | `logicParser.js` | Parses a logic string into a tree, evaluates that tree against an inventory, and annotates each node as satisfied / blocking / optional. No DOM, no data of its own. `locationTracker.js` evaluates through it and the requirements tooltip reads the same tree, so the two cannot disagree (§9). | `window.LogicParser` |
 | `tooltip.js` | The tooltip: follows the pointer on hover, or docks to the bottom of the screen when pinned from a check's button on touch. Owns showing, hiding, positioning, the edge flip and pinning; owns nothing about what is in it. An owner calls `Tooltip.register(selector, build)` and gets called back with the hovered element (§14). | `window.Tooltip`, `.tracker-tooltip` |
-| `requirementsView.js` | Turns an annotated logic tree into the *Items Required* bullet list. Presentation only. | `window.RequirementsView` |
-| `gameStateManager.js` | `window.GameState` — the inventory source of truth. Computes derived values (hearts, counted up from the Health setting; boss-mask count, regular-mask count, bomber's-code validity, "has a bottle"). `slotKind(config, id)` names what kind of slot an id is — progression, capacity, counter, digit or toggle — from config alone, so it works before `init`. `init` takes the starting items, sets those slots and records each one's floor; `slotValue(id)` reads a slot's stage or count back out of `items`, and `slotRange(id)` gives the values clicking can move it through. Also builds the **F1 debug panel**, which lists the changed settings and the starting items as well, and creates `window.TrackerDebug` for the other files' console helpers. | `window.GameState`, `window.TrackerDebug`, `#tracker-debug-panel` |
+| `requirementsView.js` | Turns an annotated logic tree into the *Items Required* chips. Presentation only. | `window.RequirementsView` |
+| `gameStateManager.js` | `window.GameState` — the inventory source of truth. Works out the logic tokens (`tokens`: the values logic can name that are not items) from the definitions in `config/logicTokens.json`, on every state change. `slotKind(config, id)` names what kind of slot an id is — progression, counter, digit or toggle — from config alone, so it works before `init`. `init` takes the starting items, sets those slots and records each one's floor; `slotValue(id)` reads a slot's stage or count back out of `items`, and `slotRange(id)` gives the values clicking can move it through. Also builds the **F1 debug panel**, which lists the changed settings and the starting items as well, and creates `window.TrackerDebug` for the other files' console helpers. | `window.GameState`, `window.TrackerDebug`, `#tracker-debug-panel` |
 | `settingsState.js` | `window.SettingsState` — the randomizer settings, read and validated out of `settings.json` (§7, *Settings*). Answers a setting's value with any lock applied (`get`, `isForced`), whether a clause matches (`matches`, `clauseProblem`), and what every grant adds up to (`startingItems`). `set` and `reset` change the picks and announce `settingsChanged`; `sections`, `describe`, `lockedBy` and `picks` are what the settings page reads. `slotSettings(slot)` says which setting controls a grid slot and which only fill it in, worked out from the grants, and `step(id, direction)` moves a controlling setting to its next choice along its slot. `numberOf(id)` is the number a dropdown's chosen option carries, for the right of `>=`, and `isNumeric(id)` says whether a dropdown carries numbers at all (§9); `list()` is every setting with its value, default and lock state, for the F1 panel. Applies the picks handed over through `launch.js` once the file is read (§2, *Pages*). No DOM. | `window.SettingsState` |
 | `trackerToolbar.js` | The toolbar in the header, and its view toggles: Hide Non-Randomized Checks, and Show Only Accessible Checks in the phone layout. Each button names the class it puts on `<body>` and its `localStorage` key in data attributes; the choices read back through `TrackerView`, and a flip announces `trackerViewChanged` (§10b, *Hiding checks*). Loaded before the trackers, so their first sweep already knows the state. Launch New Tracker asks with `confirm()`, then goes back to the settings page (§2, *Pages*). Export is in its markup but disabled until it is wired up. | `window.TrackerView`, `#tracker-toolbar` |
-| `itemGrids.js` | **On both pages.** Draws the item grids: one grid per key in `config.json`'s `grids` — the count and order come from config, nothing here — with every slot drawn from `GameState`, so a slot starts wherever the starting items put it. Hands back a view per slot for the page to add its own clicks to and redraw through `draw`. Validates every grid slot at load (§8), and registers the item tooltip: name, the song's `notes_image` where there is one, and any line a page puts in the slot's `data-tooltip-note`. | `window.ItemGrids`, one `.item-grid[data-grid="<key>"]` per grid |
+| `itemGrids.js` | **On both pages.** Draws the item grids: one grid per key in `config/grids.json`'s `grids` — the count and order come from config, nothing here — with every slot drawn from `GameState`, so a slot starts wherever the starting items put it. Hands back a view per slot for the page to add its own clicks to and redraw through `draw`. Validates every grid slot at load (§8), and registers the item tooltip: name, the song's `notes_image` where there is one, and any line a page puts in the slot's `data-tooltip-note`. | `window.ItemGrids`, one `.item-grid[data-grid="<key>"]` per grid |
 | `itemTracker.js` | The tracker's grids: starts `GameState` from the starting items, has `itemGrids.js` draw the grids, and handles left-click (advance) / right-click (retreat) cycling between a slot's floor and its top, giving a locked slot no click handler. Pushes every change into `GameState`. | `.grid-container` |
-| `locationTracker.js` | Builds every region's accordion (`.region-group` = header + `.region-content` of `.region-check-item`s) into `#region-dropdown-container`. Evaluates logic strings (`canAccess()`), sets `accessible` / `inaccessible` on checks and a rolled-up status class on each region header, and announces both. Also validates its regions at load: the logic tokens, the check ids, and each check's `vanilla_when` and `vanilla_item` (§8). Registers the requirements tooltip for its checks, and puts the sweep and `canAccess()` on `TrackerDebug`. Marks a region with nothing accessible, and keeps rows a tap hid shown until their region closes (*Hiding checks*). | `#region-dropdown-container` |
-| `locationLegend.js` | The **Legend** box only: one row per entry in `config.json`'s `legend`, each swatch colored by the same status class the region headers and map markers use. Hands the box over on an event; where it sits is not its business. | `#location-legend-box` |
-| `locationStatsTracker.js` | The **Location Progress** box only: computes checked / accessible / remaining, deduped via `config.json` `check_groups`. Creates its own box element, hands it off via an event. Re-counts when `locationTracker.js` says the checks changed. | `#location-stats-box` |
-| `locationPanelLayout.js` | Where the summary row and map container sit in `#location-section`, and sizing the desktop map so `summary row + gap + map` matches the item grid's height. It owns `#location-summary-row`, which holds the stats box and the legend side by side. Nothing about tracking. | builds `#location-summary-row`, sizes `#location-map-container` |
+| `locationTracker.js` | Builds every region's accordion (`.region-group` = header + `.region-content` of `.region-check-item`s) into `#region-dropdown-container`. Evaluates logic strings (`canAccess()`), sets `accessible` / `inaccessible` on checks and a rolled-up status class on each region header, and announces both. Also validates its regions at load (§8): the location flags and logic helpers, the logic tokens, the check ids and names, the `check_groups` ids, each check's `vanilla_when` and `vanilla_item` and their agreement across one location, and items demanded twice. Registers the requirements tooltip for its checks, and puts the sweep and `canAccess()` on `TrackerDebug`. Marks a region with nothing accessible, and keeps rows a tap hid shown until their region closes (*Hiding checks*). | `#region-dropdown-container` |
+| `locationLegend.js` | The **Legend** box only: one row per entry in `config/legend.json`'s `legend`, each swatch colored by the same status class the region headers and map markers use. Hands the box over on an event; where it sits is not its business. | `#location-legend-box` |
+| `locationStatsTracker.js` | The **Location Progress** box only: computes checked / accessible / remaining, deduped via `config/checkGroups.json`'s `check_groups`. Creates its own box element, hands it off via an event. Re-counts when `locationTracker.js` says the checks changed. | `#location-stats-box` |
+| `locationPanelLayout.js` | Where the summary row and map container sit (the row in the header on desktop, the map first in `#location-section`), sizing the desktop map to the item grids' height, and scaling the grids up on windows with room (§11). It owns `#location-summary-row`, which holds the stats box and the legend side by side. Nothing about tracking. | builds `#location-summary-row`, sizes `#location-map-container` |
 | `locationMap.js` | Desktop map view: builds `#location-map-container` (image + marker layer), one marker per region JSON with `map_coordinates`, matched to the real `.region-group` by its `data-region-name`. Clicking a marker **moves** that node into a fixed overlay and back to its original position on close, and announces the close with `regionOverlayClosed`. Also fits the region's checks to the overlay (§12). | `#location-map-container`, `#location-map-marker-layer` |
 | `mobileTabManager.js` | **On both pages.** `switchMobileTab()` toggles `.active-section` between the sections the tab buttons name in `data-section`: `#item-section` and `#location-section` on the tracker, `#settings-section` and `#starting-section` on the settings page. It does so at any width; CSS is what confines the tabs to the phone layout (§10). Announces a switch with `mobileTabChanged`. Also shows the back-to-top button once the page is scrolled half a screen, and remembers each tab's scroll position. | `.mobile-tabs`, `.tab-btn`, `#back-to-top` |
 | `settingControls.js` | **Settings page only.** One control per setting class: a slider for `toggle` (an invisible checkbox over a drawn track), a select for `dropdown`, a number field clamped to `min`–`max` for `number`. `create(description, onChange)` returns `{ element, update(value, locked) }`. A new class is one `register` call here, alongside its value rules in `settingsState.js`. | `window.SettingControls` |
@@ -206,7 +208,7 @@ All events are `CustomEvent`s on `window`.
 | Event | Dispatched by | Consumed by | Payload |
 |---|---|---|---|
 | `trackerDataReady` | `dataLoader.js`, once all of `data/` has loaded **and** `DOMContentLoaded` has fired | `settingsState.js` (first, so the settings exist before `GameState.init`), `itemGrids.js`, `itemTracker.js`, `locationTracker.js`, `locationStatsTracker.js`, `locationLegend.js`, `locationMap.js`; on the settings page, `settingsState.js`, `itemGrids.js` and `settingsPage.js` | `window.TrackerData` |
-| `trackerStateUpdated` | `gameStateManager.js` → `broadcastChange()`, on every state change | `locationTracker.js` (re-evaluates all regions), F1 debug panel, `tooltip.js` (redraws an open tooltip) | `{ items, totalHearts, totalBossMasks, totalRegularMasks }` |
+| `trackerStateUpdated` | `gameStateManager.js` → `broadcastChange()`, on every state change | `locationTracker.js` (re-evaluates all regions), F1 debug panel, `tooltip.js` (redraws an open tooltip) | `{ items, tokens }` |
 | `itemGridsReady` | `itemTracker.js`, after every grid renders, **and again** once the slot images have loaded, if any were still loading | `locationPanelLayout.js` (re-runs map sizing against the grid's real height) | — |
 | `regionsRendered` | `locationTracker.js`, once every region accordion is in the DOM | `locationMap.js` (builds its region lookup) | — |
 | `regionStatusChanged` | `locationTracker.js`, when a region's rolled-up status or its counts change | `locationMap.js` (recolors that marker, sets its count, updates an open overlay's titlebar) | `{ regionName, status, accessible, remaining }` |
@@ -257,8 +259,13 @@ they run **in `tracker.html` script order**, which makes the sequence
 deterministic. Before any of it, `launch.js` in `<head>` has either sent the page
 to the settings page (§2, *Pages*) or let it load:
 
-1. `dataLoader.js` — fetches `config.json`, `Items.json`, `manifest.json` and
-   `settings.json`, then every region file the manifest lists.
+1. `dataLoader.js` — fetches `config.json` and the files it lists, `Items.json`,
+   `manifest.json` and `settings.json`, and checks the shape of `check_groups`.
+   Then every region file the manifest lists, dropping any that can't be read,
+   and resolves each region's checks into one flat list (*Sub-regions*).
+   `locationFlags.json` and `logicHelpers.json` load alongside all of these, and
+   read as empty if they fail rather than stopping the load. `version.json` is fetched on its own, for the
+   footer and the load-error report.
 2. `logicParser.js`, `tooltip.js`, `requirementsView.js` — define their globals
    (`tooltip.js` also binds its `document` listeners). None of them waits for
    data; the trackers call them.
@@ -273,7 +280,7 @@ to the settings page (§2, *Pages*) or let it load:
 7. `settingsState.js` — reads and validates `settings.json`, then applies the
    picks handed over from the settings page. It is first in line
    on purpose: nothing may ask for a setting before this, and `GameState.init`
-   asks for the Health setting to count the starting hearts.
+   works out the tokens, some of which read a setting.
 8. `itemGrids.js` then `itemTracker.js` — the first registers the item tooltip.
    The second validates the grid slots, calls `GameState.init(items, config,
    startingItems)` with `SettingsState.startingItems()` (populates `items`, sets
@@ -281,13 +288,16 @@ to the settings page (§2, *Pages*) or let it load:
    has `itemGrids.js` render one grid per `config.grids` key with every slot drawn
    from `GameState`, adds its clicks, and dispatches `itemGridsReady`.
 9. `locationTracker.js` — registers the check tooltip, renders all accordions
-   from `TrackerData.regions`, dispatches `regionsRendered`, validates the logic
-   tokens against the fully populated `GameState.items`, the check ids against
-   each other, and each check's `vanilla_when` and `vanilla_item`, then runs one
-   `evaluateAllRegions()` sweep against the
-   real inventory. Everything from `regionsRendered` down is in a `finally`, so a
-   region file that breaks still leaves the rest of the page told about the ones
-   that rendered (§8).
+   from `TrackerData.regions`, and dispatches `regionsRendered`. Then it indexes
+   the location flags and logic helpers, which has to come first: the validators
+   count them as known tokens, and the sweep reads them. The validators follow,
+   each in its own try/catch: the flags and helpers themselves, the logic tokens
+   against the fully populated `GameState.items`, the check ids, the check names,
+   the `check_groups` ids, each check's `vanilla_when` and `vanilla_item`, their
+   agreement across one location, and items demanded twice. Last, one
+   `evaluateAllRegions()` sweep against the real inventory. Everything from
+   `regionsRendered` down is in a `finally`, so a region file that breaks still
+   leaves the rest of the page told about the ones that rendered (§8).
 10. `locationStatsTracker.js` — builds its box, counts (the checks already exist),
     dispatches `locationStatsBoxReady`, starts listening for
     `trackerChecksUpdated`. (It has no observer — see §4.)
@@ -380,13 +390,127 @@ Other files read them off `window.TrackerData`; none of them call `fetch`.
 | File | Shape | Surfaced as | Used by |
 |---|---|---|---|
 | `manifest.json` | Flat array of region file names. **Its order is the region display order** — reorder this file to reorder the mobile list. | `TrackerData.manifest` | (drives the region load order) |
-| `config.json` | `grids` (slot layout per grid — **each key becomes a rendered grid**), `progressions` (multi-stage items), `item_counts` (numeric or staged counters), `item_groups` (boss masks, bottles), `heart_rules` (`starting_hearts_setting` names the setting the starting hearts come from), `logic_token_names` (display names for the derived tokens that have no `Items.json` entry — `hearts`, `bottle` and friends), `legend` (the status swatches and their labels, in display order), `bombers_code`, `map` (image path + real pixel size), `map_overlay.text_sizes` (§12), `check_groups` (checks that grant the player the same exact item despite existing in multiple locations). | `TrackerData.config` | `itemTracker.js` and `settingsPage.js` (handing it to `itemGrids.js`), `gameStateManager.js` (via `init`), `settingsState.js`, `locationTracker.js`, `locationStatsTracker.js`, `locationLegend.js`, `locationMap.js` |
-| `Items.json` | Array of `{ id, name, image, notes_image?, regular_mask? }`. `name` drives tooltips; `notes_image` is the song's button sequence, shown in the item tooltip (§14); `regular_mask: true` marks an item as counting toward `total_masks` (§9). | `TrackerData.items` | `itemTracker.js` and `settingsPage.js` (handing it to `itemGrids.js`), `gameStateManager.js` (via `init`), `locationTracker.js` (names in the requirements tooltip) |
+| `config.json` and `config/*.json` | `config.json` is only an index: a `files` list, relative to `data/`, of the files whose keys merge into one `TrackerData.config`. `grids.json` (`grids`: slot layout per grid — **each key becomes a rendered grid**), `inventory.json` (`progressions` for multi-stage items, `item_counts` for numeric or staged counters, `item_groups` for items that count together whatever grid they are drawn in, and `digit_slots`, slots that each hold a digit, with their shared display name and the highest digit), `logicTokens.json` (`tokens`: each derived value logic can name that is not an item, with its display name, its kind and what it counts; §9), `legend.json` (the status swatches and their labels, in display order), `map.json` (`map`: image path + real pixel size, and `map_overlay.text_sizes`, §12) and `checkGroups.json` (`check_groups`: check ids that are one location listed in more than one region, which tick off and count together). A key in two files warns, and the later one wins. | `TrackerData.config` | `itemTracker.js` and `settingsPage.js` (handing it to `itemGrids.js`), `gameStateManager.js` (via `init`), `settingsState.js`, `locationTracker.js`, `locationStatsTracker.js`, `locationLegend.js`, `locationMap.js` |
+| `Items.json` | Array of `{ id, name, image, notes_image? }`. `name` drives tooltips; `notes_image` is the song's button sequence, shown in the item tooltip (§14). Any other field set to `true` is a tag a `count` or `any` token can count (§9). | `TrackerData.items` | `itemTracker.js` and `settingsPage.js` (handing it to `itemGrids.js`), `gameStateManager.js` (via `init`), `locationTracker.js` (names in the requirements tooltip) |
 | `settings.json` | `always_grants`, `starting_max`, and `sections[]` → `groups[]` → `settings[]` in the randomizer's own menu order. See *Settings* below. | `TrackerData.settings` | `settingsState.js` |
-| `<Region>.json` | `region_name`, `logic` (region entry requirement), `map_coordinates: { xPercent, yPercent }`, `item_checks: [{ id, name, logic, vanilla_when?, vanilla_item? }]`, where `vanilla_when` is the clause under which the check is not randomized (see *Settings*) and `vanilla_item` is what it holds then: an `Items.json` id, shown by the tracker's name for it, or plain text for an item the tracker doesn't track (§14). **`region_name` must be present and unique** — see §8. | `TrackerData.regions` (manifest order, unreadable files dropped; empty on the settings page) | `locationTracker.js` (accordion + logic), `locationMap.js` (marker position) |
+| `<Region>.json` | `region_name`, `logic` (region entry requirement), `map_coordinates: { xPercent, yPercent }`, `item_checks: [{ id, name, logic, vanilla_when?, vanilla_item? }]`, and an optional `subregions` tree that lets checks sharing a requirement write it once (*Sub-regions* below), where `vanilla_when` is the clause under which the check is not randomized (see *Settings*) and `vanilla_item` is what it holds then: an `Items.json` id, shown by the tracker's name for it, or plain text for an item the tracker doesn't track (§14). **`region_name` must be present, text, and unique** — see §8. | `TrackerData.regions` (manifest order, unreadable files dropped; empty on the settings page), and `TrackerData.regionFile(region)`, the file a region came from | `locationTracker.js` (accordion + logic), `locationMap.js` (marker position) |
+| `logicHelpers.json` | `{ "helpers": [{ id, name, logic }] }`: a list of items written once and used by name, like any melee damage source (*Logic helpers* below). Loaded on the tracker only. | `TrackerData.logicHelpers` (empty on the settings page, and if the file can't be read) | `locationTracker.js` (resolves each helper as a logic token) |
+| `locationFlags.json` | `{ "flags": [{ id, name, at: { check } or { region }, logic? }] }`: progress elsewhere that a check depends on, like a boss being beatable (*Location flags* below). Loaded on the tracker only. | `TrackerData.locationFlags` (empty on the settings page, and if the file can't be read) | `locationTracker.js` (resolves each flag as a logic token) |
 | `version.json` | `{ "version": "x.y.z" }`, written by `scripts/release.py` rather than by hand (README.md, *Releasing*). Fetched apart from the core files, so a report that they failed to load still carries the version. | `TrackerData.version` (null until it arrives, and if it cannot be read) | `dataLoader.js` (the `#app-version` footer and the load-error report) |
 
 Map marker positions live per-region in `map_coordinates`.
+
+### Sub-regions
+
+A region file may nest its checks instead of listing them flat. A sub-region has a
+`name`, and any of `logic`, `vanilla_when`, `vanilla_item`, `item_checks` and
+`subregions` of its own. Most of a region's checks then carry only an `id` and a
+`name`, and the requirement they share is written once on the group that holds
+them. (In Majora's Mask, the Ocean Spider House writes `bomb_bag|blast_mask` once,
+on the group holding its thirty tokens.)
+
+The region itself can carry `vanilla_when` and `vanilla_item` too, for every check
+in the file: an area whose checks are all non-randomized under the same settings
+says so once.
+
+Most regions don't use sub-regions. A tree is for an area whose checks sit in rooms
+behind rooms, such as a dungeon, where each layer adds what it takes to reach the
+next and the tree reads like a map of the place. A town or a field keeps a flat
+`item_checks` list, where the repetition is small and the list is easier to read.
+The choice is made per area rather than per file: a mostly flat region can nest its
+one deep area. (In Majora's Mask, Ikana Canyon lists most of its checks flat and
+nests only Beneath the Well and Ikana Castle.)
+
+`dataLoader.js` walks every region at load, flat ones included, and hands every
+other file one flat `item_checks` list, so nothing downstream knows the tree exists
+and the inheritance rules below mean the same in every file.
+Each resolved check carries three synthesized fields: `group_logic`, the ancestors'
+logic in order, `group_path`, their names, and `vanilla_when_from` /
+`vanilla_item_from`, naming whichever node supplied an inherited value.
+
+The two fields inherit by different rules, and the asymmetry is deliberate.
+
+| Field | Rule | Why |
+|---|---|---|
+| `logic` | Accumulates: every ancestor's, then the check's own | You pass through every area to reach the check |
+| `vanilla_when` | The nearest node that sets one, replacing rather than merging | Whether a check is randomized is a property of that check, not something it collects on the way in |
+| `vanilla_item` | Same | Same |
+
+Because the layers stay a list rather than being joined into one string,
+`LogicParser.parse()` parses each on its own. An `a|b` group can never bind loosely
+against the `c` below it, and a broken string is reported once under the text the
+file actually contains.
+
+Escape hatches, since an absent field means "inherit":
+
+| The check wants | It writes |
+|---|---|
+| A different clause or item from its group | The value itself |
+| To be randomized despite its group | `"vanilla_when": false` — the inherited item goes with it |
+| To be vanilla holding nothing listed | `"vanilla_item": null` |
+
+**A sub-region must add a requirement, never narrow one of its parent's
+alternatives.** Nesting a check needing `a&b` under a group offering `c|(a&b)`
+evaluates correctly — the strict term subsumes the loose one — and still renders a bullet in the requirements tooltip
+that can never matter. `TrackerDebug.resolvedChecks(name)` prints each check's
+resolved requirement and flags a layer that changes no outcome. The answer is
+exact, so the same files always give the same list; the comment on
+`redundantLayers()` in `locationTracker.js` says how it is decided.
+
+### Location flags
+
+Some checks depend on progress made somewhere else, such as a boss being beaten.
+Writing out what that takes on every check that needs it would copy one region's
+logic into another region's file. A location flag names that progress once, and
+logic uses it like an item. (In Majora's Mask, Boat Archery in Southern Swamp needs
+Odolwa beaten, written `odolwa_defeated`, and the Frog Choir needs a frog from four
+places.)
+
+A flag is worked out from the logic, never toggled by ticking a check. It is met
+whenever the check or region it points at could be reached with what you hold,
+together with any `logic` of its own. That matches how a randomizer treats its
+event flags, so a check that needs one turns green exactly when the randomizer
+would call it reachable, and nothing depends on remembering to tick the boss. The
+flags this game uses and the randomizer names they follow are in
+MAJORAS_MASK_DATA.md.
+
+Each entry in `data/locationFlags.json` points at one place:
+
+| `at` | The flag stands for |
+|---|---|
+| `{ "check": "<id>" }` | Everything that check needs: its region's entry, any sub-regions above it, and its own logic |
+| `{ "region": "<region_name>" }` | That region's entry requirement |
+
+Its `logic`, if any, is added on top: the flag is met where the place can be
+reached and its own requirement is held too. (In Majora's Mask, the Laundry Pool
+frog is the Laundry Pool plus `don_gero_mask`.) The `name` is what the requirements
+tooltip shows.
+
+A flag is resolved while the logic is evaluated, with the same resolver, so it
+follows the inventory like everything else. One that needs itself through other
+flags is a loop, and reads false instead of recursing.
+
+Flags are added one at a time, each approved first, and only once the check or
+region it points at exists. Until then a check that uses it warns of an unknown
+token and stays red, which is its own reminder.
+
+### Logic helpers
+
+The same lists of items turn up on check after check, such as everything that
+can hit an enemy. A randomizer usually names these once, and so does
+`data/logicHelpers.json`: each helper is a name for one of those lists, shown in the
+tooltip by its `name`. (In Majora's Mask, `fighting` is a sword, the Great Fairy's
+Sword, the Goron Mask or the Zora Mask, shown as *Melee Damage*, and `projectile`
+is the ranged list, shown as *Projectile Damage*.)
+
+A helper is a location flag without a location: a name for a logic string that
+depends only on items. It resolves the same way, while the logic is evaluated, so
+anything a check can write a helper can hold, flags and other helpers included.
+
+Writing the list once also removes a common source of repetition in the tooltip.
+A region whose way in lists weapons next to a check that lists weapons shows the
+same items twice. With the helper each list reads as one name. (In Majora's
+Mask: *Melee Damage or Projectile Damage*.)
 
 ### Settings
 
@@ -404,33 +528,31 @@ randomizer's own menu shows it. `class` decides what a value can be:
 | `number` | a whole number from `min` to `max` | `min`, `max`, `grants` |
 
 **Sections and groups** only lay out the settings page. The one section marked
-`"view": "item_grids"` (Starting Inventory) is drawn as the tracker's item grids:
+`"view": "item_grids"` is drawn as the tracker's item grids:
 its settings show through the slots they grant, and the rest are listed at the end
 of the settings panel on desktop and under the grids on a phone. Every other
 section is listed in the settings panel. A group's optional
 `name` heads its settings.
 
-**`grants`** say what a grid slot starts at: a progression's stage id, a capacity
-from its list, a count, a bomber's code digit, or `true` for a plain item. On a
-`number` setting, a grant of `"value"` hands on the number picked. `always_grants`
-apply to every tracker whatever the settings, which is how the base Wallet is
-always owned. When several grants land on one slot, counters add up to their
-maximum, progressions and capacities keep the highest stage, digits the highest
-number, and a plain item is on if anything grants it. `starting_max` then caps a
+**`grants`** say what a grid slot starts at: a progression's stage id, a count, a
+digit, or `true` for a plain item. On a `number` setting, a grant of `"value"` hands
+on the number picked. `always_grants` apply to every tracker whatever the settings,
+for what every run starts with. When several grants land on one slot, counters add up to their
+maximum, progressions keep the highest stage, digits the highest number, and a plain item is on if anything grants it. `starting_max` then caps a
 counter's starting value however it was reached. The merged result is
 `SettingsState.startingItems()`.
 
 On the tracker the starting state is also a floor. A slot starts at what it was
-granted, and clicking never takes it lower: a progression, capacity or counter
-cycles from its floor to its top and wraps back to the floor. A slot whose floor
-is already its top has nothing to cycle and is locked. So is a granted bomber's
-code digit, whatever its value, because a code is fixed rather than something to
-count up from. `GameState.slotRange()` is where those rules live.
+granted, and clicking never takes it lower: a progression or counter cycles from
+its floor to its top and wraps back to the floor. A slot whose floor
+is already its top has nothing to cycle and is locked. So is a granted digit,
+whatever its value, because a code is fixed rather than something to count up
+from. `GameState.slotRange()` is where those rules live.
 
-The starting hearts are deliberately not a grant. The randomizer adds them on top
-of every heart piece and container still in the seed, so as a grant they would
-push those counters past their maximums. `heart_rules.starting_hearts_setting` in
-`config.json` names the number setting they come from instead.
+A starting value that a randomizer adds on top of the item pool is not a grant:
+as a grant it would fill the pool's counters and push them past their maximums
+once the rest were found. A `sum` token reads the setting instead. (In Majora's
+Mask, the starting hearts: MAJORAS_MASK_DATA.md.)
 
 **`forced`** is a list of `{ when, value }` locks. While `when` matches, the
 setting reads as `value` whatever was picked, and the pick comes back once the
@@ -444,7 +566,8 @@ check with no `vanilla_when` is always randomized.
 
 - `true` always matches.
 - An object matches when every setting it names has the value given, or any of
-  the values in a list: `{ "shuffle_songs": ["song_locations", "anywhere"], "shuffle_song_of_time": false }`.
+  the values in a list. (In Majora's Mask:
+  `{ "shuffle_songs": ["song_locations", "anywhere"], "shuffle_song_of_time": false }`.)
 - A list of objects matches when any one of them does.
 
 Anything malformed never matches. `SettingsState.clauseProblem()` says what is
@@ -457,13 +580,12 @@ mostly portable — pointing it at a different game is largely a matter of
 replacing those files. The parts that are *not* data are worth knowing before you
 try:
 
-- **The special logic tokens.** `hearts`, `boss_masks` and `total_masks` are named
-  in `specialTokenValues()` (§9). Anything else a logic string needs to compare as
-  a number has to be added there.
-- **The derived values `GameState` computes.** Hearts, the two mask counts, the
-  bomber's-code check and "has a bottle" are each their own method, and each knows
-  a `config.json` key or tag by name (`heart_rules`, `item_groups.boss_masks`,
-  `item_groups.bottles`, `bombers_code`, `regular_mask`).
+- **The logic token kinds.** The tokens themselves are entries in
+  `config/logicTokens.json` (this game's are in MAJORAS_MASK_DATA.md), each of one
+  of four kinds that `GameState` knows how to work out: `count` and `any` over an item
+  group or tag, `sum` of settings and items, and `distinct` over a list of slots.
+  Anything a logic string needs that fits none of those has to be added to
+  `gameStateManager.js` as a new kind (§9).
 - **The map shape.** `locationMap.js` assumes a single image with markers placed
   on it by percentage.
 - **The setting classes.** `toggle`, `dropdown` and `number` are defined in
@@ -484,26 +606,46 @@ once, at load, and keep the rest of the app up.**
 
 | Check | Where | On failure |
 |---|---|---|
-| A core file (`config.json`, `Items.json`, `manifest.json`, `settings.json`) cannot be read | `dataLoader.js` | Nothing can render, so `<main>`'s contents are replaced with `#tracker-load-error` — the cause, the version and the page URL, in a selectable block meant to be pasted into a bug report. |
+| A core file (`config.json` or a file it lists, `Items.json`, `manifest.json`, `settings.json`) cannot be fetched, is not valid JSON, or holds the wrong shape: a config file that is not an object, an `Items.json` or `manifest.json` that is not a list, or a `settings.json` with no `sections` list | `dataLoader.js` | Nothing can render, so `<main>`'s contents are replaced with `#tracker-load-error` — the cause, naming the file, the version and the page URL, in a selectable block meant to be pasted into a bug report. |
+| An `Items.json` entry is not an object with an `id` | `dataLoader.js` | One warning naming the entries by position, which are dropped. Every file that reads the items would otherwise throw on it; a grid slot naming a dropped item draws empty, as any unknown item does. |
 | `version.json` cannot be read, or has no `x.y.z` version | `dataLoader.js` | One warning. The footer stays empty and a load-error report says `version: unknown`; nothing else reads it. |
-| A region file cannot be read | `dataLoader.js` | That region is dropped and the rest load. Names of the dropped files land on `TrackerData.failedRegions` and in a `#tracker-region-warning` banner above the tracker. |
+| A region file cannot be read, or holds something other than a region object (such as `null`) | `dataLoader.js` | That region is dropped and the rest load. Names of the dropped files land on `TrackerData.failedRegions` and in a `#tracker-region-warning` banner above the tracker. |
 | A grid slot names an item that is not in `Items.json` | `itemGrids.js` → `validate()` | One warning naming grid, index, and for a progression the stage number. The slot draws as an `.empty-slot` so the six-column alignment holds and the other grids still render. |
+| A logic string can't be parsed | `logicParser.js`, then `locationTracker.js` → `validateLogicTokens()` | The parser names the string and what is wrong with it; the validator names every region, sub-region, check, flag or helper using it. Anything it gates reads unreachable. |
 | A logic string uses a token that matches nothing in the item state, or a name after `>=` that is not a dropdown setting carrying values | `locationTracker.js` → `validateLogicTokens()` | One warning per kind, naming each name and every check using it, plus the right stage id for a progression slot, or a note that a setting only goes after `>=`. The check resolves to `false`. |
-| `region_name` is missing or duplicated | `locationTracker.js` | The region is not rendered and is named in a warning, and `locationMap.js` gives it no marker. A duplicate is the nastier case: both copies resolve to the one accordion that rendered, so the second marker would sit at its own coordinates and open the other region's checks. |
-| `item_checks` is missing, or is not a list | `locationTracker.js` | The region is skipped and named in the same warning as a bad `region_name`. An empty list is *not* an error — a region whose checks are not written yet renders as an empty accordion. |
+| `region_name` is missing, blank, not text, or duplicated | `locationTracker.js` | The region is not rendered and is named in a warning by its file, since the name can't identify it; a duplicate also names the file that kept the name. Spaces around a name are trimmed by `dataLoader.js` first, with a warning, so `"Name "` counts as a duplicate of `"Name"`. The region gets no marker from `locationMap.js`. A duplicate is the nastier case: both copies resolve to the one accordion that rendered, so the second marker would sit at its own coordinates and open the other region's checks. |
+| `item_checks` is missing, or is not a list | `locationTracker.js` | The region is skipped and named in the same warning as a bad `region_name`. An empty list is *not* an error — a region whose checks are not written yet renders as an empty accordion. A region that lists only `subregions` is fine: resolving the tree gives it an `item_checks` before this runs. |
+| A region's or sub-region's `item_checks` or `subregions` is not a list | `dataLoader.js` | That list is dropped and named by its path; the node's other checks, and the rest of the region, still load. A region left with no `item_checks` list at all is then rejected by `locationTracker.js`, as above. |
+| An entry in an `item_checks` list is not a check | `dataLoader.js` | That entry is dropped and named by its position; the rest of the list still loads. |
+| A sub-region's `logic` is not text (a number, a list, an object) | `dataLoader.js` | Named by its path. It stays in the chain, so LogicParser rejects it and every check under it reads unreachable, as a bad region or check `logic` does; dropping it would let those checks turn green early. `null` and `""` mean no requirement. |
+| A sub-region has no `name` | `dataLoader.js` | Named by position (`subregions[3]`) and still resolved. The name is never rendered — it exists so a warning can point at the one node that put a wrong value on thirty checks. |
+| A sub-region holds no checks and no sub-regions | `dataLoader.js` | Named, and does nothing. Usually a group whose checks were moved out from under it. |
+| A check sets `vanilla_when: false` and also names a `vanilla_item` | `dataLoader.js` | The item is dropped and the contradiction named. `false` means randomized, so the item could never show. |
+| One item is demanded twice down a check's chain | `locationTracker.js` | Named once per pair of layers, not once per check under them. A bare token is a truthiness test, so a second demand for it changes nothing and the check turns green a key early — it fails open, which is why it warns. A counted item asks for the running total instead (`key>=2`). A token inside an `|` is an alternative rather than a demand and is not counted. |
+| `locationFlags.json` can't be read, or has no `flags` list; the same for `logicHelpers.json` and `helpers` | `dataLoader.js` | One error, and a `#tracker-logic-warning` banner above the tracker naming the file. Every flag or helper in that file reads false and the tracker still loads, the way a missing region file doesn't stop it. The unknown-token warning then lists those names as matching nothing, and says which file failed to load, since it is the likelier cause. |
+| A flag's `at` names a check or region that isn't rendered, or names both or neither | `locationTracker.js` | Named, and the flag reads false. Every check using it stays red, which is why it warns rather than failing quietly. |
+| A helper has no `logic` | `locationTracker.js` | Named, and the helper reads false. |
+| A flag's or helper's id is already an item or derived token | `locationTracker.js` | Named, and the entry is ignored. Logic reads the item, since a name checked first would replace every requirement for it. |
+| A flag or helper is declared twice (in one file or across both), has no `name`, or has an id not written like a token | `locationTracker.js` | Named. The first declaration counts, flags before helpers; a missing name shows the id, and a malformed id is never registered. |
+| Flags and helpers need each other in a loop | `locationTracker.js` | Named with the path around the loop. That path reads false; an alternative outside the loop can still meet the token. |
+| A region's sub-region tree throws while being walked | `dataLoader.js` | Only that region is affected: it keeps whatever `item_checks` it listed, and the error names it. |
 | A region file is readable, but something inside it throws while rendering | `locationTracker.js` | That one region is skipped and named, with the thrown message; every other region still renders. The render call sits in its own try/catch inside the loop for exactly this. |
 | Two checks share an `id`, or a check has no `id` | `locationTracker.js` → `validateCheckIds()` | One warning naming the id and the regions using it. Nothing is skipped — a repeat is *legal*, it is how `check_groups` works, so the tracker cannot tell a typo from a group. The symptom is a check ticking itself off somewhere else and the progress total quietly shrinking. |
-| A region has no `map_coordinates` | `locationMap.js` → `validateMarkerCoordinates()` | One warning naming the region. It still renders its accordion and still counts, but it gets no marker — and on desktop the accordion list is `display: none`, so its checks are unreachable from anywhere. |
+| A check has no `name` | `locationTracker.js` → `validateCheckNames()` | One warning naming the check. It draws as a blank row that can still be ticked. |
+| A `check_groups` entry is not a list of at least two check ids, or `check_groups` itself is not a list | `dataLoader.js` | One warning naming the group, which is dropped: its checks tick off and count on their own. Checked before anything reads the groups, because a group that throws takes the check click and the progress box down with it. |
+| A `check_groups` id matches no check on the page, or is in two groups | `locationTracker.js` → `validateCheckGroups()` | One warning per id. An unmatched id leaves its location unlinked; an id in two groups counts with the later group while a click ticks both. |
+| A region has no `map_coordinates`, or its `xPercent` and `yPercent` aren't numbers from 0 to 100 | `locationMap.js` → `validateMarkerCoordinates()` | One warning naming the region. It still renders its accordion and still counts, but it gets no marker — and on desktop the accordion list is `display: none`, so its checks are unreachable from anywhere. |
+| A `map_overlay.text_sizes` rung has no `font_size` or `padding`, or one that isn't valid CSS once multiplied by the overlay's scale (`0` and `small` are valid alone but not there), or the list is missing, isn't a list, or is empty | `locationMap.js` | One warning naming the rungs, which are skipped, and one more when none is left. The overlay is then fitted once at the stylesheet's text size, which still grows with the map, so a region too big for the box scrolls rather than being cut off. |
 | `config.map` is missing or unusable, or building the map throws | `locationMap.js` | One error, and a `#tracker-map-warning` banner above the tracker saying the desktop location view is missing. No map is built; the item tracker and the phone layout's region list still work. |
-| The map image's real size differs from `config.map`'s | `locationMap.js` | One warning once the image loads. The map still draws, but every marker drifts off its spot until `config.json` is corrected. |
-| Nothing is tagged `regular_mask` | `gameStateManager.js` | Warns that `total_masks` will be 0 forever. |
+| The map image's real size differs from `config.map`'s | `locationMap.js` | One warning once the image loads. The map still draws, but every marker drifts off its spot until `config/map.json` is corrected. |
+| A token in `logicTokens.json` is malformed: no id or name, a repeated id, the id of an item, an unknown kind, a group or tag or slot list that names nothing, an `item_groups` group that is not a list, a `sum` term that is neither a number setting nor a known item | `gameStateManager.js` | One warning per problem, naming the token. An unusable token is left out; one whose source is missing still exists and reads 0 or false. A tag no item carries is one of these: its token reads 0 until it is fixed. A token that still throws while being worked out reads 0 or false and is named once, so the state change is still announced. |
+| An `item_groups` group names an id that is not an item | `gameStateManager.js` | One warning per token reading the group. That id counts as never owned. |
 | A slot appears in both `progressions` and `item_counts` | `gameStateManager.js` | Warns; the click handler would silently do nothing. |
 | The starting items give a slot a value it can't start at | `gameStateManager.js` → `init` | One warning naming the slot. It starts empty. |
 | An entry in `settings.json` is malformed: a missing or repeated id, an unknown `class`, a default that is not one of its values, a grant on something that is not a grid slot or with a value that slot cannot take, a lock whose `when` is malformed or names another locked setting, a `starting_max` on anything but a counter, a dropdown that gives some options a `value` but not others | `settingsState.js` | One warning per problem, naming the entry and what is ignored because of it. A bad setting is left out, a bad option, grant or lock is ignored, and every other setting still loads. |
 | A section's `view` is neither `list` nor `item_grids`, or a second section is `item_grids` | `settingsState.js` | One warning. That section is listed in the settings panel. |
 | A setting's `class` has no control in `settingControls.js` | `settingsPage.js` | One warning naming the setting. Its row is left out of the settings page; the setting still has its default. |
 | Two settings each grant only the same grid slot | `settingsState.js` | One warning. The first in `settings.json` steps through that slot on the settings page; the other still works from its row. |
-| `heart_rules.starting_hearts_setting` names no `number` setting | `settingsState.js` | Warns. Hearts start from 0, so every check gated on hearts stays out of reach until it is fixed — loud on purpose, where a silent fallback would look right on the defaults. |
 | The settings handed over from the settings page can't be read | `launch.js` | One warning. Every setting keeps its default. |
 | A handed-over pick names no setting, or a value its setting can't take — the data changed since it was picked, or the storage was edited | `settingsState.js` | One warning per pick, in the same report as the problems in `settings.json`. That setting keeps its default and the rest still apply. |
 | A check's `vanilla_when` is malformed or names an unknown setting or value | `locationTracker.js` → `validateVanillaClauses()` | One warning per check. The clause never matches, so the check shows as randomized. |
@@ -544,20 +686,23 @@ Three rules worth keeping if you add more:
 Region `logic` and check `logic` are mini-expressions parsed by
 `logicParser.js` and evaluated through `locationTracker.js` → `canAccess()`:
 
-- `&` = and, `|` = or, `()` = group up checks, `>=` = check if the count is greater than or equal to a number, or to the number a setting carries (`boss_masks>=moon_remains_required`).
-- Bare tokens are item ids, looked up in `GameState.items` (boolean or number).
-- Special tokens resolved to numbers: `hearts`, `boss_masks`, `total_masks`.
+- `&` = and, `|` = or, `()` = group up checks, `>=` = check if the count is
+  greater than or equal to a number, or to the number a setting carries
+  (`item>=setting`).
+- Bare tokens are item ids, looked up in `GameState.items` (boolean or number),
+  location flags from `locationFlags.json` (*Location flags*), or logic helpers
+  from `logicHelpers.json` (*Logic helpers*).
+- Tokens that are not items, worked out by `GameState` from
+  `config/logicTokens.json` and read from `GameState.tokens`: a `count` or `sum`
+  is a number, an `any` or `distinct` is yes or no. A token can't share an id with
+  an item.
 - Empty string = always accessible.
 
-`total_masks` counts the **20** masks tagged `regular_mask: true` in `Items.json`
-— every mask except the four transformation masks. That is not an off-by-four
-bug: the checks it gates are the moon children (the Moon trials, and the Fierce
-Deity's Mask reward), and the four transformation masks cannot be given away.
-
-The tag lives on the item rather than being derived from `config.grids.mask`,
-which is a layout list: it says what the mask panel draws and in what order, so
-moving a mask to another panel — or putting anything that is not a mask into that
-one — would change the count silently.
+A token that counts items reads a tag on the item or an `item_groups` list, never
+a grid. A grid is a layout list: it says what a panel draws and in what order, so
+moving an item to another panel, or putting something else into that one, would
+change the count silently. (In Majora's Mask, `total_masks` counts the masks
+tagged `regular_mask`; why it is 20 and not 24 is in MAJORAS_MASK_DATA.md.)
 
 `canAccess()` hands the string to `LogicParser`, which tokenizes it, builds a
 tree, and walks that tree. `|` binds loosest, then `&`, then the comparison.
@@ -570,30 +715,31 @@ can only encode a mistake. A comparison must be written `item >= count`, with a
 bare item on the left and a bare number or setting on the right; a group on either
 side, or the operands the other way round, is a parse error naming the offender
 rather than a rule that quietly evaluates to something surprising. A number is
-legal only after `>=`: on its own, `bomb | 0` would be a requirement no inventory
+legal only after `>=`: on its own, `item | 0` would be a requirement no inventory
 ever changes.
 
-**A setting after `>=` is a count the seed picks.** Moon Requirements and Majora
-Requirements are dropdowns whose options each carry a `value`, so
-`boss_masks>=majora_remains_required` asks for as many remains as the picked
-option says. The name after `>=` is always looked up as a setting, through
-`SettingsState.numberOf()`, and every other name as an item, so the two can never
-be mistaken for each other. Only a dropdown whose options carry `value` has a
-number; against anything else the comparison is unmet. What you have always goes
-on the left, which is why a `number` setting such as Health is never needed
-there.
+**A setting after `>=` is a count the seed picks.** A dropdown whose options each
+carry a `value` stands for that number, so `item>=setting` asks for as many as the
+picked option says. (In Majora's Mask, `boss_masks>=majora_remains_required` asks
+for as many remains as Majora Requirements is set to.) The name after `>=` is
+always looked up as a setting, through `SettingsState.numberOf()`, and every other
+name as an item, so the two can never be mistaken for each other. Only a dropdown
+whose options carry `value` has a number; against anything else the comparison is
+unmet. What you have always goes on the left, which is why a `number` setting is
+never needed there.
 
-A region check's effective logic is `region.logic` AND `check.logic`. The two are
-parsed separately and joined as trees rather than glued into one string, so a
-broken string is named and suppressed once, under the text actually in the region
-file — not once per check under a joined string no file contains.
-`combinedLogic()` builds the pair and the requirements tooltip uses the same
-function, so a check can never be explained by different rules than the ones that
-colored it.
+A region check's effective logic is every layer on the way to it, all required:
+the region's `logic`, the `logic` of each sub-region above the check, then the
+check's own. `combinedLogic()` hands them over as a list, and each part is parsed
+on its own and joined as trees rather than glued into one string, so a broken
+string is named and suppressed once, under the text actually in the region file —
+not once per check under a joined string no file contains. The requirements
+tooltip uses the same function, so a check can never be explained by different
+rules than the ones that colored it.
 
 **The tree, not the string, is why the tooltip can be specific.** Evaluating text
 can only answer true or false; walking a tree can say which token in
-`(bomb|blast_mask)&(hookshot|zora_mask)` is the one stopping you. `annotate()`
+`(a|b)&(c|d)` is the one stopping you. `annotate()`
 labels every node:
 
 | State | Meaning | Shown as |
@@ -614,20 +760,20 @@ would otherwise log it again on every click. A quiet console after that first
 error does not mean the data has been fixed.
 
 **Progression items are cumulative — name the lowest stage you will accept.**
-Picking up the Razor Sword sets `kokiri_sword` *and* `razor_sword` true, so
-`kokiri_sword` in a logic string reads as "any sword", and `gilded_sword` reads
-as "specifically the Gilded Sword". That is why there are no `|` chains over
-sword stages anywhere. It works because every chain in `progressions` is a real
-ladder — you cannot hold a later stage without having held the earlier ones.
+Reaching a stage sets it *and* every stage below it true, so the first stage in a
+logic string reads as "any", and a later one as "at least this one". That is why
+no logic needs an `|` chain over one progression's stages. It works because every
+chain in `progressions` is a real ladder: you cannot hold a later stage without
+having held the earlier ones. (In Majora's Mask, the Razor Sword sets
+`kokiri_sword` and `razor_sword`, so `kokiri_sword` reads as "any sword".)
 
-The slot ids themselves (`sword`, `shield`, `wallet`, `magic`, `goron_lullaby`)
-are **not** valid tokens: the state only ever holds the stage ids. Counter slots
-are the other way round — `bow` and `bomb` *are* valid and mean "any", because
-`item_counts` sets a slot-level flag as well as the staged ones.
+A progression's slot id is **not** a valid token unless it is also its first stage:
+the state only ever holds the stage ids. (In Majora's Mask, `sword` is not a token,
+while `bow` and `bomb_bag` are, as the first stage of their own progressions.)
 
-A counted item used bare is truthy once it is above zero, so
-`woodfall_small_key` means "at least one" and `ocean_skulltula_token>=30` is the
-explicit form.
+A counter slot (`item_counts`) is the other way round: its slot id is the item,
+holding a number. Used bare it is truthy once it is above zero, so `key` means "at
+least one" and `token>=30` is the explicit form.
 
 **`validateLogicTokens()` runs once at load** and warns to the console about any
 token that matches nothing in `GameState.items`, naming the checks that use it.
@@ -639,8 +785,8 @@ stage id. It sees only the regions that rendered, for the reasons in §8.
 It walks the parsed tree rather than the text, because only the tree knows which
 side of `>=` a name is on. A setting used as an item is named with a note that
 settings only go after `>=`, and a name after `>=` that is not a dropdown carrying
-values is named too. A string that fails to parse is skipped there, since the
-parser has already named it.
+values is named too. A string that fails to parse is named once more, with every
+place that uses it, since the parser names only the string.
 
 ---
 
@@ -705,15 +851,15 @@ Consequences:
 themselves, in either order; neither box knows the other exists.
 
 Both boxes are as wide as their own content and the pair is centered. On desktop
-the row is set to the map's width, so the pair centers over the map. When large
-text will not fit them side by side, the boxes shrink and wrap their labels first,
-and if that is still not enough the row stacks the legend under the stats box. The
-map keeps its size and the taller row pushes it down the page.
+the row sits in the header between the logo and the toolbar, as wide as its two
+boxes. When large text will not fit them side by side, the boxes shrink and wrap
+their labels first, and if that is still not enough the row stacks the legend under
+the stats box. Past that the header wraps: the toolbar drops under the logo and the
+row. The map keeps its size and the taller header pushes the page down.
 
-The map is sized against a fixed reserve for the row's height (§11), so **keep the
-legend no taller than the stats box on desktop**: at the default text size a
-taller row outgrows the reserve. Below the breakpoint the map is hidden, so the
-row's height is free there.
+**Keep the legend no taller than the logo beside it on desktop**, or the header
+grows at the default text size and the page scrolls: the scale's height budget
+counts the header as its logo (§11).
 
 **Regions count what is left in them.** The header reads
 `Region Name (accessible/remaining)`: how many checks you could do right now, out
@@ -741,9 +887,10 @@ counted-marker size keys off a `has-count` class, and a two-digit count off a
 `wide-count` class (see *Markers* below).
 
 **Status is a color and a shape, paired once** in `style.css`. Each status class
-sets `--status-color` and `--status-shape`, plus `--status-outline` where a shape
-needs a wider marker outline and `--status-wide-count` where it needs a smaller
-two-digit count (see *Markers* below); region headers, check rows,
+sets `--status-color` and `--status-shape`, plus `--status-outline` and
+`--status-outline-pct` where a shape needs a wider marker outline and
+`--status-wide-ratio` where it needs a smaller two-digit count (see *Markers*
+below); region headers, check rows,
 map markers and the legend swatches read those and nothing else, so a surface
 cannot disagree with what the legend says a status means. An element with
 no status class has none of these variables, so it draws no status at all: text
@@ -811,9 +958,10 @@ every count stays what Hide Non-Randomized Checks alone makes it.
   and so does every other row that is the same location in a region that is open
   too. That way a mistaken tap can be undone where it happened and the list doesn't
   jump under the finger. Marks are only made in the phone layout: the desktop
-  overlay holds its region open, so a mark made there would never be let go. `locationTracker.js` lets the marks go when that region's
-  header is clicked, on `mobileTabChanged`, on `trackerViewChanged`, so flipping
-  a toggle applies at once, and on `regionOverlayClosed`, because the map overlay
+  overlay holds its region open, so a mark made there would never be let go.
+  `locationTracker.js` lets the marks go when that region's header is clicked, on
+  `mobileTabChanged`, on `trackerViewChanged`, so flipping a toggle applies at
+  once, and on `regionOverlayClosed`, because the map overlay
   closes a region without its header. A header click lets them go on opening as
   well as closing, so a region always opens with nothing held over.
 - An item change can put the check a pinned panel describes out of reach, and so
@@ -826,15 +974,42 @@ The shape is drawn by the marker's pseudo-elements — an outline behind, the
 status color inset in front — rather than by the button, because `clip-path`
 clips text along with paint and a count on the button would be cut off where the
 shape tapers. A slanted edge shows less outline than a straight one from the same
-inset, so the slanted shapes get a wider one. That width is part of the status
-pairing in `style.css` (`--status-outline`) rather than keyed off a status name in
+inset, so the slanted shapes get a wider one. That width is set with the shape in
+`style.css` (`--status-outline`) rather than keyed off a status name in
 the map CSS, so it follows the shape if a status is ever given a different one. A
 two-digit count has the same problem: on a shape that tapers it has less room than
-the marker's width suggests, so those pairings also set a smaller
-`--status-wide-count`, and a shape without one keeps the full count size.
+the marker's width suggests, so those pairings also set a
+`--status-wide-ratio`, the share of the one-digit size the count drops to, and a
+shape without one keeps the full count size.
+
+**Everything about a marker is a share of the map's width.** The marker is 3.2% of
+it, with a floor of 15px (20px once it carries a count), the count's type follows
+at about 1.45% of it, and the outline is a share of the marker with a floor in
+pixels. So markers grow with the map: on the largest windows they are several
+times the size they have on the smallest.
+
+3.2% is the limit, not a preference: the closest pair of markers on the map is
+about 3.4% of the map's width apart, so a bigger marker would overlap its neighbor
+at rest. The tightest cluster of markers sits on a grid 50 map-image pixels apart
+for the same reason: at the narrowest desktop map the 20px counted marker is nearly
+the whole gap. That distance is center to center, which only round shapes clear:
+a full square's corners, and a full-width triangle's base, reach further out. So
+on a marker the square is drawn at 76% of its box and the triangle at 80%, the
+least that leaves a pixel between every close pair at every size, whatever their
+statuses. These are marker-only copies of the two shapes; rows, headers and the
+legend have no neighbors to clear and keep the full ones. A shape that fills less
+of its box also leaves a thinner outline, so the two marker shapes divide their
+outline width by the same share. Hovering grows a marker to 1.3× in front of its
+neighbors, which may overlap them while it does; two markers overlapping at rest
+is the thing to avoid.
 
 Keeping the count centered on the marker is a stack of rendering traps; each is
-explained beside the rule it protects in `locationMap.css`.
+explained beside the rule it protects in `locationMap.css`. The marker and the
+type are rounded to even pixels, which lands the centered line on a whole pixel.
+
+**The hover tooltip** is `tooltip.js` (§14), registered by `locationMap.js`: the
+region's name and its live `(accessible/remaining)` count. Clicking a marker
+closes it, because the overlay opens under the pointer.
 
 The count is dark with a light halo, which reads on every fill that carries one.
 That is why the purple is a light one: a dark purple would need a light count of
@@ -843,25 +1018,53 @@ its own, and as header text it would be hard to read on the dark header.
 ---
 
 
-## 11. Map sizing (`locationPanelLayout.js` → `syncPanelHeight`)
+## 11. Map sizing and scale (`locationPanelLayout.js` → `syncPanelHeight`)
 
-Desktop only. The map is sized to fill the location column without pushing the
-page taller than the item grids beside it.
+Desktop only. The grids are scaled up on windows with room, and the map is sized
+to the grids' height, so the two always end together.
 
-1. Measure the item grid's rendered height and the location column's width.
+### Scale
+
+`--ui-scale` (1 or more) multiplies every pixel size that belongs to the grids in
+`itemContainers.css`. `applyScale` picks the largest value at which the grids and a
+full-height map fit side by side without the page scrolling, across the window's
+width and in the height left under the header and above the footer. The smaller
+of the two wins, and it never goes below 1. So
+a window narrower than the layout needs is not scaled down: the grids stay at their
+base size and the map is limited by the column's width.
+
+- **From the window, not the page.** Not everything in the grids scales: the slot
+  borders stay one pixel. So their size is a fixed part plus a part that grows
+  with the scale, and both are read by measuring the grids at scale 1 and at 2,
+  inside one script so neither is painted. Dividing the current size by the current
+  scale instead would give a smaller base the larger the scale, and the same window
+  would settle differently depending on the size it was resized from. The scale is
+  floored to two places so the observers below don't keep firing on a hair's
+  difference.
+- **The header counts as its logo.** The logo has a fixed height; the summary row
+  and the toolbar grow with the browser's text size, and whether the toolbar wraps
+  depends on the header's width, which `--layout-max-width` sets from the scale.
+  Measuring the whole header would feed the scale back into itself, so the same
+  window could settle on a smaller scale or a larger one depending on the size it
+  was resized from. Counting only the logo keeps the scale a property of the
+  window: large text pushes the map down the page, and the page scrolls, instead
+  of the map shrinking.
+- **`--layout-max-width`** is set to the width the scaled layout takes, so the
+  header and `main` line up and stay centered on a very wide window.
+- **The grid has an explicit width on desktop** (`calc(360px * var(--ui-scale))`).
+  At `100%` it settles at its slots' content width and stops growing once the scale
+  lifts `max-width` past that.
+
+### The map
+
+1. Measure the item grids' rendered height and the location column's width, after
+   the scale is applied.
 2. **Bail if either looks too small to be real** (`MIN_SANE_PX`). Mid-load, and
    whenever the page isn't painting, they read as zero or something intermediate,
    and sizing from those locks in a tiny map.
-3. Subtract the summary row's **reserved** height and the gap to get the height
-   available. The reserve is the row's height at the default text size, set in
-   `locationPanelLayout.css`. Larger text makes the real row taller, and sizing
-   against the reserve means that pushes the map down the page instead of
-   shrinking it. The first time the page is at the default text size, the JS warns
-   if the row does not match the reserve.
+3. The summary row is in the header, so the map gets the grids' whole height.
 4. Fit a box of the map image's aspect ratio — handed over on `locationMapReady`
-   — inside that width and height, setting **both** dimensions explicitly, and
-   give the summary row the map's width. The row then rearranges for its text:
-   side by side, labels wrapped, or stacked.
+   — inside that width and height, setting **both** dimensions explicitly.
 
 **Both dimensions are set from JS deliberately.** CSS `aspect-ratio` with flex
 `align-self` does not resolve to the exact ratio at every viewport width, and a
@@ -927,8 +1130,13 @@ packs them left, leaving roughly a third of the box empty instead of spreading
 the checks across it. Nothing overflows either way — the cost is the wasted
 width, which buys narrower columns and so an earlier step down the text ladder.
 
-**How tall it may get.** A windowful measured down from the top of the page, or
-the map's own height, whichever is larger. The location column has dead space
+**Where it hangs from.** The top of the location column, not of the map. On a
+window where the map is shorter than the item grids it is centered in the column,
+and the overlay takes the space above it too, so it always covers at least the
+column.
+
+**How tall it may get.** A windowful measured down from the top of the column, or
+the column's own height, whichever is larger. The location column has dead space
 below the map — the item grids run lower, and below those the page usually has
 room to spare — and letting the overlay use it is what keeps the text readable.
 
@@ -958,14 +1166,20 @@ down leaves checks below the fold when you scroll back up, because nothing re-fi
 on scroll. Nothing should: that would resize the text under the reader mid-scroll.
 
 If the measurement looks wrong — short or negative, before layout settles — it
-falls back to the map's own height, the same defensive idea as `MIN_SANE_PX` in
-§11.
+falls back to the height it has to cover anyway, the map's or the location
+column's, whichever is taller: the same defensive idea as `MIN_SANE_PX` in §11.
 
-**How the text is sized.** `config.json` → `map_overlay.text_sizes`, largest
+**How the text is sized.** `config/map.json` → `map_overlay.text_sizes`, largest
 first. It walks the ladder and stops at the first size that fits, so a region only
 shrinks if it has to and an ordinary one never does. Only the largest regions drop
 at all, and then only on a short window, where the viewport caps the height
 budget.
+
+**The ladder grows with the map.** Its sizes were made for a map
+`map_overlay.base_map_width` wide. On a wider one, `--overlay-scale` (the map's
+width divided by that, never below 1) multiplies the text, the padding, the gaps and
+the titlebar, so a big map isn't left with small text and empty room. The fit then
+runs at the larger sizes, and a region that is too big still steps down the ladder.
 
 A label too long for its column wraps rather than being clipped — a last resort,
 since the columns are sized from the widest label in the first place. `nowrap` is
@@ -1023,8 +1237,8 @@ fails silently: if anything above `.mobile-tabs` ever gets an `overflow` other
 than `visible`, it stops sticking with no error.
 
 **Scroll position is remembered per tab** in `mobileTabManager.js`, in memory
-only - it is where you were looking, not what you collected, so it stays out of
-the Phase 4 save format.
+only - it is where you were looking, not what you collected, so it is not part of
+a run's state.
 
 **The digit sizing is slot-relative, not viewport-relative.** A viewport-derived
 size only tracks the slot while the mobile grid is a single column — once the
@@ -1035,15 +1249,16 @@ cannot drift.
 against `container-type` on `.item-slot`. On desktop, containment stops the slots
 feeding `.grid-container`'s `max-content` tracks and the whole item panel
 collapses to a fraction of its width. Mobile's tracks never consult the slots, so
-containment costs nothing there. Desktop keeps a flat pixel size.
+containment costs nothing there. Desktop keeps a pixel size, multiplied by
+`--ui-scale` (§11).
 
 **`.item-grid` is `border-box` here and `content-box` on desktop, on purpose.**
 Here `.grid-container`'s tracks are sized from the container, not from the grids,
 so a `content-box` `width: 100%` paints wider than its track once padding and
-border are added, and the page scrolls sideways on a phone. Desktop only looks like the same situation: its
-`max-content` tracks already resolve to exactly what `.item-grid` paints, so
-`border-box` would only shrink every grid and slot for no gain. Do not lift the
-mobile rule to the base one.
+border are added, and the page scrolls sideways on a phone. Desktop only looks
+like the same situation: its `max-content` tracks already resolve to exactly what
+`.item-grid` paints, so `border-box` would only shrink every grid and slot for no
+gain. Do not lift the mobile rule to the base one.
 
 **Back to top does not use `behavior: 'smooth'`.** Smooth scrolling is animated
 on the same frame loop as `requestAnimationFrame`, which Chrome stops running for
@@ -1082,9 +1297,10 @@ depend on `tooltip.js` loading before it (§6).
 moved into the map overlay and back (§10), and delegation survives that with no
 rebinding — per-element listeners would need reattaching on every move.
 
-**It replaces the `title` attribute rather than joining it.** A native tooltip
-cannot hold an image, and leaving both would show two tooltips per hover, a
-second apart, in different places. The accessible name is on `aria-label`.
+**It replaces the `title` attribute rather than joining it** — on the map markers
+too. A native tooltip cannot hold an image or a live count, and leaving both
+would show two tooltips per hover, a second apart, in different places. The
+accessible name is on `aria-label`.
 
 **Two ways in.** On a pointer, hovering shows the tooltip at the cursor — that
 path is gated behind `(hover: hover)`, so touch never reaches it. On touch, each
@@ -1166,20 +1382,57 @@ that only built once would quietly describe the previous state.
 
 ### The requirements list
 
-`requirementsView.js` renders the annotated tree from §9. One bullet per thing
-you need; nested `&` is flattened, so a region's entry logic and the check's own
-produce separate bullets rather than one line reading "A and B". Alternatives
-stay inline: `Bombs or Blast Mask`.
+`requirementsView.js` renders the annotated tree from §9 as chips: one per thing
+you need, wrapping to the panel's width, each led by a ✓ or a ✗ so the state never
+rests on color alone. Nested `&` is flattened, so a region's entry logic and the
+check's own produce separate chips rather than one reading "A and B". Chips wrap
+side by side, so a long list takes a few lines rather than one line per
+requirement, which keeps the docked panel short enough to read on a phone without
+scrolling. The same chips are drawn in the hover tooltip on desktop and the docked
+panel on a phone, at one size; a chip's colors are blue when met, red when it is what
+is missing, and gray when another route already covers it. The heading says how
+many are missing (`3 missing`, or `all met`), from the container's `data-missing`,
+so it reads before the chips do.
 
-Names come from `Items.json`, falling back to `config.logic_token_names`, then to
-the raw token id — a typo stays visible in the tooltip instead of rendering a
+Alternatives stay inline in one chip: `A or B`. The exception is an either/or whose
+alternatives have parts of their own, like "an explosive and a song, or one other
+song". Written inline, that needs nested parentheses to read. So the requirement
+becomes a dashed *Any one of* group of its routes, each route's parts joined by
+"and" and each with its own mark, every route a chip like a single requirement, so
+a route of several parts reads the same as a lone item. At the top level every
+single item is a route of its own; deeper in, single items stay together as one
+choice in parentheses, so "(A or B or C) and (D or E)" is one route rather than
+six.
+A route you can do reads ✓. One you can't reads red ✗ while nothing else meets the
+bullet, and gray ✗ once another route does. A plain either/or of four or more
+single items is listed the same way, one item per line, since a long line of "or"
+is harder to scan than a list. Combining alternatives can multiply a few written
+ones into many routes, so a bullet that would produce more than six stays on one
+line, unless it has at least that many alternatives written out: those never
+multiplied, and listing them is just the either/or one per line.
+
+Before any of that, bullets stop repeating each other. A region's entry often offers
+several ways in, and a check may need one of their items anyway. Every bullet is
+required, so an item one bullet asks for outright is taken as given in the rest. An
+either/or that offers it is already met and drops out, and a way in that includes
+it loses that part. (In Majora's Mask, Deku Palace can be entered with the Zora
+Mask, the Deku Mask plus a bottle or weapon, or Odolwa beaten, and its West Garden
+heart piece needs the Deku Mask regardless. The heart piece reads "Deku Mask" and
+"Zora Mask or Bottle or Bow or Hookshot or Odolwa Defeated" instead of three routes
+plus the Deku Mask again.)
+Only single items and identical counts are matched, and both steps keep the meaning
+exactly, so the marks are the ones the unsimplified list would show.
+
+Names come from `Items.json`, then from the location flags' and logic helpers' own
+`name`, then from the token definitions in `config/logicTokens.json`, and last the
+raw token id — a typo stays visible in the tooltip instead of rendering a
 blank bullet.
 
-A `>=` renders as a count, `Ocean Skulltula Tokens 12/30`, since what you already
-have is the part being asked about. Against a setting the target is that
-setting's current number, `Boss Masks 2/4`, or `?` when it has none.
+A `>=` renders as a count, `Tokens 12/30`, since what you already have is the
+part being asked about. Against a setting the target is that setting's current
+number, `Remains 2/4`, or `?` when it has none.
 
-A non-randomized check also says what it holds, in a `Vanilla: Heart Piece` line
+A non-randomized check also says what it holds, in a `Vanilla: <item>` line
 above the requirements — under the check's name when pinned, over *Items
 Required* on hover. It comes from the check's `vanilla_item`, worked out once when
 the row renders: an `Items.json` id reads as the tracker's name for it, and
@@ -1188,7 +1441,9 @@ it holds is unknown. The line is text only; item images are too small to read at
 tooltip size, and most vanilla contents have none.
 
 Counts of the same item among the bullets merge into one showing the highest
-target, which is the one the check actually needs. The Moon's entry asks for
-`moon_remains_required` and Majora's own logic for `majora_remains_required`, and
-Majora shows a single `Boss Masks` line rather than two. Only bullets merge:
-inside an `|` the counts are alternatives, and they stay as written.
+target, which is the one the check actually needs: a region's entry and a check
+inside it counting the same item against different settings show one line, not
+two. (In Majora's Mask, the Moon's entry asks for `moon_remains_required` and
+Majora's own logic for `majora_remains_required`, and Majora shows a single
+`Boss Masks` line.) Only bullets merge: inside an `|` the counts are alternatives,
+and they stay as written.

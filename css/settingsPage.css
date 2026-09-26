@@ -24,9 +24,12 @@
 }
 
 /* Sized to the grids rather than sizing them: width 0 keeps these out of the
-   section's max-content width, and min-width fills it back out. */
+   section's max-content width, and min-width fills it back out. The heading too,
+   or at large text its count, going from "0 changed" to "15 changed", widens this
+   side and narrows the settings panel. */
 .slot-legend,
-.starting-extras {
+.starting-extras,
+.starting-items h2 {
     width: 0;
     min-width: 100%;
 }
@@ -50,6 +53,23 @@
     font-size: 0.8rem;
     font-weight: normal;
     color: #8fd694;
+}
+
+/* The count's space is held whether it reads anything or not, so landing on a
+   heading can't move it: matching the heading's font size keeps the line box the
+   same, and the reserved width holds the widest count ("15 changed") so a second
+   digit can't wrap it onto a line of its own in a narrow column. At large text
+   the reserve is capped at the block's width and the count wraps inside it, or
+   it alone is wider than a phone. */
+.settings-block h3 .settings-count {
+    font-size: inherit;
+    flex: 0 1 auto;
+    min-width: min(8em, 100%);
+    text-align: right;
+}
+
+.settings-count.no-changes {
+    visibility: hidden;
 }
 
 /* Two columns where they fit, one where they don't. Rows never split across a

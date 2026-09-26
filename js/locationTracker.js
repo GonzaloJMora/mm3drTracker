@@ -2,14 +2,14 @@
     // Every rendered region and its check nodes, so one sweep can re-evaluate them all
     const activeRegionTrackers = [];
 
-    function evaluateAllRegions(inventory, hearts, bossMasks, totalMasks) {
+    function evaluateAllRegions(inventory, tokens) {
         activeRegionTrackers.forEach(region => {
             region.itemChecks.forEach(checkObj => {
                 const el = checkObj.element;
 
                 // Combine regional route requirements with individual item checks
-                const finalLogic = combinedLogic(region.entryLogic, checkObj.logic);
-                const isAvailable = canAccess(finalLogic, inventory, hearts, bossMasks, totalMasks);
+                const finalLogic = combinedLogic(region.entryLogic, checkObj);
+                const isAvailable = canAccess(finalLogic, inventory, tokens);
 
                 // Both rules here exist to stop the check text flickering on every
                 // state update: toggle(name, bool) is a no-op when the class already
@@ -33,7 +33,7 @@
     }
 
     window.addEventListener("trackerStateUpdated", (event) => {
-        evaluateAllRegions(event.detail.items, event.detail.totalHearts, event.detail.totalBossMasks, event.detail.totalRegularMasks);
+        evaluateAllRegions(event.detail.items, event.detail.tokens);
     });
 
     // Hiding non-randomized checks moves every count and some region colors, so the
@@ -42,7 +42,7 @@
     window.addEventListener("trackerViewChanged", () => {
         releaseKeptRows(document);
         const state = window.GameState;
-        if (state) evaluateAllRegions(state.items, state.totalHearts, state.totalBossMasks, state.totalRegularMasks);
+        if (state) evaluateAllRegions(state.items, state.tokens);
     });
 
     // Leaving the list for the other tab counts as done with the open regions.
@@ -86,27 +86,41 @@
         if (group) group.classList.add("keep-shown");
     }
 
-    // The tokens that are not items. Defined once, as a function of the numbers they
-    // stand for, so canAccess() and validateLogicTokens() cannot drift apart about
-    // which names are legal.
-    function specialTokenValues(hearts, bossMasks, totalMasks) {
-        return { hearts: hearts, boss_masks: bossMasks, total_masks: totalMasks };
-    }
-
     // What a bare token is worth. The requirements tooltip resolves tokens through
     // this same function, so the two cannot disagree about why a check is red.
     //
-    // A name after >= is a setting (`boss_masks>=moon_remains_required`), looked up
+    // A name after >= is a setting (`item>=setting`), looked up
     // as one so it never falls through to the inventory. Without a number it is
     // undefined, and the comparison is unmet.
-    function tokenResolver(inventory, hearts, bossMasks, totalMasks) {
-        const specials = specialTokenValues(hearts, bossMasks, totalMasks);
+    function tokenResolver(inventory, tokens) {
+        const namedValues = new Map();
+        const namedBeingWorkedOut = new Set();
 
-        return (token, kind) => {
+        const resolve = (token, kind) => {
             if (kind === "setting") {
                 return window.SettingsState ? window.SettingsState.numberOf(token) : undefined;
             }
-            if (Object.prototype.hasOwnProperty.call(specials, token)) return specials[token];
+            if (Object.prototype.hasOwnProperty.call(tokens, token)) return tokens[token];
+
+            // A named token is worth whatever its chain needs, worked out with this
+            // same resolver. One met again while it is still being worked out is a
+            // loop and reads false rather than recursing; validateNamedTokens()
+            // names it at load.
+            const named = namedTokens.get(token);
+            if (named) {
+                if (namedValues.has(token)) return namedValues.get(token);
+                if (namedBeingWorkedOut.has(token) || !named.chain) return false;
+                namedBeingWorkedOut.add(token);
+                let value = false;
+                try {
+                    value = window.LogicParser.evaluate(named.chain, resolve);
+                } catch (error) {
+                    value = false;
+                }
+                namedBeingWorkedOut.delete(token);
+                namedValues.set(token, value);
+                return value;
+            }
 
             const value = inventory[token];
             if (typeof value === "boolean") return value;
@@ -116,6 +130,61 @@
             // already named it once at load, and the check simply stays unreachable.
             return false;
         };
+        return resolve;
+    }
+
+    // ---------- Named tokens: location flags and logic helpers ----------
+
+    // Tokens that aren't items, each standing for a stored logic chain. A location
+    // flag (locationFlags.json) is progress somewhere else, like a boss being
+    // beatable: everything its check or region takes to reach, plus any logic of its
+    // own. A logic helper (logicHelpers.json) is a list of items written once, like
+    // any melee damage source. Filled once the regions have rendered, so a flag
+    // pointing into a region that failed to load has no chain and reads false. See
+    // ARCHITECTURE.md, *Location flags* and *Logic helpers*.
+    const namedTokens = new Map();
+
+    // A named token can't take an item's name: the resolver asks for these first,
+    // so one sharing an item's id would quietly replace every requirement for it.
+    function indexNamedTokens(regions) {
+        namedTokens.clear();
+        const data = window.TrackerData || {};
+        const taken = new Set([
+            ...(data.items || []).map(item => item.id),
+            ...Object.keys(window.GameState ? window.GameState.items : {}),
+            ...Object.keys(window.GameState ? window.GameState.tokens : {})
+        ]);
+        const add = (entry, kind, chainOf) => {
+            if (!entry || typeof entry.id !== "string" || !/^[a-z0-9_]+$/.test(entry.id)) return;
+            if (namedTokens.has(entry.id) || taken.has(entry.id)) return;
+            namedTokens.set(entry.id, {
+                id: entry.id,
+                kind,
+                name: typeof entry.name === "string" && entry.name !== "" ? entry.name : entry.id,
+                chain: chainOf(entry)
+            });
+        };
+        (data.locationFlags || []).forEach(entry => add(entry, "flag", e => flagChain(e, regions)));
+        (data.logicHelpers || []).forEach(entry => add(entry, "helper",
+            e => (typeof e.logic === "string" && e.logic.trim() !== "" ? [e.logic] : null)));
+    }
+
+    function flagChain(entry, regions) {
+        const at = entry.at || {};
+        const extra = typeof entry.logic === "string" ? entry.logic : "";
+        if (typeof at.check === "string" && typeof at.region === "string") return null;
+        if (typeof at.check === "string") {
+            for (const region of regions) {
+                const check = (region.item_checks || []).find(c => c && c.id === at.check);
+                if (check) return [region.logic, ...(check.group_logic || []), check.logic, extra];
+            }
+            return null;
+        }
+        if (typeof at.region === "string") {
+            const region = regions.find(r => r.region_name === at.region);
+            return region ? [region.logic, extra] : null;
+        }
+        return null;
     }
 
     // A check's element to its display name, for the docked panel's heading. Held
@@ -140,27 +209,31 @@
     // WeakMap follows the node wherever it goes.
     const checkRequirements = new WeakMap();
 
-    // Region entry and the check's own logic are one requirement, not two lists: you
-    // need the region *and* the check, so they read as a single set of bullets.
-    // A pair rather than one joined string, so LogicParser parses and names each part
-    // on its own — a broken region string is reported once, not once per check.
-    function combinedLogic(regionLogic, checkLogic) {
-        return [regionLogic, checkLogic];
+    // Region entry, every sub-region the check sits inside, and the check's own logic
+    // are one requirement, not several lists: you need all of them, so they read as a
+    // single set of bullets.
+    // A list rather than one joined string, so LogicParser parses and names each part
+    // on its own — a broken region string is reported once, not once per check — and
+    // so an `a|b` group can never bind loosely against the `c` below it.
+    function combinedLogic(regionLogic, check) {
+        return [regionLogic, ...(check.group_logic || []), check.logic];
     }
 
-    // Names come from the item data, with config.logic_token_names covering the
-    // derived tokens that have no Items.json entry (hearts, bottle, and friends).
+    // Names come from the item data, with the token definitions covering the
+    // derived tokens that have no Items.json entry.
     function tokenDisplayName(token) {
         const data = window.TrackerData;
         const item = data && data.items && data.items.find(entry => entry.id === token);
         if (item && item.name) return item.name;
 
-        const names = (data && data.config && data.config.logic_token_names) || {};
-        // Own properties only: a token like `constructor` would otherwise find
-        // Object's and render its source. Falling back to the raw id keeps a typo
-        // visible in the tooltip instead of rendering a blank bullet.
-        const name = Object.prototype.hasOwnProperty.call(names, token) ? names[token] : "";
-        return name || token;
+        const named = namedTokens.get(token);
+        if (named) return named.name;
+
+        // Falling back to the raw id keeps a typo visible in the tooltip instead of
+        // rendering a blank bullet.
+        const defs = (data && data.config && data.config.tokens) || [];
+        const def = defs.find(entry => entry && entry.id === token);
+        return (def && def.name) || token;
     }
 
     // Inside onReady so this file does not depend on tooltip.js loading first.
@@ -215,22 +288,28 @@
             }
 
             const state = window.GameState;
-            const resolve = tokenResolver(
-                state.items, state.totalHearts, state.totalBossMasks, state.totalRegularMasks
-            );
+            const resolve = tokenResolver(state.items, state.tokens);
 
             const annotated = window.LogicParser.annotate(tree, resolve);
-            fragment.appendChild(window.RequirementsView.render(annotated, tokenDisplayName, resolve));
+            const chips = window.RequirementsView.render(annotated, tokenDisplayName, resolve);
+
+            // What is still short, in the heading, so it reads before the chips do.
+            const missing = Number(chips.dataset.missing);
+            const count = document.createElement("span");
+            count.className = missing ? "tooltip-count" : "tooltip-count tooltip-count-met";
+            count.textContent = missing ? `${missing} missing` : "all met";
+            heading.appendChild(count);
+
+            fragment.appendChild(chips);
             return fragment;
         });
     });
 
-    // Structural helper parsing logic lines dynamically without keeping state duplicates
-    function canAccess(logic, inventory, hearts, bossMasks, totalMasks) {
+    function canAccess(logic, inventory, tokens) {
         try {
             return window.LogicParser.evaluate(
                 logic,
-                tokenResolver(inventory, hearts, bossMasks, totalMasks)
+                tokenResolver(inventory, tokens)
             );
         } catch (error) {
             // A malformed logic string is a data bug, and this runs on every click,
@@ -238,6 +317,99 @@
             // LogicParser has already named it in the console.
             return false;
         }
+    }
+
+    // ---------- Implied layers (console helpers only) ----------
+
+    // A layer is implied when the rest of a check's requirement already covers it:
+    // a strict requirement nested under a group offering a looser one evaluates
+    // correctly and still renders a bullet nobody can act on.
+    //
+    // Decided exactly: logic has no "not", so holding more never turns a check red.
+    // Any inventory the other layers accept holds one of their minimal ways in, so a
+    // layer met by every one of those ways is met by all of them, and a way that
+    // misses it proves it matters. Flags, helpers and counts against a setting stay
+    // plain tokens as written, which can miss an implication but never invent one.
+    // A console helper rather than a validator: some implied layers are deliberate.
+
+    // Past this, the ways in are too many to list, and the layer is left undecided
+    // rather than guessed at. Checked before pruning, which compares every way with
+    // every other and would take minutes on a chain far past it.
+    const WAYS_LIMIT = 1000;
+
+    // A count against a setting only matches the same count written the same way.
+    const settingAtom = node => `${node.left.id}>=${node.right.id}`;
+
+    // Every minimal way to meet a tree, each a Map of token -> the count it needs.
+    function waysIn(node) {
+        if (node.type === "token") return [new Map([[node.id, 1]])];
+        if (node.type === "compare") {
+            return node.right.type === "setting"
+                ? [new Map([[settingAtom(node), 1]])]
+                : [new Map([[node.left.id, node.right.value]])];
+        }
+        if (node.type === "or") return withoutDominated(node.children.flatMap(waysIn));
+
+        let ways = [new Map()];
+        node.children.forEach(child => {
+            const next = [];
+            waysIn(child).forEach(tail => ways.forEach(head => {
+                const way = new Map(head);
+                tail.forEach((count, token) => way.set(token, Math.max(count, way.get(token) || 0)));
+                next.push(way);
+            }));
+            if (next.length > WAYS_LIMIT) throw new RangeError("too many ways in");
+            ways = withoutDominated(next);
+        });
+        return ways;
+    }
+
+    // A way that asks for everything another asks, and maybe more, adds nothing.
+    function withoutDominated(ways) {
+        const covers = (small, big) => [...small].every(([token, count]) => (big.get(token) || 0) >= count);
+        return ways.filter((way, index) => !ways.some((other, at) =>
+            at !== index && covers(other, way) && (!covers(way, other) || at < index)));
+    }
+
+    // Whether a tree is met by an inventory holding exactly one way in.
+    function metBy(node, way) {
+        switch (node.type) {
+            case "token": return (way.get(node.id) || 0) >= 1;
+            case "compare":
+                return node.right.type === "setting"
+                    ? way.has(settingAtom(node))
+                    : (way.get(node.left.id) || 0) >= node.right.value;
+            case "and": return node.children.every(child => metBy(child, way));
+            case "or": return node.children.some(child => metBy(child, way));
+        }
+        return false;
+    }
+
+    // `where` names the check in a warning, for a chain too large to decide.
+    function redundantLayers(parts, where) {
+        if (parts.length < 2) return [];
+        let trees;
+        try {
+            trees = parts.map(part => window.LogicParser.parse(part));
+        } catch (error) {
+            return []; // LogicParser has named it.
+        }
+
+        const dead = [];
+        trees.forEach((tree, index) => {
+            const rest = trees.filter((other, at) => at !== index && other);
+            if (!tree || !rest.length) return;
+            let ways;
+            try {
+                ways = waysIn({ type: "and", children: rest });
+            } catch (error) {
+                if (!(error instanceof RangeError)) throw error;
+                console.warn(`locationTracker: ${where}: too many ways in to decide whether "${parts[index]}" is implied.`);
+                return;
+            }
+            if (ways.every(way => metBy(tree, way))) dead.push(parts[index]);
+        });
+        return dead;
     }
 
     // The sweep and canAccess() for a devtools console, run against the live
@@ -249,20 +421,101 @@
 
         debug.evaluateAllRegions = () => {
             const state = window.GameState;
-            evaluateAllRegions(state.items, state.totalHearts, state.totalBossMasks, state.totalRegularMasks);
+            evaluateAllRegions(state.items, state.tokens);
         };
 
         debug.canAccess = (logic) => {
             const state = window.GameState;
-            return canAccess(logic, state.items, state.totalHearts, state.totalBossMasks, state.totalRegularMasks);
+            return canAccess(logic, state.items, state.tokens);
+        };
+
+        // Every location flag and logic helper, and whether the current inventory
+        // meets it.
+        debug.namedTokens = () => {
+            const state = window.GameState;
+            const resolve = tokenResolver(state.items, state.tokens);
+            return [...namedTokens.values()].map(named => ({
+                id: named.id,
+                kind: named.kind,
+                name: named.name,
+                met: Boolean(resolve(named.id)),
+                resolvable: Boolean(named.chain)
+            }));
+        };
+
+        // The same answer as the dump's "implied" lines, as data and without printing,
+        // so a test can assert on it. Takes a region name, part of one, or nothing.
+        debug.impliedLayers = (match) => {
+            const wanted = typeof match === "string" ? match.toLowerCase() : null;
+            const found = [];
+            (window.TrackerData.regions || []).forEach(region => {
+                if (wanted && !String(region.region_name).toLowerCase().includes(wanted)) return;
+                (region.item_checks || []).forEach(check => {
+                    const parts = [region.logic, ...(check.group_logic || []), check.logic]
+                        .filter(part => typeof part === "string" && part.trim() !== "");
+                    redundantLayers(parts, checkWhere(region, check)).forEach(part => found.push({
+                        region: region.region_name,
+                        path: (check.group_path || []).join(" -> "),
+                        check: check.id,
+                        implied: part
+                    }));
+                });
+            });
+            return found;
+        };
+
+        // What the sub-region trees actually resolved to. Inheritance is only worth
+        // trusting if you can read the result instead of re-deriving it in your head,
+        // so this prints each check's full requirement and where its vanilla values
+        // came from. Takes a region name, part of one, or nothing for every region.
+        debug.resolvedChecks = (match) => {
+            const wanted = typeof match === "string" ? match.toLowerCase() : null;
+            const regions = (window.TrackerData.regions || []).filter(region =>
+                !wanted || String(region.region_name).toLowerCase().includes(wanted));
+
+            if (!regions.length) {
+                console.warn(`No region matches "${match}".`);
+                return;
+            }
+
+            regions.forEach(region => {
+                console.group(`${region.region_name} - ${(region.item_checks || []).length} check(s)`);
+                if (region.logic) console.log(`region entry: ${region.logic}`);
+
+                (region.item_checks || []).forEach(check => {
+                    const path = (check.group_path || []).join(" -> ");
+                    console.group(`${check.id}${path ? `   [${path}]` : ""}`);
+
+                    const parts = [region.logic, ...(check.group_logic || []), check.logic]
+                        .filter(part => typeof part === "string" && part.trim() !== "");
+                    console.log(`logic: ${parts.length ? parts.join("  &  ") : "(none)"}`);
+
+                    redundantLayers(parts, checkWhere(region, check)).forEach(part => console.info(
+                        `implied: "${part}" is already covered by the rest of this check's ` +
+                        `requirement, so it renders a bullet that can never change. Expected ` +
+                        `where an area is entered more loosely than a check inside it needs; ` +
+                        `worth moving the check out if that was not deliberate.`
+                    ));
+
+                    if (check.vanilla_when === undefined) {
+                        console.log("vanilla: randomized");
+                    } else {
+                        console.log(`vanilla_when: ${JSON.stringify(check.vanilla_when)}${fromNote(check.vanilla_when_from)}`);
+                        const item = check.vanilla_item === undefined ? "(nothing listed)" : check.vanilla_item;
+                        console.log(`vanilla_item: ${item}${fromNote(check.vanilla_item_from)}`);
+                    }
+                    console.groupEnd();
+                });
+                console.groupEnd();
+            });
         };
     });
 
     // An unrecognized token resolves to false in canAccess() and stays that way, so
     // the check never turns green and it reads as bad region logic rather than a typo.
     //
-    // The progression hint is the part worth having: `sword` looks like it should work
-    // — it is the slot id — but the state only holds the stage ids, so you name the
+    // The progression hint is the part worth having: a progression's slot id looks
+    // like it should work, but the state only holds the stage ids, so you name the
     // lowest stage you will accept. See ARCHITECTURE.md, "Logic strings".
     //
     // It walks the parsed tree rather than the text: the name after >= is a setting
@@ -270,7 +523,8 @@
     // A string that fails to parse is skipped, since LogicParser has already named it.
     function validateLogicTokens(regions, config) {
         const known = new Set(Object.keys(window.GameState ? window.GameState.items : {}));
-        Object.keys(specialTokenValues(0, 0, 0)).forEach(token => known.add(token));
+        Object.keys(window.GameState ? window.GameState.tokens : {}).forEach(token => known.add(token));
+        namedTokens.forEach((named, id) => known.add(id));
 
         const settings = window.SettingsState;
         const isSetting = name => Boolean(settings) && settings.get(name) !== undefined;
@@ -296,27 +550,68 @@
             }
         };
 
+        // LogicParser says what is wrong with a string, but not where it is used.
+        const unreadable = new Map(); // the string as written -> where it was seen
+        // In a list of one, so a layer is parsed as the sweep parses it: a list
+        // written as a layer is one bad part, not a list of parts.
         const scan = (logic, where) => {
             let tree = null;
             try {
-                tree = window.LogicParser.parse(logic);
+                tree = window.LogicParser.parse([logic]);
             } catch (error) {
+                note(unreadable, typeof logic === "string" ? `"${logic}"` : JSON.stringify(logic), where);
                 return;
             }
             if (tree) walk(tree, where);
         };
 
+        ((window.TrackerData && window.TrackerData.locationFlags) || []).forEach(entry => {
+            if (entry && typeof entry.logic === "string") scan(entry.logic, `locationFlags.json -> ${entry.id}`);
+        });
+        ((window.TrackerData && window.TrackerData.logicHelpers) || []).forEach(entry => {
+            if (entry && typeof entry.logic === "string") scan(entry.logic, `logicHelpers.json -> ${entry.id}`);
+        });
+
         regions.forEach(region => {
             scan(region.logic, `${region.region_name} (region entry)`);
+            // A sub-region's logic is on every check under it, so it is scanned once
+            // under the group's own name rather than once per check.
+            const groupsSeen = new Set();
             (region.item_checks || []).forEach(check => {
-                if (check) scan(check.logic, `${region.region_name} -> ${check.id}`);
+                if (!check) return;
+                const path = check.group_path || [];
+                (check.group_logic || []).forEach((logic, depth) => {
+                    const where = `${region.region_name} -> ${path.slice(0, depth + 1).join(" -> ")}`;
+                    const key = `${where}||${logic}`;
+                    if (groupsSeen.has(key)) return;
+                    groupsSeen.add(key);
+                    scan(logic, where);
+                });
+                scan(check.logic, checkWhere(region, check));
             });
         });
 
+        if (unreadable.size) {
+            console.warn(
+                `locationTracker: ${unreadable.size} logic string(s) can't be read, so every check ` +
+                `they gate reads unreachable.`
+            );
+            unreadable.forEach((places, shown) => console.warn(`  ${shown}
+        used by: ${places.join(", ")}`));
+        }
+
         if (unknown.size) {
+            // Which names a missing file held can't be known, so they stay listed,
+            // but the file that failed is the likelier cause than every region file.
+            const failed = ((window.TrackerData && window.TrackerData.failedLogicFiles) || [])
+                .map(path => path.replace(/^data\//, ""));
+            const cause = failed.length
+                ? ` ${failed.join(" and ")} could not be loaded, so ${failed.length === 1 ? "its" : "their"} ` +
+                  `entries are likely among these.`
+                : "";
             console.warn(
                 `locationTracker: ${unknown.size} logic token(s) match nothing in the item state. ` +
-                `Every check using one of these will stay unreachable no matter what you collect.`
+                `Every check using one of these will stay unreachable no matter what you collect.${cause}`
             );
             unknown.forEach((places, token) => {
                 const chain = Object.prototype.hasOwnProperty.call(progressions, token) ? progressions[token] : null;
@@ -346,6 +641,181 @@
         }
     }
 
+    // Tokens a layer demands outright: the & spine only. A token inside an | is an
+    // alternative rather than a demand, and `key>=2` is the right way to ask for a
+    // second one, so neither is collected here.
+    function demandedTokens(logic) {
+        const found = new Set();
+        let tree = null;
+        try {
+            tree = window.LogicParser.parse(logic);
+        } catch (error) {
+            return found;
+        }
+        (function walk(node) {
+            if (!node) return;
+            if (node.type === "and") {
+                node.children.forEach(walk);
+                return;
+            }
+            if (node.type === "token") found.add(node.id);
+        })(tree);
+        return found;
+    }
+
+    // A bare token is a yes/no question, so demanding one twice down a sub-region
+    // chain asks for no more than demanding it once: one small key opens both doors.
+    // It fails open — the check turns green early and nothing looks wrong — which is
+    // why it is worth a warning rather than a comment somewhere.
+    function validateRepeatedTokens(regions) {
+        const counted = (window.TrackerData.config && window.TrackerData.config.item_counts) || {};
+        const found = new Map();
+
+        regions.forEach(region => {
+            (region.item_checks || []).forEach(check => {
+                const path = check.group_path || [];
+                const layers = [
+                    { where: "the region's entry", logic: region.logic },
+                    ...(check.group_logic || []).map((logic, depth) => ({
+                        where: `"${path[depth]}"`, logic
+                    })),
+                    { where: "the check itself", logic: check.logic }
+                ];
+
+                // Keyed by the two layers rather than by the check, so a group that
+                // repeats its parent is named once and not once per check under it.
+                const seen = new Map();
+                layers.forEach(layer => {
+                    demandedTokens(layer.logic).forEach(token => {
+                        if (!seen.has(token)) {
+                            seen.set(token, layer.where);
+                            return;
+                        }
+                        const key = [region.region_name, seen.get(token), layer.where, token].join("|");
+                        if (found.has(key)) return;
+                        found.set(key, { region: region.region_name, first: seen.get(token),
+                            again: layer.where, token, example: check.id });
+                    });
+                });
+            });
+        });
+
+        if (!found.size) return;
+        console.warn(
+            `locationTracker: ${found.size} item(s) are demanded twice in one check's ` +
+            `requirement, where the second copy asks for nothing the first did not.`
+        );
+        found.forEach(entry => {
+            // Only a counted item can be asked for twice, with a running total.
+            // Anything else is a yes/no token, where "two of them" is not a thing
+            // to suggest.
+            const fix = typeof counted[entry.token] === "number"
+                ? ` Write the running total on the deeper one, like "${entry.token}>=2", if two are needed.`
+                : " Drop one of them.";
+            console.warn(
+                `  ${entry.region}: "${entry.token}" is demanded by ${entry.first} and again ` +
+                `by ${entry.again} (for example ${entry.example}).${fix}`
+            );
+        });
+    }
+
+    // A bad named token reads false, so every check using it stays red for a reason
+    // that is nowhere near the check. Each problem is named once here instead.
+    function validateNamedTokens() {
+        const data = window.TrackerData || {};
+        const items = new Set((data.items || []).map(item => item.id));
+        const derived = new Set([
+            ...Object.keys(window.GameState ? window.GameState.items : {}),
+            ...Object.keys(window.GameState ? window.GameState.tokens : {})
+        ]);
+        const bad = [];
+        const declaredIn = new Map();
+
+        // What every entry needs, whichever file it's in. Returns where to name it,
+        // or null when the entry is ignored.
+        const common = (entry, index, file, example) => {
+            const label = entry && typeof entry.id === "string" && entry.id ? entry.id : `[${index}]`;
+            const where = `${file} -> ${label}`;
+            if (!entry || typeof entry !== "object" || typeof entry.id !== "string" || !/^[a-z0-9_]+$/.test(entry.id)) {
+                bad.push(`${where}: needs an "id" written like a logic token, such as "${example}"`);
+                return null;
+            }
+            if (declaredIn.has(entry.id)) {
+                bad.push(`${where}: is already declared in ${declaredIn.get(entry.id)}; only the first counts`);
+                return null;
+            }
+            declaredIn.set(entry.id, file);
+            if (items.has(entry.id) || derived.has(entry.id)) {
+                bad.push(`${where}: is already an item or derived token, so logic reads that and ignores this entry`);
+                return null;
+            }
+            if (typeof entry.name !== "string" || entry.name === "") {
+                bad.push(`${where}: has no "name", so the tooltip shows the id`);
+            }
+            return where;
+        };
+
+        (data.locationFlags || []).forEach((entry, index) => {
+            const where = common(entry, index, "locationFlags.json", "odolwa_defeated");
+            if (!where) return;
+            const at = entry.at || {};
+            const pointers = ["check", "region"].filter(key => typeof at[key] === "string");
+            if (pointers.length !== 1) {
+                bad.push(`${where}: "at" needs exactly one of "check" or "region", so it reads false`);
+            } else if (!namedTokens.get(entry.id) || !namedTokens.get(entry.id).chain) {
+                bad.push(`${where}: "at" names ${pointers[0]} "${at[pointers[0]]}", which isn't in any rendered region, so it reads false`);
+            }
+        });
+
+        (data.logicHelpers || []).forEach((entry, index) => {
+            const where = common(entry, index, "logicHelpers.json", "fighting");
+            if (!where) return;
+            if (typeof entry.logic !== "string" || entry.logic.trim() === "") {
+                bad.push(`${where}: has no "logic", so it reads false`);
+            }
+        });
+
+        // A loop can only close through other named tokens, so following those is enough.
+        const uses = id => {
+            const named = namedTokens.get(id);
+            if (!named || !named.chain) return [];
+            const tokens = new Set();
+            named.chain.forEach(part => {
+                let tree = null;
+                try { tree = window.LogicParser.parse(part); } catch (error) { return; }
+                (function walk(node) {
+                    if (!node) return;
+                    if (node.type === "token") tokens.add(node.id);
+                    else if (node.type === "compare") tokens.add(node.left.id);
+                    else if (node.children) node.children.forEach(walk);
+                })(tree);
+            });
+            return [...tokens].filter(token => namedTokens.has(token));
+        };
+        namedTokens.forEach((named, id) => {
+            const stack = [[id, [id]]];
+            const visited = new Set();
+            while (stack.length) {
+                const [current, path] = stack.pop();
+                for (const next of uses(current)) {
+                    if (next === id) {
+                        bad.push(`${id}: needs itself through ${path.concat(id).join(" -> ")}; that path reads false`);
+                        stack.length = 0;
+                        break;
+                    }
+                    if (!visited.has(next)) {
+                        visited.add(next);
+                        stack.push([next, path.concat(next)]);
+                    }
+                }
+            }
+        });
+
+        if (!bad.length) return;
+        console.warn(`locationTracker: ${bad.length} problem(s) in locationFlags.json or logicHelpers.json.`);
+        bad.forEach(line => console.warn(`  ${line}`));
+    }
+
     // Two checks sharing an id are one location as far as the rest of the tracker is
     // concerned — they tick off together and count once. That is what check_groups is
     // for, and it is indistinguishable from a typo, which instead makes a check tick
@@ -360,7 +830,8 @@
             (region.item_checks || []).forEach((check, index) => {
                 const id = check && check.id;
                 if (typeof id !== "string" || id === "") {
-                    blank.push(`${region.region_name} -> item_checks[${index}]`);
+                    const path = (check && check.group_path) || [];
+                    blank.push(`${[region.region_name, ...path].join(" -> ")} -> item_checks[${index}]`);
                     return;
                 }
                 if (!usedBy.has(id)) usedBy.set(id, []);
@@ -387,6 +858,60 @@
         duplicated.forEach(([id, where]) => console.warn(`  "${id}" — used by: ${where.join(", ")}`));
     }
 
+    // dataLoader.js has already dropped groups that aren't lists of ids. What's left
+    // to ask needs the rendered checks: an id that matches none leaves its location
+    // unlinked, and an id in two groups joins only the later one in the progress
+    // count while a click ticks both.
+    function validateCheckGroups(regions, checkGroups) {
+        const ids = new Set();
+        regions.forEach(region => (region.item_checks || []).forEach(check => {
+            if (check && typeof check.id === "string") ids.add(check.id);
+        }));
+
+        const problems = [];
+        const groupOf = new Map();
+        checkGroups.forEach((group, index) => {
+            group.forEach(id => {
+                if (!ids.has(id)) problems.push(`check_groups[${index}]: "${id}" matches no check on the page`);
+                if (groupOf.has(id)) {
+                    problems.push(`check_groups[${index}]: "${id}" is already in check_groups[${groupOf.get(id)}]`);
+                } else {
+                    groupOf.set(id, index);
+                }
+            });
+        });
+
+        if (!problems.length) return;
+        console.warn(`locationTracker: ${problems.length} problem(s) in config/checkGroups.json. A location they name may not tick off or count as one.`);
+        problems.forEach(line => console.warn(`  ${line}`));
+    }
+
+    // A check with no name draws as a blank row that can still be ticked.
+    function validateCheckNames(regions) {
+        const unnamed = [];
+        regions.forEach(region => (region.item_checks || []).forEach((check, index) => {
+            if (typeof check.name !== "string" || check.name.trim() === "") {
+                unnamed.push(typeof check.id === "string" && check.id ? checkWhere(region, check)
+                    : `${region.region_name} -> item_checks[${index}]`);
+            }
+        }));
+
+        if (!unnamed.length) return;
+        console.warn(`locationTracker: ${unnamed.length} check(s) have no name, so each draws as a blank row.`);
+        unnamed.forEach(where => console.warn(`  ${where}`));
+    }
+
+    // Where a check sits, sub-regions included, for a warning that has to be
+    // findable in the file. A value a group set names the group as well, since the
+    // fix is there and not on the thirty checks that inherited it.
+    function checkWhere(region, check) {
+        return [region.region_name, ...(check.group_path || []), check.id].join(" -> ");
+    }
+
+    function fromNote(source) {
+        return source ? ` (set by "${source}")` : "";
+    }
+
     // A vanilla_when that can't be read never matches, so its check shows as
     // randomized. Named once here rather than left as a check that should be purple.
     function validateVanillaClauses(regions) {
@@ -398,7 +923,9 @@
             (region.item_checks || []).forEach(check => {
                 if (!check || check.vanilla_when === undefined) return;
                 const problem = settings.clauseProblem(check.vanilla_when);
-                if (problem) bad.push(`${region.region_name} -> ${check.id}: vanilla_when ${problem}`);
+                if (problem) {
+                    bad.push(`${checkWhere(region, check)}: vanilla_when ${problem}${fromNote(check.vanilla_when_from)}`);
+                }
             });
         });
 
@@ -419,7 +946,7 @@
         regions.forEach(region => {
             (region.item_checks || []).forEach(check => {
                 if (!check || check.vanilla_item === undefined) return;
-                const where = `${region.region_name} -> ${check.id}`;
+                const where = `${checkWhere(region, check)}${fromNote(check.vanilla_item_from)}`;
                 const value = check.vanilla_item;
                 if (typeof value !== "string" || value.trim() === "") {
                     bad.push(`${where}: vanilla_item has to be an item id or text`);
@@ -502,30 +1029,41 @@
             // regionStatusChanged all key off. If two regions share one, the second
             // marker sits at its own coordinates and opens the first region's checks —
             // so skip it and say so rather than leave that to be found on the map.
-            const seen = new Set();
+            const seen = new Map(); // region_name -> the file that claimed it
 
             regions.forEach(regionData => {
                 const name = regionData.region_name;
+                // Every rejection names the file: when the name is the problem, it is
+                // the only way to find the region.
+                const file = window.TrackerData.regionFile(regionData) || "a region file";
 
-                if (!name) {
+                // Text only: the name is keyed as a string on the page (dataset) and
+                // as written by locationMap.js, so a number would render with no marker.
+                // dataLoader.js has already trimmed it.
+                if (typeof name !== "string" || name === "") {
                     const count = Array.isArray(regionData.item_checks) ? regionData.item_checks.length : 0;
-                    rejected.push(`a region file with no region_name (${count} check${count === 1 ? "" : "s"})`);
+                    const what = name === undefined ? "no region_name"
+                        : typeof name === "string" ? "a blank region_name"
+                        : `a region_name that isn't text (${JSON.stringify(name)})`;
+                    rejected.push(`${file} has ${what} (${count} check${count === 1 ? "" : "s"})`);
                     return;
                 }
                 if (seen.has(name)) {
-                    rejected.push(`"${name}" appears more than once`);
+                    rejected.push(seen.get(name) === file
+                        ? `"${name}" in ${file} is loaded twice, because manifest.json lists ${file} twice`
+                        : `"${name}" in ${file} is already used by ${seen.get(name)}`);
                     return;
                 }
                 // An empty list is normal — a region whose checks aren't written yet
                 // renders as an empty accordion. A missing one is not: it throws, and
                 // takes every region after it down with the regionsRendered handoff.
-                // Tested before seen.add(), so a good file can still claim the name.
+                // Tested before seen.set(), so a good file can still claim the name.
                 if (!Array.isArray(regionData.item_checks)) {
-                    rejected.push(`"${name}" has no item_checks list`);
+                    rejected.push(`"${name}" in ${file} has no item_checks list`);
                     return;
                 }
 
-                seen.add(name);
+                seen.set(name, file);
 
                 // Per region on purpose. Anything unexpected in one region file should
                 // cost that region and nothing else; the outer catch stays for whatever
@@ -534,7 +1072,7 @@
                     renderRegionDropdown(regionData, regionContainer, CHECK_GROUPS);
                     rendered.push(regionData);
                 } catch (error) {
-                    rejected.push(`"${name}" could not be rendered (${error.message})`);
+                    rejected.push(`"${name}" in ${file} could not be rendered (${error.message})`);
                     console.error(`locationTracker: rendering "${name}" failed`, error);
                 }
             });
@@ -562,8 +1100,21 @@
             // it is the malformed ones that make a validator throw, so handing over the
             // full list would cost you the diagnosis of every other file.
             //
-            // After GameState.init (itemTracker.js runs first), so there is item state
-            // to check the tokens against.
+            // Before the validators and the first sweep, which both read it, and after
+            // GameState.init (itemTracker.js runs first), so there is item state to
+            // check the tokens against.
+            try {
+                indexNamedTokens(rendered);
+            } catch (error) {
+                console.error("locationTracker: could not read the location flags and logic helpers", error);
+            }
+
+            try {
+                validateNamedTokens();
+            } catch (error) {
+                console.error("locationTracker: could not validate the location flags and logic helpers", error);
+            }
+
             try {
                 validateLogicTokens(rendered, config);
             } catch (error) {
@@ -577,6 +1128,18 @@
                 validateCheckIds(rendered);
             } catch (error) {
                 console.error("locationTracker: could not validate the check ids", error);
+            }
+
+            try {
+                validateCheckNames(rendered);
+            } catch (error) {
+                console.error("locationTracker: could not validate the check names", error);
+            }
+
+            try {
+                validateCheckGroups(rendered, CHECK_GROUPS);
+            } catch (error) {
+                console.error("locationTracker: could not validate the check groups", error);
             }
 
             try {
@@ -597,9 +1160,15 @@
                 console.error("locationTracker: could not compare vanilla_when across grouped checks", error);
             }
 
+            try {
+                validateRepeatedTokens(rendered);
+            } catch (error) {
+                console.error("locationTracker: could not look for items demanded twice", error);
+            }
+
             // Run evaluation sweep using initial baseline numbers immediately after files finish rendering
             if (window.GameState) {
-                evaluateAllRegions(window.GameState.items, window.GameState.totalHearts, window.GameState.totalBossMasks, window.GameState.totalRegularMasks);
+                evaluateAllRegions(window.GameState.items, window.GameState.tokens);
             }
         }
     });
@@ -691,12 +1260,13 @@
 
             itemChecksRegistry.push({
                 element: itemDiv,
-                logic: check.logic
+                logic: check.logic,
+                group_logic: check.group_logic
             });
 
             // The same expression the sweep evaluates, so the tooltip can never
             // explain a check by different rules than the ones that colored it.
-            checkRequirements.set(itemDiv, combinedLogic(regionData.logic, check.logic));
+            checkRequirements.set(itemDiv, combinedLogic(regionData.logic, check));
 
             itemDiv.addEventListener("click", () => {
                 const isCompleted = itemDiv.classList.toggle("completed");
@@ -721,7 +1291,7 @@
 
                 // The linked rows can sit in other regions, so every region's counts are redone.
                 if (window.GameState) {
-                    evaluateAllRegions(window.GameState.items, window.GameState.totalHearts, window.GameState.totalBossMasks, window.GameState.totalRegularMasks);
+                    evaluateAllRegions(window.GameState.items, window.GameState.tokens);
                 } else {
                     window.dispatchEvent(new CustomEvent("trackerChecksUpdated"));
                 }
@@ -801,13 +1371,6 @@
             newStatus = "completed";
         }
 
-        // Only touch the DOM if the status actually moved. Rewriting the classes for
-        // every region on every state change forces a restyle across every check, which
-        // reads as the text flickering on each click.
-        //
-        // data-status is both the contract locationMap.js mirrors onto its markers and
-        // the record of which class was last applied, so neither file has to keep its
-        // own list of status names.
         // For Show Only Accessible Checks, which hides a region with nothing left to go
         // and do. A class rather than the count attribute because CSS can't compare
         // numbers; toggling to the class it already has changes nothing.
@@ -817,6 +1380,13 @@
         const statusMoved = headerBtn.dataset.status !== newStatus;
         const countsMoved = headerBtn.dataset.counts !== counts;
 
+        // Only touch the DOM if the status actually moved. Rewriting the classes for
+        // every region on every state change forces a restyle across every check, which
+        // reads as the text flickering on each click.
+        //
+        // data-status is both the contract locationMap.js mirrors onto its markers and
+        // the record of which class was last applied, so neither file has to keep its
+        // own list of status names.
         if (statusMoved) {
             if (headerBtn.dataset.status) headerBtn.classList.remove(headerBtn.dataset.status);
             headerBtn.dataset.status = newStatus;

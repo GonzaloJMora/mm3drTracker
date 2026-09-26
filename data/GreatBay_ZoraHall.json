@@ -1,8 +1,53 @@
 {
   "region_name": "Zora Hall",
-  "logic": "",
-  "map_coordinates": { "xPercent": 23.5, "yPercent": 51.6 },
+  "logic": "ocarina_of_time&eponas_song&((zora_mask&magic_meter)|hookshot)",
+  "map_coordinates": { "xPercent": 23.6, "yPercent": 51.4 },
   "item_checks": [
-
+    {
+      "id": "zh_evan",
+      "name": "Evan",
+      "logic": "zora_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "zh_deku_scrub_purchase",
+      "name": "Deku Scrub Merchant Purchase",
+      "logic": "zora_mask",
+      "vanilla_when": { "shuffle_scrub_purchases": false },
+      "vanilla_item": "Green Potion"
+    },
+    {
+      "id": "zh_deku_scrub_trade",
+      "name": "Deku Scrub Merchant Trade",
+      "logic": "zora_mask&goron_mask&mountain_title_deed",
+      "vanilla_when": { "shuffle_scrub_trades": false },
+      "vanilla_item": "ocean_title_deed"
+    },
+    {
+      "id": "zh_lulus_room_ledge_hp",
+      "name": "Lulu's Room Ledge HP",
+      "logic": "zora_mask&goron_mask&deku_mask&mountain_title_deed",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "zh_zora_shop_item_1",
+      "name": "Zora Shop Item 1",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "termina_shield"
+    },
+    {
+      "id": "zh_zora_shop_item_2",
+      "name": "Zora Shop Item 2",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Arrows (10)"
+    },
+    {
+      "id": "zh_zora_shop_item_3",
+      "name": "Zora Shop Item 3",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Red Potion"
+    }
   ]
 }

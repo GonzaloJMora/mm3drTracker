@@ -1,4 +1,4 @@
-# MM3D Randomizer Tracker — Diagrams
+# Randomizer Tracker — Diagrams
 
 Companion to [`ARCHITECTURE.md`](ARCHITECTURE.md). Five views:
 
@@ -45,11 +45,14 @@ Nothing reads `data/` but `dataLoader.js`, and every consumer waits for it throu
 ```mermaid
 flowchart LR
     subgraph D["data/"]
-        CFG["config.json"]
+        CFG["config.json<br/>and config/*.json"]
         ITM["Items.json"]
         MAN["manifest.json"]
         SET["settings.json"]
         REG["Region JSON Files"]
+        FLG["locationFlags.json"]
+        HLP["logicHelpers.json"]
+        VER["version.json"]
     end
 
     DL["<b>dataLoader.js</b><br/>window.TrackerData"]
@@ -70,6 +73,9 @@ flowchart LR
     MAN --> DL
     SET --> DL
     REG --> DL
+    FLG --> DL
+    HLP --> DL
+    VER --> DL
     DL --> SS
     DL --> IG
     DL --> IT
@@ -81,7 +87,8 @@ flowchart LR
 ```
 
 On the settings page `settingsState.js`, `itemGrids.js` and `settingsPage.js` wait
-for the data, and `dataLoader.js` leaves the region files out.
+for the data, and `dataLoader.js` leaves out the region files, `locationFlags.json`
+and `logicHelpers.json`.
 
 ### Who renders what
 
@@ -99,7 +106,7 @@ flowchart LR
 
     IT -- "init()" --> GSM
     IT -- "startingItems()" --> SS
-    GSM -- "Health setting" --> SS
+    GSM -- "settings a token reads" --> SS
     LT -- "vanilla_when · counts" --> SS
     LT -- "hides non-randomized?" --> TB
     LST -- "hides non-randomized?" --> TB
@@ -336,7 +343,7 @@ sequenceDiagram
     IT->>IT: validate the grid slots
     IT->>SS: startingItems()
     IT->>GSM: init(items, config,<br/>starting items)
-    GSM->>SS: the Health setting
+    GSM->>SS: the settings a token reads
     Note over GSM: trackerStateUpdated:<br/>locationTracker.js sweeps<br/>no regions yet
     IT->>IT: render one grid<br/>per config.grids key
     Note over IT: itemGridsReady for<br/>locationPanelLayout.js

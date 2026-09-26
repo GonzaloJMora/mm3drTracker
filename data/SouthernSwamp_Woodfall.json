@@ -1,8 +1,30 @@
 {
   "region_name": "Woodfall",
-  "logic": "",
+  "logic": "deku_mask&(bottle|bow|zora_mask|hookshot)",
   "map_coordinates": { "xPercent": 54.4, "yPercent": 68.9 },
   "item_checks": [
-
+    {
+      "id": "wf_bridge_chest",
+      "name": "Bridge Chest",
+      "logic": "fighting|projectile",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "wf_behind_owl_statue_chest",
+      "name": "Behind Owl Statue Chest",
+      "logic": "fighting|projectile"
+    },
+    {
+      "id": "wf_entrance_to_woodfall_chest",
+      "name": "Entrance to Woodfall Chest"
+    },
+    {
+      "id": "wf_great_fairy_reward",
+      "name": "Great Fairy Reward",
+      "logic": "(fighting|projectile)&woodfall_stray_fairy>=15",
+      "vanilla_when": { "shuffle_fairy_rewards": "off" },
+      "vanilla_item": "Spin Attack"
+    }
   ]
 }

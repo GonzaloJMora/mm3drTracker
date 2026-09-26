@@ -86,7 +86,7 @@
         // rendering as nonsense.
         //
         // The count is a number or the id of a setting that carries one
-        // (`boss_masks>=moon_remains_required`). It becomes a "setting" node, so it
+        // (`item>=setting`). It becomes a "setting" node, so it
         // is looked up as a setting and never mistaken for an item.
         function parseComparison() {
             const left = parsePrimary();
@@ -155,14 +155,16 @@
         if (failures.has(logic)) throw failures.get(logic);
 
         try {
-            if (typeof logic !== "string") throw new Error(`expected text, got ${typeof logic}`);
+            if (typeof logic !== "string") throw new Error(`expected text, got ${Array.isArray(logic) ? "a list" : typeof logic}`);
             const tree = parseTokens(tokenize(logic));
             cache.set(logic, tree);
             return tree;
         } catch (error) {
             failures.set(logic, error);
+            // Anything but text as JSON, so an empty list doesn't print as "".
+            const shown = typeof logic === "string" ? `"${logic}"` : JSON.stringify(logic);
             console.error(
-                `LogicParser: "${logic}" is not valid logic (${error.message}). ` +
+                `LogicParser: ${shown} is not valid logic (${error.message}). ` +
                 "Suppressing this error message."
             );
             throw error;
@@ -180,7 +182,7 @@
         return trees.length === 1 ? trees[0] : { type: "and", children: trees };
     }
 
-    // Comparison operands need the value itself, not its truthiness — `hearts>=5`
+    // Comparison operands need the value itself, not its truthiness — `item>=5`
     // has to see 5, not true.
     function valueOf(node, resolve) {
         if (node.type === "number") return node.value;

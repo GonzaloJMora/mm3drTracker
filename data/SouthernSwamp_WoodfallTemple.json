@@ -1,8 +1,183 @@
 {
   "region_name": "Woodfall Temple",
-  "logic": "",
+  "logic": "deku_mask&(bottle|bow|zora_mask|hookshot)&ocarina_of_time&sonata_of_awakening&(fighting|projectile)",
   "map_coordinates": { "xPercent": 51.4, "yPercent": 62.5 },
+  "vanilla_when": { "stray_fairies": "vanilla" },
+  "vanilla_item": "woodfall_stray_fairy",
   "item_checks": [
-
+    { "id": "wft_entrance_stray_fairy", "name": "Entrance Stray Fairy" },
+    { "id": "wft_entrance_chest_stray_fairy", "name": "Entrance Chest Stray Fairy" }
+  ],
+  "subregions": [
+    {
+      "name": "Main Room",
+      "item_checks": [
+        { "id": "wft_main_room_bubble_stray_fairy", "name": "Main Room Bubble Stray Fairy", "logic": "(bow|hookshot)&great_fairy_mask" },
+        { "id": "wft_main_room_jar_stray_fairy", "name": "Main Room Jar Stray Fairy", "logic": "great_fairy_mask" },
+        { "id": "wft_main_room_deku_baba_stray_fairy", "name": "Main Room Deku Baba Stray Fairy" }
+      ],
+      "subregions": [
+        {
+          "name": "Platform Room",
+          "item_checks": [
+            {
+              "id": "wft_small_key_chest",
+              "name": "Small Key Chest",
+              "vanilla_when": { "small_keys": "vanilla" },
+              "vanilla_item": "woodfall_small_key"
+            }
+          ],
+          "subregions": [
+            {
+              "name": "Map Room",
+              "item_checks": [
+                {
+                  "id": "wft_map_chest",
+                  "name": "Map Chest",
+                  "vanilla_when": { "maps_compasses": "vanilla" },
+                  "vanilla_item": "map_woodfall_temple"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Bridge Room",
+          "logic": "woodfall_small_key>=1|bow",
+          "item_checks": [
+            { "id": "wft_bridge_room_beehive_stray_fairy", "name": "Bridge Room Beehive Stray Fairy", "logic": "projectile&great_fairy_mask" },
+            { "id": "wft_bridge_room_skulltula_stray_fairy", "name": "Bridge Room Skulltula Stray Fairy", "logic": "fighting&great_fairy_mask" }
+          ],
+          "subregions": [
+            {
+              "name": "Compass Room",
+              "logic": "deku_stick|(bow&magic_meter&fire_arrow)",
+              "item_checks": [
+                {
+                  "id": "wft_compass_chest",
+                  "name": "Compass Chest",
+                  "vanilla_when": { "maps_compasses": "vanilla" },
+                  "vanilla_item": "compass_woodfall_temple"
+                }
+              ]
+            },
+            {
+              "name": "Dark Room",
+              "logic": "bow|deku_stick",
+              "item_checks": [
+                { "id": "wft_dark_room_stray_fairy", "name": "Dark Room Stray Fairy", "logic": "deku_stick&fighting" }
+              ],
+              "subregions": [
+                {
+                  "name": "Dragonfly Room",
+                  "item_checks": [
+                    { "id": "wft_dragonfly_room_bubble_stray_fairy", "name": "Dragonfly Room Bubble Stray Fairy" }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Main Room 2F",
+          "logic": "bow|(woodfall_small_key>=1&deku_stick)",
+          "item_checks": [
+            { "id": "wft_main_room_2f_switch_stray_fairy", "name": "Main Room 2F Switch Stray Fairy" }
+          ],
+          "subregions": [
+            {
+              "name": "Upper Platform Room",
+              "item_checks": [
+                { "id": "wft_upper_platform_room_beehive_stray_fairy", "name": "Upper Platform Room Beehive Stray Fairy", "logic": "projectile&great_fairy_mask" }
+              ],
+              "subregions": [
+                {
+                  "name": "Boss Key Room",
+                  "logic": "bow",
+                  "item_checks": [
+                    {
+                      "id": "wft_boss_key_chest",
+                      "name": "Boss Key Chest",
+                      "logic": "fighting",
+                      "vanilla_when": { "boss_keys": "vanilla" },
+                      "vanilla_item": "woodfall_big_key"
+                    }
+                  ]
+                },
+                {
+                  "name": "Bow Room",
+                  "item_checks": [
+                    {
+                      "id": "wft_heros_bow_chest",
+                      "name": "Hero's Bow Chest",
+                      "logic": "fighting",
+                      "vanilla_when": { "shuffle_main_inventory": false },
+                      "vanilla_item": "Progressive Bow"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Pre-Boss Room",
+              "logic": "bow",
+              "item_checks": [
+                { "id": "wft_pre_boss_room_lower_right_bubble_stray_fairy", "name": "Pre-Boss Room Lower Right Bubble Stray Fairy" },
+                { "id": "wft_pre_boss_room_upper_left_bubble_stray_fairy", "name": "Pre-Boss Room Upper Left Bubble Stray Fairy" },
+                { "id": "wft_pre_boss_room_upper_right_bubble_stray_fairy", "name": "Pre-Boss Room Upper Right Bubble Stray Fairy" },
+                { "id": "wft_pre_boss_room_pillar_bubble_stray_fairy", "name": "Pre-Boss Room Pillar Bubble Stray Fairy" }
+              ],
+              "subregions": [
+                {
+                  "name": "Boss Room",
+                  "logic": "woodfall_big_key",
+                  "item_checks": [
+                    {
+                      "id": "wft_odolwa_heart_container",
+                      "name": "Odolwa Heart Container",
+                      "logic": "fighting",
+                      "vanilla_when": { "heart_containers": "vanilla" },
+                      "vanilla_item": "heart_container"
+                    },
+                    {
+                      "id": "wft_odolwa_remains",
+                      "name": "Odolwa's Remains",
+                      "logic": "fighting",
+                      "vanilla_when": { "dungeon_rewards": "vanilla" },
+                      "vanilla_item": "odolwa_remains"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Deku Princess Room",
+      "logic": "odolwa_defeated",
+      "item_checks": [
+        {
+          "id": "wft_deku_princess",
+          "name": "Deku Princess",
+          "logic": "bottle&(kokiri_sword|great_fairy_sword)",
+          "vanilla_when": true,
+          "vanilla_item": "deku_princess"
+        }
+      ]
+    },
+    {
+      "name": "Oath to Order",
+      "item_checks": [
+        {
+          "id": "wft_oath_to_order",
+          "name": "Oath to Order",
+          "logic": "odolwa_defeated",
+          "vanilla_when": { "shuffle_songs": "off" },
+          "vanilla_item": "oath_to_order"
+        }
+      ]
+    }
   ]
 }

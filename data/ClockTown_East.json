@@ -1,12 +1,11 @@
 {
   "region_name": "East Clock Town",
   "logic": "",
-  "map_coordinates": { "xPercent": 53.85, "yPercent": 40.7 },
+  "map_coordinates": { "xPercent": 54.62, "yPercent": 40.7 },
   "item_checks": [
     {
       "id": "ect_chest",
-      "name": "Chest",
-      "logic": ""
+      "name": "Chest"
     },
     {
       "id": "ect_postbox",
@@ -19,13 +18,12 @@
       "id": "ect_stray_fairy",
       "name": "Stray Fairy",
       "logic": "deku_mask",
-      "vanilla_when": [{ "stray_fairies": "vanilla" }, { "clock_town_stray_fairy": "vanilla" }],
+      "vanilla_when": { "clock_town_stray_fairy": "vanilla" },
       "vanilla_item": "clock_town_stray_fairy"
     },
     {
       "id": "ect_aroma_in_office",
       "name": "Mayor's Office Madame Aroma",
-      "logic": "",
       "vanilla_when": { "shuffle_anju_and_kafei": false },
       "vanilla_item": "kafei_mask"
     },
@@ -37,9 +35,23 @@
       "vanilla_item": "heart_piece"
     },
     {
+      "id": "ect_milk_bar_chateau_buy",
+      "name": "Milk Bar Chateau Romani",
+      "logic": "romani_mask&bottle",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Chateau Romani"
+    },
+    {
+      "id": "ect_milk_bar_milk_buy",
+      "name": "Milk Bar Milk",
+      "logic": "romani_mask&bottle",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Milk"
+    },
+    {
       "id": "ect_milk_bar_gorman",
       "name": "Milk Bar Gorman",
-      "logic": "ocarina_of_time&romani_mask&deku_mask&goron_mask&zora_mask",
+      "logic": "romani_mask&deku_mask&goron_mask&zora_mask",
       "vanilla_when": { "shuffle_masks": false },
       "vanilla_item": "troupe_leader_mask"
     },
@@ -74,7 +86,7 @@
     {
       "id": "ect_honey_and_darling_3_days",
       "name": "Honey and Darling 3 Days",
-      "logic": "bow&bomb",
+      "logic": "bow&bomb_bag",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
     },
@@ -88,7 +100,7 @@
     {
       "id": "ect_bombers_hideout_chest",
       "name": "Bombers' Hideout Chest",
-      "logic": "(bombers_notebook|bombers_code|deku_mask)&(bomb|blast_mask)"
+      "logic": "(bombers_notebook|bombers_code|deku_mask)&(bomb_bag|blast_mask)"
     }
   ]
 }

@@ -1,8 +1,174 @@
 {
   "region_name": "Snowhead Temple",
-  "logic": "",
-  "map_coordinates": { "xPercent": 47.2, "yPercent": 11.4 },
-  "item_checks": [
-
+  "logic": "bow&goron_mask&magic_meter&ocarina_of_time&goron_lullaby_full",
+  "map_coordinates": { "xPercent": 47.3, "yPercent": 11.4 },
+  "vanilla_when": { "stray_fairies": "vanilla" },
+  "vanilla_item": "snowhead_stray_fairy",
+  "subregions": [
+    {
+      "name": "Bridge Room",
+      "item_checks": [
+        {
+          "id": "sht_bridge_room_small_key_chest",
+          "name": "Bridge Room Small Key Chest",
+          "logic": "fire_arrow",
+          "vanilla_when": { "small_keys": "vanilla" },
+          "vanilla_item": "snowhead_small_key"
+        },
+        { "id": "sht_bridge_room_ledge_bubble_stray_fairy", "name": "Bridge Room Ledge Bubble Stray Fairy" },
+        { "id": "sht_bridge_room_pillar_bubble_stray_fairy", "name": "Bridge Room Pillar Bubble Stray Fairy", "logic": "great_fairy_mask" }
+      ],
+      "subregions": [
+        {
+          "name": "Lower Map Room",
+          "item_checks": [
+            { "id": "sht_lower_map_room_stray_fairy", "name": "Lower Map Room Stray Fairy" },
+            {
+              "id": "sht_map_chest",
+              "name": "Map Chest",
+              "vanilla_when": { "maps_compasses": "vanilla" },
+              "vanilla_item": "map_snowhead_temple"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Basement",
+      "item_checks": [
+        { "id": "sht_basement_stray_fairy", "name": "Basement Stray Fairy" }
+      ]
+    },
+    {
+      "name": "Double Block Room Lower",
+      "item_checks": [
+        {
+          "id": "sht_double_block_room_small_key_chest",
+          "name": "Double Block Room Small Key Chest",
+          "vanilla_when": { "small_keys": "vanilla" },
+          "vanilla_item": "snowhead_small_key"
+        }
+      ]
+    },
+    {
+      "name": "Pillar Freezards Room",
+      "logic": "fire_arrow",
+      "item_checks": [
+        { "id": "sht_pillar_freezards_room_stray_fairy", "name": "Pillar Freezards Room Stray Fairy" }
+      ]
+    },
+    {
+      "name": "Compass Room",
+      "logic": "snowhead_small_key>=1|fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)",
+      "item_checks": [
+        {
+          "id": "sht_compass_chest",
+          "name": "Compass Chest",
+          "vanilla_when": { "maps_compasses": "vanilla" },
+          "vanilla_item": "compass_snowhead_temple"
+        },
+        { "id": "sht_compass_room_ice_puzzle_stray_fairy", "name": "Compass Room Ice Puzzle Stray Fairy", "logic": "fire_arrow" },
+        { "id": "sht_compass_room_crate_stray_fairy", "name": "Compass Room Crate Stray Fairy", "logic": "(bomb_bag|blast_mask)&great_fairy_mask" }
+      ],
+      "subregions": [
+        {
+          "name": "Double Block Room Upper",
+          "logic": "hookshot|fire_arrow",
+          "item_checks": [
+            { "id": "sht_double_block_room_upper_stray_fairy", "name": "Double Block Room Upper Stray Fairy" }
+          ]
+        },
+        {
+          "name": "Icicle Room",
+          "logic": "(bomb_bag|blast_mask)|fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)",
+          "item_checks": [
+            {
+              "id": "sht_icicle_room_small_key_chest",
+              "name": "Icicle Room Small Key Chest",
+              "vanilla_when": { "small_keys": "vanilla" },
+              "vanilla_item": "snowhead_small_key"
+            },
+            { "id": "sht_icicle_room_wall_stray_fairy", "name": "Icicle Room Wall Stray Fairy", "logic": "great_fairy_mask&lens_of_truth" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Main Room 2F",
+      "logic": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|blast_mask))",
+      "item_checks": [
+        { "id": "sht_main_room_2f_wall_stray_fairy", "name": "Main Room 2F Wall Stray Fairy", "logic": "hookshot&scarecrow_song&great_fairy_mask&lens_of_truth" }
+      ],
+      "subregions": [
+        {
+          "name": "Upper Map Room",
+          "item_checks": [
+            { "id": "sht_upper_map_room_ledge_stray_fairy", "name": "Upper Map Room Ledge Stray Fairy", "logic": "hookshot|lens_of_truth" }
+          ]
+        },
+        {
+          "name": "Goron Switch Puzzle Room",
+          "item_checks": [
+            { "id": "sht_switch_puzzle_ceiling_stray_fairy", "name": "Switch Puzzle Ceiling Stray Fairy", "logic": "great_fairy_mask&lens_of_truth" }
+          ]
+        },
+        {
+          "name": "Miniboss Room",
+          "item_checks": [
+            {
+              "id": "sht_fire_arrow_chest",
+              "name": "Fire Arrow Chest",
+              "vanilla_when": { "shuffle_main_inventory": false },
+              "vanilla_item": "fire_arrow"
+            }
+          ]
+        },
+        {
+          "name": "Snow Room",
+          "logic": "fire_arrow&snowhead_small_key>=3",
+          "item_checks": [
+            { "id": "sht_snow_room_bubble_stray_fairy", "name": "Snow Room Bubble Stray Fairy", "logic": "great_fairy_mask&lens_of_truth" }
+          ],
+          "subregions": [
+            {
+              "name": "Dinolfos Room",
+              "item_checks": [
+                { "id": "sht_dinolfos_room_stray_fairy_1", "name": "Dinolfos Room Stray Fairy 1" },
+                { "id": "sht_dinolfos_room_stray_fairy_2", "name": "Dinolfos Room Stray Fairy 2" }
+              ]
+            },
+            {
+              "name": "Boss Key Room",
+              "item_checks": [
+                {
+                  "id": "sht_boss_key_chest",
+                  "name": "Boss Key Chest",
+                  "vanilla_when": { "boss_keys": "vanilla" },
+                  "vanilla_item": "snowhead_big_key"
+                }
+              ]
+            },
+            {
+              "name": "Boss Room",
+              "logic": "snowhead_big_key",
+              "item_checks": [
+                {
+                  "id": "sht_goht_heart_container",
+                  "name": "Goht Heart Container",
+                  "vanilla_when": { "heart_containers": "vanilla" },
+                  "vanilla_item": "heart_container"
+                },
+                {
+                  "id": "sht_goht_remains",
+                  "name": "Goht's Remains",
+                  "vanilla_when": { "dungeon_rewards": "vanilla" },
+                  "vanilla_item": "goht_remains"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   ]
 }

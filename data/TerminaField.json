@@ -1,8 +1,92 @@
 {
   "region_name": "Termina Field",
   "logic": "",
-  "map_coordinates": { "xPercent": 53.85, "yPercent": 46.57 },
+  "map_coordinates": { "xPercent": 54.62, "yPercent": 47.9 },
   "item_checks": [
-
+    {
+      "id": "tf_kamaro",
+      "name": "Kamaro",
+      "logic": "ocarina_of_time&song_of_healing",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "kamaro_mask"
+    },
+    {
+      "id": "tf_grass_chest",
+      "name": "Grass Chest"
+    },
+    {
+      "id": "tf_grass_grotto",
+      "name": "Grass Grotto"
+    },
+    {
+      "id": "tf_stump_chest",
+      "name": "Stump Chest",
+      "logic": "hookshot|(magic_bean&(bottle|(ocarina_of_time&song_of_storms)))"
+    },
+    {
+      "id": "tf_peahat_grotto",
+      "name": "Peahat Grotto",
+      "logic": "fighting|bow",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "tf_cow_grotto_cow_1",
+      "name": "Grotto Cow 1",
+      "logic": "(bomb_bag|blast_mask)&mask_of_truth&ocarina_of_time&eponas_song&bottle",
+      "vanilla_when": { "shuffle_cows": false },
+      "vanilla_item": "Milk"
+    },
+    {
+      "id": "tf_cow_grotto_cow_2",
+      "name": "Grotto Cow 2",
+      "logic": "(bomb_bag|blast_mask)&mask_of_truth&ocarina_of_time&eponas_song&bottle",
+      "vanilla_when": { "shuffle_cows": false },
+      "vanilla_item": "Milk"
+    },
+    {
+      "id": "tf_business_scrub_grotto",
+      "name": "Business Scrub Grotto Purchase",
+      "logic": "(bombers_notebook|bombers_code|deku_mask)&adults_wallet",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "tf_pillar_grotto",
+      "name": "Pillar Grotto"
+    },
+    {
+      "id": "tf_dodongo_grotto",
+      "name": "Dodongo Grotto",
+      "logic": "fighting|bow|bomb_bag",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "tf_bio_baba_grotto",
+      "name": "Bio Baba Grotto",
+      "logic": "(bomb_bag|blast_mask|goron_mask)&zora_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "tf_underwater_chest",
+      "name": "Underwater Chest",
+      "logic": "zora_mask"
+    },
+    {
+      "id": "tf_colored_gossip_stones",
+      "name": "Colored Gossip Stones",
+      "logic": "ocarina_of_time&(bomb_bag|blast_mask|goron_mask)&((deku_mask&sonata_of_awakening)|(zora_mask&new_wave_bossa_nova)|(goron_mask&goron_lullaby_full))",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "tf_moons_tear",
+      "name": "Moon's Tear",
+      "logic": "deku_mask|((bombers_notebook|bombers_code)&projectile)",
+      "vanilla_when": { "shuffle_scrub_trades": false },
+      "vanilla_item": "moons_tear"
+    }
   ]
 }

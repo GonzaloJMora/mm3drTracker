@@ -2,20 +2,15 @@ window.GameState = {
     items: {},
     // Slot id -> the stage or count the settings started it at. See slotRange().
     floors: {},
-    totalHearts: 3,
-    totalBossMasks: 0,
-    totalRegularMasks: 0,
-    regularMaskIds: new Set(),
+    // What logic can name besides items, worked out from the inventory: token id ->
+    // a number or a yes/no. Defined in config/logicTokens.json.
+    tokens: {},
+    // The tokens that read cleanly, each with the item ids it looks at.
+    tokenSources: [],
     config: null,
     // The settings page runs init() again on every change to preview the starting
     // items, so the data is checked on the first run only.
     dataChecked: false,
-
-    // Named groupings from config.json. They cut across the grids on purpose:
-    // grids say where a slot is drawn, item_groups say what it means.
-    group(name) {
-        return (this.config && this.config.item_groups && this.config.item_groups[name]) || [];
-    },
 
     // What kind of slot an id is. Read from config alone rather than this.config,
     // so it works before init() — the settings grants need it that early.
@@ -24,10 +19,14 @@ window.GameState = {
         const rule = Object.prototype.hasOwnProperty.call(config.item_counts, slotId)
             ? config.item_counts[slotId]
             : undefined;
-        if (Array.isArray(rule)) return "capacity";
         if (Number.isInteger(rule)) return "counter";
-        if (slotId.startsWith("bombers_code_digit_")) return "digit";
+        if (this.digitIds(config).includes(slotId)) return "digit";
         return "toggle";
+    },
+
+    // The slots that each hold a digit. Read from config alone, like slotKind().
+    digitIds(config) {
+        return (config.digit_slots && Array.isArray(config.digit_slots.ids)) ? config.digit_slots.ids : [];
     },
 
     // A slot's current value, read back out of items: a stage from -1 (not owned)
@@ -37,11 +36,8 @@ window.GameState = {
         if (kind === "counter" || kind === "digit") return this.items[slotId] || 0;
         if (kind === "toggle") return this.items[slotId] ? 0 : -1;
 
-        const flags = kind === "progression"
-            ? this.config.progressions[slotId]
-            : this.config.item_counts[slotId].map(size => `${slotId}_${size}`);
         let stage = -1;
-        flags.forEach((flag, index) => {
+        this.config.progressions[slotId].forEach((flag, index) => {
             if (this.items[flag]) stage = index;
         });
         return stage;
@@ -57,9 +53,8 @@ window.GameState = {
         let bottom = kind === "counter" || kind === "digit" ? 0 : -1;
         let top = 0;
         if (kind === "progression") top = config.progressions[slotId].length - 1;
-        else if (kind === "capacity") top = config.item_counts[slotId].length - 1;
         else if (kind === "counter") top = config.item_counts[slotId];
-        else if (kind === "digit") top = config.bombers_code.max_digit_value;
+        else if (kind === "digit") top = config.digit_slots.max_value;
 
         if (Object.prototype.hasOwnProperty.call(this.floors, slotId)) {
             bottom = this.floors[slotId];
@@ -77,10 +72,6 @@ window.GameState = {
             return stage >= 0 ? stage : null;
         }
         if (!Object.prototype.hasOwnProperty.call(this.items, slotId)) return null;
-        if (kind === "capacity") {
-            const stage = this.config.item_counts[slotId].indexOf(granted);
-            return stage >= 0 ? stage : null;
-        }
         if (kind === "counter" || kind === "digit") {
             return Number.isInteger(granted) && granted > 0 ? granted : null;
         }
@@ -91,25 +82,10 @@ window.GameState = {
     // start that slot at. Each one also becomes that slot's floor.
     init(itemsList, configData, startingState = {}) {
         this.config = configData;
+        const firstRun = !this.dataChecked;
 
-        // Tagged on the item in Items.json rather than read off config.grids.mask,
-        // which is a layout list — moving a mask to another panel would otherwise
-        // quietly change the count. The four transformation masks are simply
-        // untagged, leaving exactly the masks that can be given to the moon
-        // children.
-        this.regularMaskIds = new Set(
-            itemsList.filter(item => item.regular_mask).map(item => item.id)
-        );
-
-        if (!this.dataChecked) {
+        if (firstRun) {
             this.dataChecked = true;
-
-            if (!this.regularMaskIds.size) {
-                console.warn(
-                    'GameState: nothing in Items.json is tagged "regular_mask", so total_masks ' +
-                    "will always be 0 and every check gated on it stays unreachable."
-                );
-            }
 
             // A slot in both would be treated as a progression but handed the counter
             // rule as its chain, so the click silently does nothing — quiet enough to
@@ -117,7 +93,7 @@ window.GameState = {
             Object.keys(this.config.progressions).forEach(slotId => {
                 if (Object.prototype.hasOwnProperty.call(this.config.item_counts, slotId)) {
                     console.warn(
-                        `GameState: "${slotId}" is in both progressions and item_counts in config.json. ` +
+                        `GameState: "${slotId}" is in both progressions and item_counts in config/inventory.json. ` +
                         `Those are alternatives, not a combination, and clicking that slot will not work.`
                     );
                 }
@@ -135,21 +111,14 @@ window.GameState = {
         });
 
         Object.keys(this.config.item_counts).forEach(slotId => {
-            const rule = this.config.item_counts[slotId];
-            if (Array.isArray(rule)) {
-                this.items[slotId] = false;
-                rule.forEach(val => { this.items[`${slotId}_${val}`] = false; });
-            } else {
-                this.items[slotId] = 0;
-            }
+            this.items[slotId] = 0;
         });
 
-        for (let i = 1; i <= this.config.bombers_code.digits; i++) {
-            this.items[`bombers_code_digit_${i}`] = 0;
-        }
+        this.digitIds(this.config).forEach(slotId => {
+            this.items[slotId] = 0;
+        });
 
-        this.items["bombers_code"] = false;
-        this.items["bottle"] = false;
+        this.buildTokens(itemsList, firstRun);
 
         this.floors = {};
         Object.keys(startingState).forEach(slotId => {
@@ -164,11 +133,6 @@ window.GameState = {
             this.floors[slotId] = value;
         });
 
-        this.calculateHearts();
-        this.calculateBossMasks();
-        this.calculateRegularMasks();
-        this.calculateBombersCode();
-        this.checkForBottle();
         this.broadcastChange();
     },
 
@@ -191,113 +155,160 @@ window.GameState = {
                 if (chain[i]) this.items[chain[i]] = true;
             }
         }
-        else if (countRule && Array.isArray(countRule)) {
-            this.items[slotId] = (stageIndex >= 0);
-            countRule.forEach(val => { this.items[`${slotId}_${val}`] = false; });
-            
-            for (let i = 0; i <= stageIndex; i++) {
-                this.items[`${slotId}_${countRule[i]}`] = true;
-            }
-        }
-        else if ((countRule && Number.isInteger(countRule)) || (slotId && slotId.startsWith("bombers_code_digit_"))) {
+        else if ((countRule && Number.isInteger(countRule)) || this.digitIds(this.config).includes(slotId)) {
             this.items[slotId] = currentCount;
-            
-            // Off heart_rules rather than literal ids, like calculateHearts().
-            // Otherwise renaming one in config leaves the count right on load and
-            // frozen on every click after.
-            const heartRules = this.config.heart_rules;
-            if (slotId === heartRules.piece_id || slotId === heartRules.container_id) {
-                this.calculateHearts();
-            }
         }
         else {
             this.items[slotId] = (stageIndex !== -1);
         }
-
-        if (this.group("boss_masks").includes(slotId)) {
-            this.calculateBossMasks();
-        }
-
-        if (this.regularMaskIds.has(slotId)) {
-            this.calculateRegularMasks();
-        }
-
-        if (slotId && slotId.startsWith("bombers_code_")) {
-            this.calculateBombersCode();
-        }
-
-        if (this.group("bottles").includes(slotId)) {
-            this.checkForBottle();
-        }
     },
 
-    calculateHearts() {
-        // The base is the rando's Health setting, which heart_rules names. It sets
-        // your starting hearts without taking any from the pool, so it can't be a
-        // grant on the counters.
-        const rules = this.config.heart_rules;
+    // What an item counts for in a token: a count is its number, a plain item is 1
+    // when owned.
+    countOf(itemId) {
+        const value = this.items[itemId];
+        if (Number.isInteger(value)) return value;
+        return value === true ? 1 : 0;
+    },
+
+    // Reads config/logicTokens.json into tokenSources: each token that can be worked
+    // out, with the item ids it looks at. A token with a fault warns once and still
+    // exists, reading 0 or false, so logic that names it stays parseable; one that
+    // has no usable id or kind is left out.
+    buildTokens(itemsList, report) {
+        const warn = (id, problem) => {
+            if (report) console.warn(`GameState: token "${id}" in config/logicTokens.json ${problem}`);
+        };
+        const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+        const defs = this.config.tokens;
+        // Groups and tags say what an item means, where the grids only say where a
+        // slot is drawn: moving an item to another panel must not change a count.
+        const groups = this.config.item_groups || {};
         const settings = window.SettingsState;
-        const health = settings ? settings.get(rules.starting_hearts_setting) : undefined;
-        const starting = typeof health === "number" ? health : 0;
-        const pieces = this.items[rules.piece_id] || 0;
-        const containers = this.items[rules.container_id] || 0;
-        this.totalHearts = starting + Math.floor(pieces / rules.pieces_per_heart) + containers;
-    },
 
-    calculateBossMasks() {
-        let count = 0;
-        this.group("boss_masks").forEach(maskId => {
-            if (this.items[maskId] === true) {
-                count++;
-            }
-        });
-        this.totalBossMasks = count;
-    },
-
-    calculateRegularMasks() {
-        let count = 0;
-        this.regularMaskIds.forEach(maskId => {
-            if (this.items[maskId] === true) {
-                count++;
-            }
-        });
-        this.totalRegularMasks = count;
-    },
-
-    calculateBombersCode() {
-        let digits = [];
-        for (let i = 1; i <= this.config.bombers_code.digits; i++) {
-            let val = this.items[`bombers_code_digit_${i}`] ?? 0;
-            digits.push(parseInt(val, 10) || 0);
+        this.tokenSources = [];
+        if (!Array.isArray(defs)) {
+            if (report) console.warn('GameState: config/logicTokens.json has no "tokens" list, so no token has a value.');
+            this.computeTokens();
+            return;
         }
 
-        const hasZero = digits.includes(0);
-        const allUnique = new Set(digits).size === digits.length;
-        this.items["bombers_code"] = !hasZero && allUnique;
+        const seen = new Set();
+        defs.forEach((def, index) => {
+            try {
+                if (!def || typeof def !== "object" || typeof def.id !== "string" || def.id === "" || typeof def.name !== "string") {
+                    if (report) console.warn(`GameState: tokens[${index}] in config/logicTokens.json needs a string "id" and "name", and is skipped.`);
+                    return;
+                }
+                if (seen.has(def.id)) return warn(def.id, "is listed twice, and the second is skipped.");
+                if (has(this.items, def.id)) return warn(def.id, "has the id of an item, which would replace it in every check, and is skipped.");
+                seen.add(def.id);
+
+                let ids = [];
+                if (def.kind === "count" || def.kind === "any") {
+                    if (has(def, "group") === has(def, "tag")) {
+                        warn(def.id, 'needs exactly one of "group" or "tag", so it reads as empty.');
+                    } else if (has(def, "group")) {
+                        const group = has(groups, def.group) ? groups[def.group] : undefined;
+                        if (group === undefined) {
+                            warn(def.id, `names the group "${def.group}", which is not in item_groups, so it reads as empty.`);
+                        } else if (!Array.isArray(group)) {
+                            warn(def.id, `names the group "${def.group}", which is not a list of item ids in item_groups, so it reads as empty.`);
+                        } else {
+                            ids = group;
+                            const unknown = group.filter(id => typeof id !== "string" || !has(this.items, id));
+                            if (unknown.length) {
+                                warn(def.id, `reads the group "${def.group}", whose ${unknown.map(id => JSON.stringify(id)).join(", ")} ` +
+                                    `${unknown.length === 1 ? "is not an item" : "are not items"}, so ${unknown.length === 1 ? "it counts" : "they count"} as never owned.`);
+                            }
+                        }
+                    } else {
+                        ids = itemsList.filter(item => item[def.tag]).map(item => item.id);
+                        if (!ids.length) warn(def.id, `names the tag "${def.tag}", which no item in Items.json has, so it reads as empty.`);
+                    }
+                } else if (def.kind === "sum") {
+                    const terms = Array.isArray(def.terms) ? def.terms : [];
+                    if (!terms.length) warn(def.id, 'needs a non-empty "terms" list, so it reads as 0.');
+                    def = Object.assign({}, def, { terms: terms.filter(term => {
+                        if (term && typeof term.setting === "string") {
+                            if (!settings || typeof settings.get(term.setting) !== "number") {
+                                warn(def.id, `has a term naming "${term.setting}", which is not a number setting, so that term counts as 0.`);
+                            }
+                            return true;
+                        }
+                        if (term && typeof term.item === "string" && has(this.items, term.item)
+                            && (term.per === undefined || (Number.isInteger(term.per) && term.per >= 1))) {
+                            return true;
+                        }
+                        warn(def.id, `has a term that is neither a setting nor a known item with a "per" of 1 or more (${JSON.stringify(term)}), and it is skipped.`);
+                        return false;
+                    }) });
+                } else if (def.kind === "distinct") {
+                    const source = this.config[def.slots];
+                    if (source && Array.isArray(source.ids) && source.ids.length) ids = source.ids;
+                    else if (source && Array.isArray(source.ids)) warn(def.id, `names "${def.slots}" as its slots, whose "ids" list is empty, so it reads as false.`);
+                    else warn(def.id, `names "${def.slots}" as its slots, which has no "ids" list, so it reads as false.`);
+                } else {
+                    return warn(def.id, `has the kind ${JSON.stringify(def.kind)}, which is not count, any, sum or distinct, and is skipped.`);
+                }
+
+                this.tokenSources.push({ def, ids });
+            } catch (error) {
+                console.error(`GameState: could not read token ${JSON.stringify(def && def.id)}`, error);
+            }
+        });
+
+        this.computeTokens();
     },
 
-    checkForBottle() {
-        let hasBottle = false;
-
-        for (const bottleId of this.group("bottles")) {
-            const item = this.items[bottleId];
-
-            if (item === true || (Number.isInteger(item) && item > 0)) {
-                hasBottle = true;
-                break;
-            }
+    // One token's value from the inventory and the settings.
+    tokenValue(def, ids, settings) {
+        if (def.kind === "count") return ids.filter(id => this.countOf(id) > 0).length;
+        if (def.kind === "any") return ids.some(id => this.countOf(id) > 0);
+        if (def.kind === "sum") {
+            return def.terms.reduce((total, term) => {
+                if (term.setting !== undefined) {
+                    const value = settings ? settings.get(term.setting) : undefined;
+                    return total + (typeof value === "number" ? value : 0);
+                }
+                return total + Math.floor(this.countOf(term.item) / (term.per || 1));
+            }, 0);
         }
+        // Both tests below pass on an empty list, which would make a token with no
+        // slots read true.
+        if (!ids.length) return false;
+        const digits = ids.map(id => this.countOf(id));
+        return !digits.includes(0) && new Set(digits).size === digits.length;
+    },
 
-        this.items["bottle"] = hasBottle;
+    // Tokens already named as failing in computeTokens(), so each is named once.
+    computeFailures: new Set(),
+
+    // Runs on every state change, outside buildTokens()'s guard, so one token that
+    // throws must not stop the announcement: it reads 0 or false, and is named once.
+    computeTokens() {
+        const settings = window.SettingsState;
+        const tokens = {};
+        this.tokenSources.forEach(({ def, ids }) => {
+            try {
+                tokens[def.id] = this.tokenValue(def, ids, settings);
+            } catch (error) {
+                tokens[def.id] = def.kind === "count" || def.kind === "sum" ? 0 : false;
+                if (!this.computeFailures.has(def.id)) {
+                    this.computeFailures.add(def.id);
+                    console.error(`GameState: could not work out token "${def.id}", so it reads ${tokens[def.id]}`, error);
+                }
+            }
+        });
+        this.tokens = tokens;
     },
 
     broadcastChange() {
+        this.computeTokens();
         window.dispatchEvent(new CustomEvent("trackerStateUpdated", {
             detail: {
                 items: { ...this.items },
-                totalHearts: this.totalHearts,
-                totalBossMasks: this.totalBossMasks,
-                totalRegularMasks: this.totalRegularMasks
+                tokens: { ...this.tokens }
             }
         }));
     }
@@ -376,13 +387,22 @@ window.TrackerDebug = {};
     });
 
     window.addEventListener('trackerStateUpdated', (e) => {
-        const { items, totalHearts, totalBossMasks, totalRegularMasks } = e.detail;
-        let html = `<div><strong>Total Hearts:</strong> ${totalHearts} ❤️</div>`;
-        html += `<div><strong>Boss Masks Count:</strong> ${totalBossMasks} 🎭</div>`;
-        html += `<div><strong>Regular Masks Count:</strong> ${totalRegularMasks} 🎭</div>`;
-        html += `<div><strong>Bombers Code Valid:</strong> ${items["bombers_code"] ? "YES ✅" : "NO ❌"}</div>`;
-        html += `<div><strong>Has Bottle:</strong> ${items["bottle"] ? "YES ✅" : "NO ❌"}</div>`;
-        html += `<div style="margin-top:8px; border-bottom:1px dashed #444; padding-bottom:4px;"><strong>Active Flags & Numbers:</strong></div>`;
+        const { items, tokens } = e.detail;
+        // Everything shown comes from data/, so all of it is escaped.
+        const escape = text => String(text).replace(/[&<>"]/g, ch =>
+            ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+        const header = label =>
+            `<div style="margin-top:8px; border-bottom:1px dashed #444; padding-bottom:4px;"><strong>${label}</strong></div>`;
+        const row = (key, value) => `<div style="display:flex; justify-content:space-between;">
+                    <span style="color:#aaa;">${escape(key)}:</span>
+                    <span style="color:#55ff55; font-weight:bold;">${escape(value)}</span>
+                </div>`;
+
+        let html = window.GameState.tokenSources.map(({ def }) => {
+            const value = tokens[def.id];
+            return `<div><strong>${escape(def.name)}:</strong> ${typeof value === "boolean" ? (value ? "YES ✅" : "NO ❌") : escape(value)}</div>`;
+        }).join("");
+        html += header("Active Flags &amp; Numbers:");
 
         const activeItems = Object.entries(items).filter(([_, val]) => val !== false && val !== 0);
 
@@ -390,25 +410,12 @@ window.TrackerDebug = {};
             html += `<div style="color:#888;">(Inventory Empty)</div>`;
         } else {
             activeItems.sort().forEach(([key, value]) => {
-                html += `<div style="display:flex; justify-content:space-between;">
-                    <span style="color:#aaa;">${key}:</span>
-                    <span style="color:#55ff55; font-weight:bold;">${value}</span>
-                </div>`;
+                html += row(key, value);
             });
         }
 
         const settings = window.SettingsState;
         if (settings) {
-            // Ids and values come from settings.json, so they are escaped.
-            const escape = text => String(text).replace(/[&<>"]/g, ch =>
-                ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
-            const header = label =>
-                `<div style="margin-top:8px; border-bottom:1px dashed #444; padding-bottom:4px;"><strong>${label}</strong></div>`;
-            const row = (key, value) => `<div style="display:flex; justify-content:space-between;">
-                    <span style="color:#aaa;">${escape(key)}:</span>
-                    <span style="color:#55ff55; font-weight:bold;">${escape(value)}</span>
-                </div>`;
-
             // Only what differs from its default or is locked: the full list is
             // long enough to bury the few settings that matter.
             html += header("Settings (changed or locked):");

@@ -1,10 +1,9 @@
-/* Where the summary row (stats box + legend) and map container sit in the
-   location column. The map's own visuals (image, markers, overlay) are
-   locationMap.css; the two boxes style themselves. */
+/* Where the summary row (stats box + legend) and map container sit: the row in the
+   header on desktop, the map alone in the location column. The map's own visuals
+   (image, markers, overlay) are locationMap.css; the two boxes style themselves. */
 
 /* The legend sits to the right of the stats box. Both boxes are as wide as their
-   own content and the pair is centered — on desktop that is centered over the
-   map, whose width the row is set to. */
+   own content and the pair is centered. */
 #location-summary-row {
     display: flex;
     align-items: stretch;
@@ -43,16 +42,20 @@
         gap: 15px;
         flex: 1 1 400px;
         min-width: 0;
+        /* As tall as the item grids, with the map centered in it: on a window where
+           the map is shorter than the grids it sits beside their middle, not their
+           top. */
+        align-self: stretch;
+        justify-content: center;
     }
 
+    /* In the header (locationPanelLayout.js, placeSummaryRow), between the logo
+       and the toolbar. It is as wide as its two boxes and gives way before the logo
+       or the toolbar do. */
     #location-summary-row {
-        /* The row's height at the default text size. The map is sized as if the
-           row were this tall, so larger text pushes the map down the page instead
-           of shrinking it. locationPanelLayout.js warns when this goes stale. */
-        --summary-row-reserve: 117px;
         margin: 0;
-        /* JS matches its width to the map's so the two read as one unit. */
-        align-self: center;
+        flex: 0 1 auto;
+        min-width: 0;
     }
 
     #location-stats-box {

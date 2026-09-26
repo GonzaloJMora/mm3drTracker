@@ -1,8 +1,39 @@
 {
   "region_name": "Deku Palace",
-  "logic": "",
-  "map_coordinates": { "xPercent": 47.4, "yPercent": 70.6 },
+  "logic": "odolwa_defeated|(deku_mask&(bottle|bow|zora_mask|hookshot))",
+  "map_coordinates": { "xPercent": 47.4, "yPercent": 70.5 },
   "item_checks": [
-
+    {
+      "id": "dp_west_garden_hp",
+      "name": "West Garden HP",
+      "logic": "deku_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "dp_imprisoned_monkey",
+      "name": "Imprisoned Monkey",
+      "logic": "(magic_bean&(bottle|song_of_storms))&deku_mask&ocarina_of_time",
+      "vanilla_when": { "shuffle_songs": "off" },
+      "vanilla_item": "sonata_of_awakening"
+    },
+    {
+      "id": "dp_magic_bean_seller",
+      "name": "Magic Bean Seller",
+      "vanilla_when": { "shuffle_magic_beans": false },
+      "vanilla_item": "magic_bean"
+    },
+    {
+      "id": "dp_bean_grotto_chest",
+      "name": "Bean Grotto Chest",
+      "logic": "hookshot|(magic_bean&(bottle|(ocarina_of_time&song_of_storms)))"
+    },
+    {
+      "id": "dp_butler_race",
+      "name": "Butler Race",
+      "logic": "odolwa_defeated&deku_princess&(fighting|projectile)",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "mask_of_scents"
+    }
   ]
 }

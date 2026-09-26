@@ -39,9 +39,10 @@ what is reachable and what is left.
 
 ## Browser support
 
-Built and tested in Brave. Anything else reasonably current should be fine —
-roughly Chrome/Edge 105+, Safari 16+ or Firefox 110+, the limiting factor being
-CSS container queries.
+Built in Brave, and tested in Chromium, Firefox and WebKit (the engines behind
+Chrome and Edge, Firefox, and Safari) and in Safari on iPhone. Anything else
+reasonably current should be fine — roughly Chrome/Edge 105+, Safari 16+ or
+Firefox 110+, the limiting factor being CSS container queries.
 
 ## Reporting a bug
 
@@ -95,11 +96,13 @@ the JavaScript:
 
 | File | Holds |
 |---|---|
-| `config.json` | which items appear in which grid, upgrade chains, counters, the map |
+| `config.json`, `config/*.json` | which items appear in which grid, upgrade chains, counters, the values logic counts (hearts, masks), the legend, linked checks, the map |
 | `Items.json` | every item's display name and icon |
 | `<Region>.json` | one per region: its checks, each check's requirement, and where its marker sits on the map |
 | `manifest.json` | the region list, in display order |
 | `settings.json` | the randomizer's settings in its menu order: what each can be set to, what it starts you with, and what it locks |
+| `locationFlags.json` | progress made somewhere else that a check depends on, named once and used in the logic like an item |
+| `logicHelpers.json` | lists of items written once and used by name in the logic |
 | `version.json` | the app version, written by the release script |
 
 So adding a region, correcting a requirement or reordering the list is a JSON
@@ -139,11 +142,13 @@ Releases are numbered `x.y.z`:
 
 | Part | Bumped when |
 |---|---|
-| `x` — major | Saves from an earlier major version no longer load |
-| `y` — minor | Bigger than a hotfix, and existing saves still load |
-| `z` — hotfix | Bug fixes only |
+| `x` — major | Saves from earlier versions can no longer be brought up to date |
+| `y` — minor | A new feature is added, and earlier saves still load |
+| `z` — hotfix | Bug fixes only: nothing new, and earlier saves still load |
 
-Saving arrives with 1.0, so the 0.x releases have no saves to break.
+A release takes the highest part that applies. A new feature alongside some bug
+fixes is minor, and a change that leaves old saves behind is major whatever else
+is in it. Until saving arrives, no release has saves to break.
 `scripts/release.py` shows these same three rules when it asks for the release
 type, so a change to one of them is made in both places.
 

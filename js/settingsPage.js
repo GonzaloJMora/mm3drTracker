@@ -172,7 +172,7 @@
 
         // ---------- Redrawing ----------
 
-        // Settings that differ only by a trailing number, like Bottle Slot 1 to 7,
+        // Settings that differ only by a trailing number, like Slot 1 to Slot 7,
         // are named once, by the name they share.
         function namesOf(ids) {
             const names = ids.map(id => settings.describe(id).name);
@@ -205,7 +205,8 @@
 
             counts.forEach(({ idsNow, count }) => {
                 const changed = idsNow().filter(isPicked).length;
-                count.textContent = changed ? `${changed} changed` : "";
+                count.textContent = `${changed} changed`;
+                count.classList.toggle("no-changes", !changed);
             });
 
             if (!slots.length) return;

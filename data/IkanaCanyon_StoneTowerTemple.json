@@ -1,8 +1,219 @@
 {
   "region_name": "Stone Tower Temple",
-  "logic": "",
+  "logic": "hookshot&(garo_mask|gibdo_mask)&ocarina_of_time&eponas_song&bow&magic_meter&ice_arrow&elegy_of_emptiness&goron_mask&zora_mask",
   "map_coordinates": { "xPercent": 85.4, "yPercent": 32.1 },
+  "vanilla_when": { "stray_fairies": "vanilla" },
+  "vanilla_item": "stone_tower_stray_fairy",
   "item_checks": [
-
+    {
+      "id": "stt_entrance_statue_eye_stray_fairy",
+      "name": "Entrance Statue Eye Stray Fairy"
+    },
+    {
+      "id": "stt_entrance_death_armos_stray_fairy",
+      "name": "Entrance Death Armos Stray Fairy",
+      "logic": "light_arrow&deku_mask&stone_tower_small_key>=3"
+    }
+  ],
+  "subregions": [
+    {
+      "name": "Upright Death Armos Room",
+      "item_checks": [
+        {
+          "id": "stt_death_armos_room_small_key_chest",
+          "name": "Death Armos Room Small Key Chest",
+          "logic": "light_arrow&deku_mask&stone_tower_small_key>=3",
+          "vanilla_when": { "small_keys": "vanilla" },
+          "vanilla_item": "stone_tower_small_key"
+        }
+      ],
+      "subregions": [
+        {
+          "name": "Armos Room",
+          "item_checks": [
+            {
+              "id": "stt_map_chest",
+              "name": "Map Chest",
+              "logic": "light_arrow|((bomb_bag|blast_mask)&mirror_shield)",
+              "vanilla_when": { "maps_compasses": "vanilla" },
+              "vanilla_item": "map_stone_tower_temple"
+            },
+            {
+              "id": "stt_armos_room_small_key_chest",
+              "name": "Armos Room Small Key Chest",
+              "logic": "light_arrow|((bomb_bag|blast_mask)&mirror_shield)",
+              "vanilla_when": { "small_keys": "vanilla" },
+              "vanilla_item": "stone_tower_small_key"
+            },
+            {
+              "id": "stt_armos_room_basement_ledge_stray_fairy",
+              "name": "Armos Room Basement Ledge Stray Fairy"
+            }
+          ]
+        },
+        {
+          "name": "Water Bridge Room",
+          "logic": "stone_tower_small_key>=1",
+          "item_checks": [
+            {
+              "id": "stt_water_bridge_room_small_key_chest",
+              "name": "Water Bridge Room Small Key Chest",
+              "logic": "deku_mask",
+              "vanilla_when": { "small_keys": "vanilla" },
+              "vanilla_item": "stone_tower_small_key"
+            },
+            {
+              "id": "stt_bridge_crystal_stray_fairy",
+              "name": "Bridge Crystal Stray Fairy",
+              "logic": "light_arrow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Upright Updraft Room",
+      "item_checks": [
+        {
+          "id": "stt_compass_chest",
+          "name": "Compass Chest",
+          "logic": "light_arrow|(stone_tower_small_key>=1&mirror_shield)",
+          "vanilla_when": { "maps_compasses": "vanilla" },
+          "vanilla_item": "compass_stone_tower_temple"
+        },
+        {
+          "id": "stt_underwater_stray_fairy",
+          "name": "Underwater Chest Stray Fairy",
+          "logic": "light_arrow"
+        }
+      ]
+    },
+    {
+      "name": "Sun Block Puzzle Room",
+      "logic": "stone_tower_small_key>=2&(light_arrow|mirror_shield)",
+      "item_checks": [
+        {
+          "id": "stt_mirror_sun_block_stray_fairy",
+          "name": "Mirror Sun Block Stray Fairy"
+        },
+        {
+          "id": "stt_mirror_sun_switch_stray_fairy",
+          "name": "Mirror Sun Switch Stray Fairy"
+        }
+      ],
+      "subregions": [
+        {
+          "name": "Lava Room",
+          "logic": "deku_mask",
+          "item_checks": [
+            {
+              "id": "stt_lava_room_ledge_stray_fairy",
+              "name": "Lava Room Ledge Stray Fairy"
+            },
+            {
+              "id": "stt_lava_room_fire_ring_stray_fairy",
+              "name": "Lava Room Fire Ring Stray Fairy"
+            },
+            {
+              "id": "stt_light_arrow_chest",
+              "name": "Light Arrow Chest",
+              "vanilla_when": { "shuffle_main_inventory": false },
+              "vanilla_item": "light_arrow"
+            },
+            {
+              "id": "stt_eyegore_stray_fairy",
+              "name": "Eyegore Stray Fairy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Thin Bridge Room",
+      "item_checks": [
+        {
+          "id": "stt_thin_bridge_room_stray_fairy",
+          "name": "Thin Bridge Room Stray Fairy",
+          "logic": "light_arrow&deku_mask&stone_tower_small_key>=4"
+        }
+      ]
+    },
+    {
+      "name": "Inverted Stone Tower Temple",
+      "logic": "light_arrow",
+      "item_checks": [
+        {
+          "id": "stt_boss_warp_stray_fairy",
+          "name": "Boss Warp Stray Fairy"
+        }
+      ],
+      "subregions": [
+        {
+          "name": "Inverted Updraft Room",
+          "logic": "deku_mask",
+          "item_checks": [
+            {
+              "id": "stt_updraft_room_small_key_chest",
+              "name": "Updraft Room Small Key Chest",
+              "vanilla_when": { "small_keys": "vanilla" },
+              "vanilla_item": "stone_tower_small_key"
+            },
+            {
+              "id": "stt_updraft_room_fire_ring_stray_fairy",
+              "name": "Updraft Room Fire Ring Stray Fairy"
+            },
+            {
+              "id": "stt_updraft_room_frozen_eye_stray_fairy",
+              "name": "Updraft Room Frozen Eye Stray Fairy",
+              "logic": "fire_arrow"
+            }
+          ],
+          "subregions": [
+            {
+              "name": "Flipping Lava Room",
+              "logic": "stone_tower_small_key>=3",
+              "item_checks": [
+                {
+                  "id": "stt_wizzrobe_room_stray_fairy",
+                  "name": "Wizzrobe Room Stray Fairy"
+                },
+                {
+                  "id": "stt_boss_key_chest",
+                  "name": "Boss Key Chest",
+                  "vanilla_when": { "boss_keys": "vanilla" },
+                  "vanilla_item": "stone_tower_big_key"
+                }
+              ]
+            },
+            {
+              "name": "Boss Room",
+              "logic": "stone_tower_small_key>=4&stone_tower_big_key",
+              "item_checks": [
+                {
+                  "id": "stt_giants_mask_chest",
+                  "name": "Giant's Mask Chest",
+                  "vanilla_when": { "shuffle_masks": false },
+                  "vanilla_item": "giants_mask"
+                },
+                {
+                  "id": "stt_twinmold_heart_container",
+                  "name": "Twinmold Heart Container",
+                  "logic": "giants_mask",
+                  "vanilla_when": { "heart_containers": "vanilla" },
+                  "vanilla_item": "heart_container"
+                },
+                {
+                  "id": "stt_twinmold_remains",
+                  "name": "Twinmold's Remains",
+                  "logic": "giants_mask",
+                  "vanilla_when": { "dungeon_rewards": "vanilla" },
+                  "vanilla_item": "twinmold_remains"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   ]
 }

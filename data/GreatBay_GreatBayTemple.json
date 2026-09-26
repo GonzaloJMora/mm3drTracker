@@ -1,8 +1,203 @@
 {
   "region_name": "Great Bay Temple",
-  "logic": "",
+  "logic": "ocarina_of_time&eponas_song&new_wave_bossa_nova&zora_mask&hookshot&magic_meter",
   "map_coordinates": { "xPercent": 10.9, "yPercent": 45.6 },
+  "vanilla_when": { "stray_fairies": "vanilla" },
+  "vanilla_item": "great_bay_stray_fairy",
   "item_checks": [
-
+    {
+      "id": "gbt_entrance_torches_stray_fairy",
+      "name": "Entrance Torches Stray Fairy",
+      "logic": "bow&fire_arrow"
+    }
+  ],
+  "subregions": [
+    {
+      "name": "Water Control Room",
+      "item_checks": [
+        {
+          "id": "gbt_water_control_room_skulltula_stray_fairy",
+          "name": "Water Control Room Skulltula Stray Fairy",
+          "logic": "great_fairy_mask"
+        },
+        {
+          "id": "gbt_water_control_room_underwater_bubble_stray_fairy",
+          "name": "Water Control Room Underwater Bubble Stray Fairy"
+        }
+      ],
+      "subregions": [
+        {
+          "name": "Whirlpool Room",
+          "item_checks": [
+            {
+              "id": "gbt_whirlpool_room_barrel_stray_fairy",
+              "name": "Whirlpool Room Barrel Stray Fairy",
+              "logic": "great_fairy_mask"
+            },
+            {
+              "id": "gbt_whirlpool_room_jar_stray_fairy",
+              "name": "Whirlpool Room Jar Stray Fairy",
+              "logic": "great_fairy_mask"
+            }
+          ],
+          "subregions": [
+            {
+              "name": "Map Room",
+              "item_checks": [
+                {
+                  "id": "gbt_map_chest",
+                  "name": "Map Chest",
+                  "vanilla_when": { "maps_compasses": "vanilla" },
+                  "vanilla_item": "map_great_bay_temple"
+                },
+                {
+                  "id": "gbt_map_room_ledge_jar_stray_fairy",
+                  "name": "Map Room Ledge Jar Stray Fairy",
+                  "logic": "great_fairy_mask|(bow&ice_arrow)"
+                }
+              ],
+              "subregions": [
+                {
+                  "name": "Bio Baba Room",
+                  "item_checks": [
+                    {
+                      "id": "gbt_bio_baba_room_stray_fairy",
+                      "name": "Bio Baba Room Stray Fairy"
+                    }
+                  ],
+                  "subregions": [
+                    {
+                      "name": "Compass Room",
+                      "item_checks": [
+                        {
+                          "id": "gbt_compass_chest",
+                          "name": "Compass Chest",
+                          "vanilla_when": { "maps_compasses": "vanilla" },
+                          "vanilla_item": "compass_great_bay_temple"
+                        },
+                        {
+                          "id": "gbt_small_key_chest",
+                          "name": "Small Key Chest",
+                          "vanilla_when": { "small_keys": "vanilla" },
+                          "vanilla_item": "great_bay_small_key"
+                        },
+                        {
+                          "id": "gbt_compass_room_dexihands_jar_stray_fairy",
+                          "name": "Compass Room Dexihands Jar Stray Fairy",
+                          "logic": "great_fairy_mask"
+                        }
+                      ],
+                      "subregions": [
+                        {
+                          "name": "Boss Key Room",
+                          "logic": "bow&ice_arrow&fire_arrow",
+                          "item_checks": [
+                            {
+                              "id": "gbt_boss_key_chest",
+                              "name": "Boss Key Chest",
+                              "vanilla_when": { "boss_keys": "vanilla" },
+                              "vanilla_item": "great_bay_big_key"
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Waterwheel Room",
+                          "logic": "bow&ice_arrow",
+                          "item_checks": [
+                            {
+                              "id": "gbt_waterwheel_room_lower_stray_fairy",
+                              "name": "Waterwheel Room Lower Stray Fairy"
+                            },
+                            {
+                              "id": "gbt_waterwheel_room_upper_stray_fairy",
+                              "name": "Waterwheel Room Upper Stray Fairy"
+                            }
+                          ],
+                          "subregions": [
+                            {
+                              "name": "Seesaw Room",
+                              "logic": "fire_arrow",
+                              "item_checks": [
+                                {
+                                  "id": "gbt_seesaw_room_underwater_barrel_stray_fairy",
+                                  "name": "Seesaw Room Underwater Barrel Stray Fairy",
+                                  "logic": "great_fairy_mask"
+                                },
+                                {
+                                  "id": "gbt_seesaw_room_chest_stray_fairy",
+                                  "name": "Seesaw Room Chest Stray Fairy"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Miniboss Room",
+              "logic": "great_bay_small_key>=1",
+              "item_checks": [
+                {
+                  "id": "gbt_ice_arrow_chest",
+                  "name": "Ice Arrow Chest",
+                  "vanilla_when": { "shuffle_main_inventory": false },
+                  "vanilla_item": "ice_arrow"
+                }
+              ]
+            },
+            {
+              "name": "Green Valve Room",
+              "logic": "bow&ice_arrow",
+              "item_checks": [
+                {
+                  "id": "gbt_green_valve_room_stray_fairy",
+                  "name": "Green Valve Room Stray Fairy"
+                }
+              ]
+            },
+            {
+              "name": "Pre-Boss Room",
+              "logic": "bow&ice_arrow",
+              "item_checks": [
+                {
+                  "id": "gbt_pre_boss_room_bubble_stray_fairy",
+                  "name": "Pre-Boss Room Bubble Stray Fairy",
+                  "logic": "great_fairy_mask"
+                },
+                {
+                  "id": "gbt_pre_boss_room_underwater_bubble_stray_fairy",
+                  "name": "Pre-Boss Room Underwater Bubble Stray Fairy",
+                  "logic": "great_fairy_mask"
+                }
+              ],
+              "subregions": [
+                {
+                  "name": "Boss Room",
+                  "logic": "fire_arrow&great_bay_big_key",
+                  "item_checks": [
+                    {
+                      "id": "gbt_gyorg_heart_container",
+                      "name": "Gyorg Heart Container",
+                      "vanilla_when": { "heart_containers": "vanilla" },
+                      "vanilla_item": "heart_container"
+                    },
+                    {
+                      "id": "gbt_gyorg_remains",
+                      "name": "Gyorg's Remains",
+                      "vanilla_when": { "dungeon_rewards": "vanilla" },
+                      "vanilla_item": "gyorg_remains"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   ]
 }

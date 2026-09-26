@@ -3,6 +3,69 @@
   "logic": "",
   "map_coordinates": { "xPercent": 62.7, "yPercent": 41.1 },
   "item_checks": [
-
+    {
+      "id": "rti_pillar_chest",
+      "name": "Pillar Chest",
+      "logic": "hookshot"
+    },
+    {
+      "id": "rti_road_to_ikana_grotto",
+      "name": "Road to Ikana Grotto",
+      "logic": "goron_mask"
+    }
+  ],
+  "subregions": [
+    {
+      "name": "Ikana Graveyard",
+      "logic": "ocarina_of_time&eponas_song",
+      "item_checks": [
+        {
+          "id": "rti_captain_keetas_chest",
+          "name": "Captain Keeta's Chest",
+          "logic": "sonata_of_awakening&fighting",
+          "vanilla_when": { "shuffle_masks": false },
+          "vanilla_item": "captains_hat"
+        },
+        {
+          "id": "rti_graveyard_grotto",
+          "name": "Graveyard Grotto",
+          "logic": "(bomb_bag|blast_mask)&mask_of_truth"
+        }
+      ],
+      "subregions": [
+        {
+          "name": "Below the Graves",
+          "logic": "captains_hat",
+          "item_checks": [
+            {
+              "id": "rti_day_1_grave_bats",
+              "name": "Day 1 Grave Bats",
+              "logic": "fighting"
+            },
+            {
+              "id": "rti_day_1_grave_tablet",
+              "name": "Day 1 Grave Tablet",
+              "logic": "fighting",
+              "vanilla_when": { "shuffle_songs": "off" },
+              "vanilla_item": "song_of_storms"
+            },
+            {
+              "id": "rti_day_2_iron_knuckle_chest",
+              "name": "Day 2 Iron Knuckle Chest",
+              "logic": "lens_of_truth&magic_meter&(bomb_bag|blast_mask)&fighting",
+              "vanilla_when": { "shuffle_pieces_of_heart": false },
+              "vanilla_item": "heart_piece"
+            },
+            {
+              "id": "rti_day_3_dampe_digging",
+              "name": "Day 3 Dampe Digging",
+              "logic": "fighting",
+              "vanilla_when": { "shuffle_pieces_of_heart": false },
+              "vanilla_item": "heart_piece"
+            }
+          ]
+        }
+      ]
+    }
   ]
 }

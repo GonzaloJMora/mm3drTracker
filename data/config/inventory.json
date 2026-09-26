@@ -1,0 +1,36 @@
+{
+  "progressions": {
+    "sword": ["kokiri_sword", "razor_sword", "gilded_sword"],
+    "shield": ["termina_shield", "mirror_shield"],
+    "bow": ["bow", "bow_large_quiver", "bow_largest_quiver"],
+    "wallet": ["base_wallet", "adults_wallet", "giants_wallet"],
+    "bomb_bag": ["bomb_bag", "big_bomb_bag", "biggest_bomb_bag"],
+    "magic": ["magic_meter", "magic_meter_double"],
+    "goron_lullaby": ["goron_lullaby_intro", "goron_lullaby_full"]
+  },
+  "item_counts": {
+    "empty_bottle": 2,
+    "swamp_skulltula_token": 30,
+    "ocean_skulltula_token": 30,
+    "zora_egg": 7,
+    "woodfall_small_key": 1,
+    "snowhead_small_key": 3,
+    "great_bay_small_key": 1,
+    "stone_tower_small_key": 4,
+    "woodfall_stray_fairy": 15,
+    "snowhead_stray_fairy": 15,
+    "great_bay_stray_fairy": 15,
+    "stone_tower_stray_fairy": 15,
+    "heart_piece": 52,
+    "heart_container": 4
+  },
+  "item_groups": {
+    "boss_masks": ["odolwa_remains", "goht_remains", "gyorg_remains", "twinmold_remains"],
+    "bottles": ["red_potion", "gold_dust", "milk", "chateau_romani", "mystery_milk", "empty_bottle"]
+  },
+  "digit_slots": {
+    "name": "Bomber's Code Digit",
+    "ids": ["bombers_code_digit_1", "bombers_code_digit_2", "bombers_code_digit_3", "bombers_code_digit_4", "bombers_code_digit_5"],
+    "max_value": 5
+  }
+}
