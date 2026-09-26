@@ -26,10 +26,15 @@
 }
 
 .location-map-marker {
-    /* Unrounded so a browser without round() still draws markers: inside a
-       custom property round() cannot fall back, and width goes invalid instead.
-       The @supports block below rounds it. */
-    --marker-size: clamp(15px, 2.5%, 28px);
+    /* A share of the map's width, so markers grow with the map. 3.2% is as far as
+       it can go: the closest pair of markers is about 3.4% of the map's width
+       apart, center to center. Only round shapes clear at that, so the square and
+       triangle are drawn smaller than the box (style.css). */
+
+    /* Unrounded so a browser without round() still draws markers: inside a custom
+       property round() cannot fall back, and width goes invalid instead. The
+       @supports block below rounds it. */
+    --marker-size: max(15px, 3.2%);
     position: absolute;
     width: var(--marker-size);
     height: auto;
@@ -79,8 +84,9 @@
 .location-map-marker::before {
     z-index: -1;
     /* The outline is whatever this inset leaves uncovered; style.css widens it
-       for the slanted shapes. */
-    inset: var(--status-outline, 2px);
+       for the slanted shapes. A share of the marker with a floor, so it grows
+       with the marker. */
+    inset: max(var(--status-outline, 2px), var(--status-outline-pct, 8%));
     /* Unfilled without a status, so a marker never passes for Checked. */
     background-color: var(--status-color, transparent);
 }
@@ -91,43 +97,52 @@
 }
 
 /* A counted marker needs a floor a plain dot does not: two digits are unreadable
-   at the size the map gives markers on a small screen. Only the floor moves.
-   Clock Town's markers already sit closer than 20px on the narrowest desktop
-   maps, so counted neighbors there touch; raising the whole scale would crowd
-   them at every width. */
+   at the size the map gives markers on a small screen. Only the floor moves. It is
+   why the tightest cluster's coordinates are spread: at the narrowest desktop map
+   the floor is nearly the whole gap between neighbors. */
 .location-map-marker.has-count {
-    --marker-size: clamp(20px, 2.5%, 28px);
-    --count-size: 11px;
+    --marker-size: max(20px, 3.2%);
+    --count-size: max(11px, 1.45cqw);
     font-size: var(--count-size);
-    /* Fixed rather than the marker's height: 20px centers the count at every
-       size the map produces, and a line box as tall as the marker puts odd
-       sizes half a pixel off. */
-    line-height: 20px;
+    /* One line as tall as the type, centered by the marker's flex box. */
+    line-height: 1;
 }
 
-/* Whole pixels for the box and the type: a fractional marker centers a
-   fractional glyph, so a count sits a hair off its neighbors at one map width
-   and true at another. Gated because a percentage inside round() needs a newer
-   browser than the rest of the tracker. */
-@supports (width: round(clamp(15px, 2.5%, 28px), 1px)) {
+/* Even whole pixels for the box and the type: a line box is centered in the
+   marker, so an even marker and an even type size land it on a whole pixel, where
+   an odd one puts the count half a pixel off and differently at each map width.
+   Gated because a percentage inside round() needs a newer browser than the rest
+   of the tracker. */
+@supports (width: round(max(15px, 3.2%), 2px)) {
     .location-map-marker {
-        --marker-size: round(clamp(15px, 2.5%, 28px), 1px);
+        --marker-size: round(max(15px, 3.2%), 2px);
     }
 
     .location-map-marker.has-count {
-        --marker-size: round(clamp(20px, 2.5%, 28px), 1px);
-        /* 11 and 12 center exactly; 10, 13 and 15 sit half a pixel off. Keep
-           the ramp inside the exact sizes. */
-        --count-size: round(clamp(11px, 1.4cqw, 12px), 1px);
+        --marker-size: round(max(20px, 3.2%), 2px);
+        --count-size: round(max(11px, 1.45cqw), 2px);
     }
 }
 
 /* A shape that tapers gives a two-digit count much less room than its width
    suggests — the diamond is the tight one, since the space either side of the
-   center line falls away. Which shapes taper, and the smaller size, belong to the
-   status pairing in style.css; a shape without one keeps the full count size. */
+   center line falls away. How much smaller the count gets belongs to the status
+   pairing in style.css; a shape without a ratio keeps the full count size. */
 .location-map-marker.wide-count {
-    font-size: var(--status-wide-count, var(--count-size));
+    font-size: calc(var(--count-size) * var(--status-wide-ratio, 1));
+}
+
+@supports (width: round(max(15px, 3.2%), 2px)) {
+    .location-map-marker.wide-count {
+        font-size: round(calc(var(--count-size) * var(--status-wide-ratio, 1)), 2px);
+    }
+}
+
+/* The count in the tooltip: muted, so the region name still leads. */
+.tracker-tooltip .marker-tooltip-count {
+    margin-left: 8px;
+    font-weight: normal;
+    opacity: 0.75;
 }
 
 .location-map-crosshair {
@@ -166,7 +181,7 @@
 
 /* Muted so the region name still leads. */
 .location-map-overlay-count {
-    margin-left: 8px;
+    margin-left: calc(8px * var(--overlay-scale, 1));
     font-weight: normal;
     opacity: 0.75;
 }
@@ -174,11 +189,11 @@
 .location-map-overlay-titlebar {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    padding: calc(8px * var(--overlay-scale, 1)) calc(12px * var(--overlay-scale, 1));
     background-color: #333;
     color: #fff;
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: calc(1.1rem * var(--overlay-scale, 1));
     flex-shrink: 0;
     cursor: pointer; /* the whole titlebar closes the overlay, not just the X */
 }
@@ -187,10 +202,10 @@
     background: none;
     border: none;
     color: #fff;
-    font-size: 1.3rem;
+    font-size: calc(1.3rem * var(--overlay-scale, 1));
     line-height: 1;
     cursor: pointer;
-    padding: 2px 8px;
+    padding: calc(2px * var(--overlay-scale, 1)) calc(8px * var(--overlay-scale, 1));
     /* Pushed right rather than by space-between, which would strand the count
        in the middle instead of beside the name. */
     margin-left: auto;
@@ -224,11 +239,14 @@
 }
 
 /* Density is computed, not chosen: locationMap.js walks map_overlay.text_sizes
-   in config.json and sets these to the largest that fits. The defaults are the
-   top of that ladder, which is what an ordinary region gets. */
+   in config/map.json and sets these to the largest that fits. The defaults are the
+   top of that ladder, which is what an ordinary region gets. --overlay-scale
+   (set on the overlay) multiplies every size here on a map bigger than the
+   ladder was made for. */
 .location-map-overlay-body .region-check-item {
-    padding: var(--overlay-check-padding, 10px 12px);
-    font-size: var(--overlay-check-font, 0.95rem);
+    padding: var(--overlay-check-padding,
+        calc(10px * var(--overlay-scale, 1)) calc(12px * var(--overlay-scale, 1)));
+    font-size: var(--overlay-check-font, calc(0.95rem * var(--overlay-scale, 1)));
     width: auto;
     /* Catches a name too long for its column, which would otherwise be clipped
        with no sign it happened. Default break behavior, so it breaks at spaces.
@@ -250,8 +268,8 @@
        overflow:hidden would slice the checks that spilled past it. */
     box-sizing: border-box;
     height: 100%;
-    gap: 4px 20px;
-    padding: 14px;
+    gap: calc(4px * var(--overlay-scale, 1)) calc(20px * var(--overlay-scale, 1));
+    padding: calc(14px * var(--overlay-scale, 1));
     background: transparent;
     overflow: hidden; /* the fit is computed; a scrollbar here would mean a bug */
 }

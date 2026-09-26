@@ -1,8 +1,79 @@
 {
   "region_name": "Goron Village",
-  "logic": "",
+  "logic": "bow&(bomb_bag|blast_mask|goron_mask|(magic_meter&fire_arrow))",
   "map_coordinates": { "xPercent": 60.4, "yPercent": 18.7 },
   "item_checks": [
-
+    {
+      "id": "gv_powder_keg_challenge",
+      "name": "Powder Keg Challenge",
+      "logic": "goron_mask&(goht_defeated|(magic_meter&fire_arrow))",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "powder_keg"
+    },
+    {
+      "id": "gv_deku_scrub_purchase",
+      "name": "Deku Scrub Merchant Purchase",
+      "logic": "adults_wallet&goron_mask&big_bomb_bag",
+      "vanilla_when": [{ "shuffle_main_inventory": false }, { "shuffle_scrub_purchases": false }],
+      "vanilla_item": "Progressive Bomb Bag"
+    },
+    {
+      "id": "gv_deku_scrub_trade",
+      "name": "Deku Scrub Merchant Trade",
+      "logic": "deku_mask&swamp_title_deed",
+      "vanilla_when": { "shuffle_scrub_trades": false },
+      "vanilla_item": "mountain_title_deed"
+    },
+    {
+      "id": "gv_ledge_hp",
+      "name": "Ledge HP",
+      "logic": "deku_mask&swamp_title_deed",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "gv_lens_of_truth_chest",
+      "name": "Lens of Truth Chest",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "lens_of_truth"
+    },
+    {
+      "id": "gv_lens_cave_invisible_chest",
+      "name": "Lens Cave Invisible Chest",
+      "logic": "lens_of_truth&magic_meter"
+    },
+    {
+      "id": "gv_lens_cave_rock_chest",
+      "name": "Lens Cave Rock Chest",
+      "logic": "bomb_bag|blast_mask"
+    },
+    {
+      "id": "gv_goron_shop_item_1",
+      "name": "Goron Shop Item 1",
+      "logic": "goron_mask|(magic_meter&fire_arrow)",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Bombs (10)"
+    },
+    {
+      "id": "gv_goron_shop_item_2",
+      "name": "Goron Shop Item 2",
+      "logic": "goron_mask|(magic_meter&fire_arrow)",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Bombchu (10)"
+    },
+    {
+      "id": "gv_goron_shop_item_3",
+      "name": "Goron Shop Item 3",
+      "logic": "goron_mask|(magic_meter&fire_arrow)",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Red Potion"
+    },
+    {
+      "id": "gv_goron_lullaby",
+      "name": "Goron Lullaby",
+      "logic": "goron_mask&ocarina_of_time&goron_lullaby_intro",
+      "vanilla_when": { "shuffle_songs": "off" },
+      "vanilla_item": "Progressive Lullaby"
+    }
   ]
 }

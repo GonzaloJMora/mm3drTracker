@@ -10,8 +10,15 @@
     --mobile-breakpoint: 1499px;
 
     /* Where main stops growing. The header caps at the same width, so the toolbar
-       ends where the tracker below it ends. */
+       ends where the tracker below it ends. On the tracker page
+       locationPanelLayout.js sets it to the width the scaled layout needs. */
     --layout-max-width: 1880px;
+
+    /* How much larger the desktop item grids, and so the map beside them, are drawn
+       than their base size. Never below 1. locationPanelLayout.js sets it from the
+       window; every pixel size in itemContainers.css that belongs to the grids is
+       multiplied by it. */
+    --ui-scale: 1;
 
     /* One definition per status. Region headers, check rows, map markers and the
        legend all read these, so the legend cannot describe a color the map is
@@ -35,24 +42,40 @@
     --shape-vanilla: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
     --shape-completed: circle(50%);
 
+    /* Map markers only: the triangle at 80% of its box and the square at 76%, so
+       their corners clear neighboring markers (ARCHITECTURE.md, *Markers*). Every
+       other surface has no neighbors to clear and keeps the full shapes above. */
+    --shape-inaccessible-marker: polygon(50% 15.36%, 90% 84.64%, 10% 84.64%);
+    --shape-vanilla-marker: polygon(12% 12%, 88% 12%, 88% 88%, 12% 88%);
+
     /* A map marker's outline is the gap its fill leaves inside it, and a slanted
        edge keeps less of that gap than a straight one, because it is measured
        square to the edge. The diamond and the triangle are inset further to
-       compensate; every other shape uses the default in locationMap.css. */
+       compensate. Each is a share of the marker with a floor in pixels, so it
+       grows with the marker and never thins below the floor on a small one.
+       These are for the full shapes; the marker-only block after the pairings
+       adjusts them for the smaller triangle and square. The circle uses the
+       default in locationMap.css. */
     --shape-inaccessible-outline: 3px;
     --shape-partial-outline: 3px;
+    --shape-vanilla-outline: 2px;
+    --shape-inaccessible-outline-pct: 12%;
+    --shape-partial-outline-pct: 12%;
+    --shape-vanilla-outline-pct: 8%;
 
     /* A two-digit count on a shape that tapers has less room than the marker's
-       width suggests, so it drops to this size — one that centers exactly. The
-       square doesn't taper, so its pairing leaves it out and keeps the full size. */
-    --shape-tapered-wide-count: 9px;
+       width suggests, so it drops to this share of the one-digit size. The square
+       doesn't taper, but on a marker it fills only 76% of the box, so it drops
+       too, if less. */
+    --shape-tapered-wide-ratio: 0.75;
+    --shape-vanilla-wide-ratio: 0.85;
 }
 
 /* The color and shape of a status are paired here and nowhere else. Every
    surface below reads --status-color and --status-shape, and map markers also
-   read --status-outline and --status-wide-count, so adding a surface means
-   consuming variables rather than writing five more rules — and an element with
-   no status class simply has none of them. */
+   read --status-outline, --status-outline-pct and --status-wide-ratio, so adding
+   a surface means consuming variables rather than writing five more rules — and
+   an element with no status class simply has none of them. */
 .region-header.inaccessible,
 .region-check-item.inaccessible,
 .location-map-marker.inaccessible,
@@ -60,7 +83,8 @@
     --status-color: var(--status-inaccessible);
     --status-shape: var(--shape-inaccessible);
     --status-outline: var(--shape-inaccessible-outline);
-    --status-wide-count: var(--shape-tapered-wide-count);
+    --status-outline-pct: var(--shape-inaccessible-outline-pct);
+    --status-wide-ratio: var(--shape-tapered-wide-ratio);
 }
 
 .region-header.partialCompletion,
@@ -69,7 +93,8 @@
     --status-color: var(--status-partial);
     --status-shape: var(--shape-partial);
     --status-outline: var(--shape-partial-outline);
-    --status-wide-count: var(--shape-tapered-wide-count);
+    --status-outline-pct: var(--shape-partial-outline-pct);
+    --status-wide-ratio: var(--shape-tapered-wide-ratio);
 }
 
 /* Regions roll up to fullClear; a single check is accessible. Same meaning. */
@@ -79,7 +104,7 @@
 .location-legend-swatch.fullClear {
     --status-color: var(--status-accessible);
     --status-shape: var(--shape-accessible);
-    --status-wide-count: var(--shape-tapered-wide-count);
+    --status-wide-ratio: var(--shape-tapered-wide-ratio);
 }
 
 .region-header.vanilla,
@@ -88,6 +113,22 @@
 .location-legend-swatch.vanilla {
     --status-color: var(--status-vanilla);
     --status-shape: var(--shape-vanilla);
+    --status-wide-ratio: var(--shape-vanilla-wide-ratio);
+}
+
+/* Markers draw the smaller triangle and square. A shape that fills less of its
+   box leaves a thinner outline by the same share, so the outline is divided by
+   it. Before the completed pairing, which still wins. */
+.location-map-marker.inaccessible {
+    --status-shape: var(--shape-inaccessible-marker);
+    --status-outline: calc(var(--shape-inaccessible-outline) / 0.8);
+    --status-outline-pct: calc(var(--shape-inaccessible-outline-pct) / 0.8);
+}
+
+.location-map-marker.vanilla {
+    --status-shape: var(--shape-vanilla-marker);
+    --status-outline: calc(var(--shape-vanilla-outline) / 0.76);
+    --status-outline-pct: calc(var(--shape-vanilla-outline-pct) / 0.76);
 }
 
 /* A non-randomized check you can't reach yet is red like any other, and turns
@@ -126,7 +167,7 @@ body.hide-non-randomized .location-legend-row[data-status="vanilla"] {
 .location-legend-swatch.completed {
     --status-color: var(--status-completed);
     --status-shape: var(--shape-completed);
-    --status-wide-count: var(--shape-tapered-wide-count);
+    --status-wide-ratio: var(--shape-tapered-wide-ratio);
 }
 
 /* iOS Safari enlarges wide blocks of text in landscape and doesn't always shrink
@@ -173,6 +214,7 @@ header {
     max-width: var(--layout-max-width);
     margin-inline: auto;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
@@ -245,6 +287,7 @@ main.awaiting-data {
    user-select: none. */
 #tracker-load-error,
 #tracker-region-warning,
+#tracker-logic-warning,
 #tracker-map-warning {
     -webkit-user-select: text;
     -moz-user-select: text;
@@ -281,6 +324,7 @@ main.awaiting-data {
    Full width to take their own row in main's flex layout. The settings page's
    storage warning is settingsPage.js's. */
 #tracker-region-warning,
+#tracker-logic-warning,
 #tracker-map-warning,
 #settings-storage-warning {
     width: 100%;
@@ -293,10 +337,13 @@ main.awaiting-data {
     color: #e8d9a0;
     font-size: 0.9rem;
     line-height: 1.5;
+    /* At the largest text sizes one word can be wider than a phone. */
+    overflow-wrap: anywhere;
 }
 
-/* pre-wrap keeps the detail's line breaks; break-word stops a long path
-   widening the box. */
+/* pre-wrap keeps the detail's line breaks. anywhere, not break-word, stops a long
+   path or URL widening the box: break-word wraps it when drawn but still sizes the
+   box to fit it whole, which pushes the load-error box past a phone's edge. */
 .tracker-error-detail {
     display: block;
     padding: 10px 12px;
@@ -307,10 +354,11 @@ main.awaiting-data {
     font-size: 0.9rem;
     color: #ffffff;
     white-space: pre-wrap;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 
 #tracker-region-warning .tracker-error-detail,
+#tracker-logic-warning .tracker-error-detail,
 #tracker-map-warning .tracker-error-detail {
     margin-top: 8px;
 }

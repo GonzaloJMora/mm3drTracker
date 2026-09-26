@@ -35,6 +35,7 @@
               ] },
             { "id": "shuffle_song_of_soaring", "name": "Shuffle Song of Soaring", "class": "toggle", "default": false },
             { "id": "shuffle_song_of_time", "name": "Shuffle Song of Time", "class": "toggle", "default": false },
+            { "id": "shopsanity", "name": "Shopsanity", "class": "toggle", "default": false },
             { "id": "tokensanity", "name": "Tokensanity", "class": "toggle", "default": false },
             { "id": "shuffle_fairy_rewards", "name": "Shuffle Fairy Rewards", "class": "dropdown", "default": "off",
               "options": [
@@ -51,11 +52,13 @@
       "groups": [
         {
           "settings": [
+            { "id": "shuffle_scrub_purchases", "name": "Shuffle Scrub Purchases", "class": "toggle", "default": false },
             { "id": "shuffle_scrub_trades", "name": "Shuffle Scrub Trades", "class": "toggle", "default": false },
             { "id": "shuffle_anju_and_kafei", "name": "Shuffle Anju and Kafei", "class": "toggle", "default": false },
-            { "id": "shuffle_tingle_maps", "name": "Shuffle Tingle Maps", "class": "toggle", "default": false },
-            { "id": "shuffle_notebook", "name": "Shuffle Notebook", "class": "toggle", "default": false },
             { "id": "shuffle_cows", "name": "Shuffle Cows", "class": "toggle", "default": false },
+            { "id": "shuffle_tingle_maps", "name": "Shuffle Tingle Maps", "class": "toggle", "default": false },
+            { "id": "shuffle_magic_beans", "name": "Shuffle Magic Beans", "class": "toggle", "default": false },
+            { "id": "shuffle_notebook", "name": "Shuffle Notebook", "class": "toggle", "default": false },
             { "id": "shuffle_moon_items", "name": "Shuffle Moon Items", "class": "toggle", "default": false },
             { "id": "shuffle_fierce_deity", "name": "Shuffle Fierce Deity", "class": "toggle", "default": false }
           ]
@@ -202,9 +205,9 @@
             { "id": "starting_bomb_bag", "name": "Bomb Bag", "class": "dropdown", "default": "none",
               "options": [
                 { "id": "none", "name": "None" },
-                { "id": "20", "name": "20", "grants": { "bomb": 20 } },
-                { "id": "30", "name": "30", "grants": { "bomb": 30 } },
-                { "id": "40", "name": "40", "grants": { "bomb": 40 } }
+                { "id": "20", "name": "20", "grants": { "bomb_bag": "bomb_bag" } },
+                { "id": "30", "name": "30", "grants": { "bomb_bag": "big_bomb_bag" } },
+                { "id": "40", "name": "40", "grants": { "bomb_bag": "biggest_bomb_bag" } }
               ] },
             { "id": "starting_bombchus", "name": "Bombchu", "class": "toggle", "default": false,
               "grants": { "bombchu": true } },
@@ -213,9 +216,9 @@
             { "id": "starting_bow", "name": "Bow", "class": "dropdown", "default": "none",
               "options": [
                 { "id": "none", "name": "None" },
-                { "id": "30", "name": "30", "grants": { "bow": 30 } },
-                { "id": "40", "name": "40", "grants": { "bow": 40 } },
-                { "id": "50", "name": "50", "grants": { "bow": 50 } }
+                { "id": "30", "name": "30", "grants": { "bow": "bow" } },
+                { "id": "40", "name": "40", "grants": { "bow": "bow_large_quiver" } },
+                { "id": "50", "name": "50", "grants": { "bow": "bow_largest_quiver" } }
               ] },
             { "id": "starting_fire_arrow", "name": "Fire Arrow", "class": "toggle", "default": false,
               "grants": { "fire_arrow": true } },

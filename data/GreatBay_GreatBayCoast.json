@@ -1,8 +1,81 @@
 {
   "region_name": "Great Bay Coast",
-  "logic": "",
+  "logic": "ocarina_of_time&eponas_song",
   "map_coordinates": { "xPercent": 26.2, "yPercent": 42 },
   "item_checks": [
-
+    {
+      "id": "gbc_mikau",
+      "name": "Mikau",
+      "logic": "song_of_healing",
+      "vanilla_when": { "shuffle_transformation": false },
+      "vanilla_item": "zora_mask"
+    },
+    {
+      "id": "gbc_grotto_chest",
+      "name": "Grotto Chest"
+    },
+    {
+      "id": "gbc_fisherman_photo",
+      "name": "Fisherman Photo",
+      "logic": "zora_mask&pictograph_box&stone_mask",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "seahorse"
+    },
+    {
+      "id": "gbc_tingle_great_bay_map_buy",
+      "name": "Tingle Great Bay Map",
+      "logic": "projectile",
+      "vanilla_when": { "shuffle_tingle_maps": false },
+      "vanilla_item": "Great Bay Map"
+    },
+    {
+      "id": "gbc_tingle_stone_tower_map_buy",
+      "name": "Tingle Stone Tower Map",
+      "logic": "projectile",
+      "vanilla_when": { "shuffle_tingle_maps": false },
+      "vanilla_item": "Stone Tower Map"
+    },
+    {
+      "id": "gbc_marine_lab_fish_hp",
+      "name": "Marine Lab Fish HP",
+      "logic": "bottle",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "gbc_marine_lab_baby_zoras",
+      "name": "Marine Lab Baby Zoras",
+      "logic": "zora_egg>=7",
+      "vanilla_when": { "shuffle_songs": "off" },
+      "vanilla_item": "new_wave_bossa_nova"
+    },
+    {
+      "id": "gbc_cow_grotto_cow_1",
+      "name": "Grotto Cow 1",
+      "logic": "hookshot&bottle",
+      "vanilla_when": { "shuffle_cows": false },
+      "vanilla_item": "Milk"
+    },
+    {
+      "id": "gbc_cow_grotto_cow_2",
+      "name": "Grotto Cow 2",
+      "logic": "hookshot&bottle",
+      "vanilla_when": { "shuffle_cows": false },
+      "vanilla_item": "Milk"
+    },
+    {
+      "id": "gbc_ledge_hp",
+      "name": "Ledge HP",
+      "logic": "hookshot&magic_bean&(bottle|song_of_storms)&scarecrow_song",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "gbc_fishermans_game",
+      "name": "Fisherman's Game",
+      "logic": "gyorg_defeated&hookshot",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    }
   ]
 }

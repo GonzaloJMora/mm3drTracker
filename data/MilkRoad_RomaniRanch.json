@@ -3,6 +3,59 @@
   "logic": "",
   "map_coordinates": { "xPercent": 38.7, "yPercent": 47.1 },
   "item_checks": [
-
+    {
+      "id": "rr_romani_game",
+      "name": "Romani's Game",
+      "logic": "goron_mask&powder_keg&bow",
+      "vanilla_when": { "shuffle_songs": "off" },
+      "vanilla_item": "eponas_song"
+    },
+    {
+      "id": "rr_alien_defense",
+      "name": "Alien Defense",
+      "logic": "goron_mask&powder_keg&bow",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "milk"
+    },
+    {
+      "id": "rr_cremia_escort",
+      "name": "Cremia Escort",
+      "logic": "goron_mask&powder_keg&bow",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "romani_mask"
+    },
+    {
+      "id": "rr_barn_cow_1",
+      "name": "Barn Cow 1",
+      "logic": "goron_mask&powder_keg&ocarina_of_time&eponas_song&bottle",
+      "vanilla_when": { "shuffle_cows": false },
+      "vanilla_item": "Milk"
+    },
+    {
+      "id": "rr_barn_cow_2",
+      "name": "Barn Cow 2",
+      "logic": "goron_mask&powder_keg&ocarina_of_time&eponas_song&bottle",
+      "vanilla_when": { "shuffle_cows": false },
+      "vanilla_item": "Milk"
+    },
+    {
+      "id": "rr_doggy_racetrack_roof_chest",
+      "name": "Doggy Racetrack Roof Chest",
+      "logic": "hookshot|(magic_bean&(bottle|(ocarina_of_time&song_of_storms)))"
+    },
+    {
+      "id": "rr_dog_race_reward",
+      "name": "Dog Race Winner",
+      "logic": "mask_of_truth",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "rr_grogs_cuccos",
+      "name": "Grog's Cuccos",
+      "logic": "bremen_mask",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "bunny_hood"
+    }
   ]
 }

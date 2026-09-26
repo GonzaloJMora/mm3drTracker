@@ -1,8 +1,124 @@
 {
   "region_name": "Ikana Canyon",
-  "logic": "",
+  "logic": "hookshot&(garo_mask|gibdo_mask)&ocarina_of_time&eponas_song",
   "map_coordinates": { "xPercent": 75.6, "yPercent": 39.6 },
   "item_checks": [
-
+    {
+      "id": "ic_ledge_hp",
+      "name": "Ledge HP",
+      "logic": "zora_mask&ocean_title_deed&deku_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "ic_deku_scrub_trade",
+      "name": "Deku Scrub Merchant Trade",
+      "logic": "zora_mask&ocean_title_deed",
+      "vanilla_when": { "shuffle_scrub_trades": false },
+      "vanilla_item": "Huge Rupee"
+    },
+    {
+      "id": "ic_deku_scrub_purchase",
+      "name": "Deku Scrub Merchant Purchase",
+      "logic": "adults_wallet&bottle",
+      "vanilla_when": { "shuffle_scrub_purchases": false },
+      "vanilla_item": "Blue Potion"
+    },
+    {
+      "id": "ic_secret_shrine_grotto",
+      "name": "Secret Shrine Grotto"
+    }
+  ],
+  "subregions": [
+    {
+      "name": "Upper Ikana Canyon",
+      "logic": "bow&magic_meter&ice_arrow",
+      "item_checks": [
+        {
+          "id": "ic_tingle_stone_tower_map_buy",
+          "name": "Tingle Stone Tower Map",
+          "vanilla_when": { "shuffle_tingle_maps": false },
+          "vanilla_item": "Stone Tower Map"
+        },
+        {
+          "id": "ic_tingle_clock_town_map_buy",
+          "name": "Tingle Clock Town Map",
+          "vanilla_when": { "shuffle_tingle_maps": false },
+          "vanilla_item": "Clock Town Map"
+        },
+        {
+          "id": "ic_poe_hut_hp",
+          "name": "Poe Hut HP",
+          "logic": "fighting",
+          "vanilla_when": { "shuffle_pieces_of_heart": false },
+          "vanilla_item": "heart_piece"
+        },
+        {
+          "id": "ic_pamelas_father",
+          "name": "Pamela's Father",
+          "logic": "song_of_storms&song_of_healing",
+          "vanilla_when": { "shuffle_masks": false },
+          "vanilla_item": "gibdo_mask"
+        },
+        {
+          "id": "ic_great_fairy_reward",
+          "name": "Great Fairy Reward",
+          "logic": "stone_tower_stray_fairy>=15",
+          "vanilla_when": { "shuffle_main_inventory": false, "shuffle_fairy_rewards": "off" },
+          "vanilla_item": "great_fairy_sword"
+        }
+      ],
+      "subregions": [
+        {
+          "name": "Beneath the Well",
+          "logic": "gibdo_mask&bottle",
+          "item_checks": [
+            {
+              "id": "ic_well_left_path_chest",
+              "name": "Beneath the Well Left Path Chest",
+              "logic": "lens_of_truth"
+            },
+            {
+              "id": "ic_well_right_path_chest",
+              "name": "Beneath the Well Right Path Chest",
+              "logic": "fire_arrow&(magic_bean|light_arrow|mirror_shield)"
+            },
+            {
+              "id": "ic_well_cow",
+              "name": "Beneath the Well Cow",
+              "logic": "deku_nut&(hot_spring_water|zora_mask)&(magic_bean|light_arrow|mirror_shield)",
+              "vanilla_when": { "shuffle_cows": false },
+              "vanilla_item": "Milk"
+            }
+          ]
+        },
+        {
+          "name": "Through Ikana Castle",
+          "item_checks": [
+            {
+              "id": "ic_well_mirror_shield_chest",
+              "name": "Mirror Shield Chest",
+              "logic": "fire_arrow&(light_arrow|mirror_shield|(gibdo_mask&bottle&magic_bean&deku_nut&bomb_bag))",
+              "vanilla_when": { "shuffle_main_inventory": false },
+              "vanilla_item": "mirror_shield"
+            },
+            {
+              "id": "ic_castle_pillar_hp",
+              "name": "Ikana Castle Pillar HP",
+              "logic": "deku_mask&fire_arrow&(light_arrow|mirror_shield)",
+              "vanilla_when": { "shuffle_pieces_of_heart": false },
+              "vanilla_item": "heart_piece"
+            },
+            {
+              "id": "ic_castle_igos_du_ikana",
+              "name": "Igos du Ikana",
+              "logic": "mirror_shield&fire_arrow&fighting&(light_arrow|(deku_mask&goron_mask&powder_keg))",
+              "vanilla_when": { "shuffle_songs": "off" },
+              "vanilla_item": "elegy_of_emptiness"
+            }
+          ]
+        }
+      ]
+    }
   ]
 }

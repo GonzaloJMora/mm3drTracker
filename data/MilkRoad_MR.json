@@ -3,6 +3,47 @@
   "logic": "",
   "map_coordinates": { "xPercent": 44.2, "yPercent": 50.7 },
   "item_checks": [
-
+    {
+      "id": "mr_keaton_quiz",
+      "name": "Keaton Quiz",
+      "logic": "keaton_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "mr_tingle_romani_ranch_map_buy",
+      "name": "Tingle Romani Ranch Map",
+      "logic": "projectile",
+      "vanilla_when": { "shuffle_tingle_maps": false },
+      "vanilla_item": "Romani Ranch Map"
+    },
+    {
+      "id": "mr_tingle_great_bay_map_buy",
+      "name": "Tingle Great Bay Map",
+      "logic": "projectile",
+      "vanilla_when": { "shuffle_tingle_maps": false },
+      "vanilla_item": "Great Bay Map"
+    },
+    {
+      "id": "mr_gorman_track_race",
+      "name": "Gorman Track Race",
+      "logic": "ocarina_of_time&eponas_song",
+      "vanilla_when": { "shuffle_masks": false },
+      "vanilla_item": "garo_mask"
+    },
+    {
+      "id": "mr_gorman_track_milk_purchase",
+      "name": "Gorman Milk Purchase",
+      "logic": "bottle",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Milk"
+    },
+    {
+      "id": "mr_gorman_mystery_milk",
+      "name": "Gorman Mystery Milk",
+      "logic": "troupe_leader_mask",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "mystery_milk"
+    }
   ]
 }

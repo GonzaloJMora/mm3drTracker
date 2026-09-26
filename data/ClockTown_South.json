@@ -1,40 +1,37 @@
 {
   "region_name": "South Clock Town",
   "logic": "",
-  "map_coordinates": { "xPercent": 51.1, "yPercent": 46.57 },
+  "map_coordinates": { "xPercent": 51.1, "yPercent": 47.9 },
   "item_checks": [
     {
       "id": "sct_ocarina_of_time",
       "name": "Ocarina of Time",
-      "logic": "(magic_meter&deku_mask)|bow|hookshot|zora_mask",
+      "logic": "projectile",
       "vanilla_when": { "start_with_ocarina": true },
       "vanilla_item": "ocarina_of_time"
     },
     {
       "id": "sct_song_of_time",
       "name": "Song of Time",
-      "logic": "(magic_meter&deku_mask)|bow|hookshot|zora_mask",
+      "logic": "projectile",
       "vanilla_when": [{ "shuffle_songs": "off" }, { "shuffle_songs": ["song_locations", "anywhere"], "shuffle_song_of_time": false }],
       "vanilla_item": "song_of_time"
     },
     {
       "id": "sct_deku_mask",
       "name": "Deku Mask",
-      "logic": "",
       "vanilla_when": { "shuffle_transformation": false },
       "vanilla_item": "deku_mask"
     },
     {
       "id": "sct_song_of_healing",
       "name": "Song of Healing",
-      "logic": "",
       "vanilla_when": { "shuffle_songs": "off" },
       "vanilla_item": "song_of_healing"
     },
     {
       "id": "sct_bombers_notebook",
       "name": "Bomber's Notebook",
-      "logic": "",
       "vanilla_when": { "shuffle_notebook": false },
       "vanilla_item": "bombers_notebook"
     },
@@ -55,7 +52,6 @@
     {
       "id": "sct_clock_tower_hp",
       "name": "Clock Tower Heart Piece",
-      "logic": "",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
     },
@@ -72,19 +68,16 @@
     {
       "id": "sct_bank_reward_1",
       "name": "Bank Reward 1",
-      "logic": "",
       "vanilla_when": { "shuffle_main_inventory": false },
       "vanilla_item": "Progressive Wallet"
     },
     {
       "id": "sct_bank_reward_2",
-      "name": "Bank Reward 2",
-      "logic": ""
+      "name": "Bank Reward 2"
     },
     {
       "id": "sct_bank_reward_3",
       "name": "Bank Reward 3",
-      "logic": "",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
     }

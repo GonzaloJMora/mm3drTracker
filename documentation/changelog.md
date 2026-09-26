@@ -4,6 +4,25 @@
      The release workflow finds each one by its "## Version: vx.y.z" line, so leave
      those lines exactly as written. -->
 
+## Version: v0.14.0
+
+**Released:** 09/26/2026
+
+**Changes:**
+- Fixed the settings page shifting a column when a section's changed count appeared.
+- Added flags for logic checks that require events such as a boss being defeated
+- Every region now lists its checks with the items each one requires, following the randomizer's logic
+- The requirements panel now shows each requirement as a chip with a ✓ or ✗ and a count of what's still missing, on phone and desktop, and the longest lists are shorter
+- On desktop, the stats and legend moved into the header, and the map now uses the full height of the item grids and sits centered beside them when it is shorter
+- On wide windows (about 2200px and up) the item grids and the map scale up to use the extra room
+- Link previews for the tracker now show the app icon instead of the wide logo
+
+**Notes:**
+- Logic in tracker follows and is up to date with Nightly-b00e39 (2026-09-18)
+- Shop prices from Shopsanity aren't modeled, so a shop slot priced over 200 rupees can show as accessible before you can afford it
+
+---
+
 ## Version: v0.13.0
 
 **Released:** 09/16/2026

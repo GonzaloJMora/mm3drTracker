@@ -3,6 +3,94 @@
   "logic": "",
   "map_coordinates": { "xPercent": 54.4, "yPercent": 59.1 },
   "item_checks": [
-
+    {
+      "id": "ss_song_of_soaring",
+      "name": "Song of Soaring",
+      "vanilla_when": [{ "shuffle_songs": "off" }, { "shuffle_songs": ["song_locations", "anywhere"], "shuffle_song_of_soaring": false }],
+      "vanilla_item": "song_of_soaring"
+    },
+    {
+      "id": "ss_deku_scrub_purchase",
+      "name": "Deku Scrub Merchant Purchase",
+      "logic": "deku_mask",
+      "vanilla_when": { "shuffle_scrub_purchases": false },
+      "vanilla_item": "magic_bean"
+    },
+    {
+      "id": "ss_deku_scrub_trade",
+      "name": "Deku Scrub Merchant Trade",
+      "logic": "clock_town_title_deed",
+      "vanilla_when": { "shuffle_scrub_trades": false },
+      "vanilla_item": "swamp_title_deed"
+    },
+    {
+      "id": "ss_tourist_center_roof",
+      "name": "Tourist Center Roof",
+      "logic": "deku_mask&clock_town_title_deed",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "ss_koume",
+      "name": "Save Koume",
+      "logic": "bottle",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "pictograph_box"
+    },
+    {
+      "id": "ss_pictograph_contest_winner",
+      "name": "Pictograph Contest Winner",
+      "logic": "pictograph_box",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "ss_boat_archery",
+      "name": "Boat Archery",
+      "logic": "odolwa_defeated&bow&bottle",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "empty_bottle"
+    },
+    {
+      "id": "ss_kotake",
+      "name": "Kotake",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "red_potion"
+    },
+    {
+      "id": "ss_kotake_mushroom_sale",
+      "name": "Kotake Mushroom Sale",
+      "logic": "mask_of_scents&bottle"
+    },
+    {
+      "id": "ss_potion_shop_item_1",
+      "name": "Potion Shop Item 1",
+      "logic": "mask_of_scents&bottle",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Blue Potion"
+    },
+    {
+      "id": "ss_potion_shop_item_2",
+      "name": "Potion Shop Item 2",
+      "logic": "bottle",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Green Potion"
+    },
+    {
+      "id": "ss_potion_shop_item_3",
+      "name": "Potion Shop Item 3",
+      "logic": "bottle",
+      "vanilla_when": { "shopsanity": false },
+      "vanilla_item": "Red Potion"
+    },
+    {
+      "id": "ss_mystery_woods_grotto",
+      "name": "Mystery Woods Grotto"
+    },
+    {
+      "id": "ss_near_swamp_spider_house_grotto",
+      "name": "Near Swamp Spider House Grotto",
+      "logic": "odolwa_defeated|(deku_mask&(bottle|bow|zora_mask|hookshot))"
+    }
   ]
 }

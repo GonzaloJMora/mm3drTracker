@@ -1,0 +1,12 @@
+{
+  "flags": [
+    { "id": "odolwa_defeated", "name": "Odolwa Defeated", "at": { "check": "wft_odolwa_remains" } },
+    { "id": "woodfall_frog", "name": "Woodfall Temple Frog", "at": { "check": "wft_boss_key_chest" }, "logic": "don_gero_mask" },
+    { "id": "goht_defeated", "name": "Goht Defeated", "at": { "check": "sht_goht_remains" } },
+    { "id": "gyorg_defeated", "name": "Gyorg Defeated", "at": { "check": "gbt_gyorg_remains" } },
+    { "id": "great_bay_frog", "name": "Great Bay Temple Frog", "at": { "check": "gbt_boss_key_chest" }, "logic": "don_gero_mask" },
+    { "id": "hot_spring_water", "name": "Hot Spring Water", "at": { "region": "Mountain Village" }, "logic": "bottle&((goron_mask&lens_of_truth&magic_meter)|goht_defeated|(magic_meter&fire_arrow))" },
+    { "id": "laundry_frog", "name": "Laundry Pool Frog", "at": { "region": "Laundry Pool" }, "logic": "don_gero_mask" },
+    { "id": "swamp_frog", "name": "Southern Swamp Frog", "at": { "region": "Southern Swamp" }, "logic": "don_gero_mask" }
+  ]
+}

@@ -1,8 +1,55 @@
 {
   "region_name": "Zora Cape",
-  "logic": "",
+  "logic": "ocarina_of_time&eponas_song",
   "map_coordinates": { "xPercent": 28.7, "yPercent": 51 },
   "item_checks": [
-
+    {
+      "id": "zc_like_like_hp",
+      "name": "Like Like HP",
+      "logic": "zora_mask",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "zc_underwater_chest",
+      "name": "Underwater Chest",
+      "logic": "zora_mask"
+    },
+    {
+      "id": "zc_ledge_with_tree_chest",
+      "name": "Ledge With Tree Chest",
+      "logic": "hookshot"
+    },
+    {
+      "id": "zc_ledge_without_tree_chest",
+      "name": "Ledge Without Tree Chest",
+      "logic": "hookshot"
+    },
+    {
+      "id": "zc_grotto_chest",
+      "name": "Grotto Chest",
+      "logic": "bomb_bag|blast_mask|goron_mask"
+    },
+    {
+      "id": "zc_beaver_race_1",
+      "name": "Beaver Race 1",
+      "logic": "hookshot&zora_mask&magic_meter",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "empty_bottle"
+    },
+    {
+      "id": "zc_beaver_race_2",
+      "name": "Beaver Race 2",
+      "logic": "hookshot&zora_mask&magic_meter",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "zc_great_fairy_reward",
+      "name": "Great Fairy Reward",
+      "logic": "hookshot&great_bay_stray_fairy>=15",
+      "vanilla_when": { "shuffle_fairy_rewards": "off", "remove_double_defense": false },
+      "vanilla_item": "Double Defense"
+    }
   ]
 }

@@ -44,9 +44,9 @@ BRANCH_COMMENT = re.compile(r"^<!-- Branch: (.+) -->$")
 
 # The same three rules as the table in README.md, Versioning. Change both together.
 RELEASE_TYPES = [
-    ("Major", "Saves from an earlier major version no longer load"),
-    ("Minor", "Bigger than a hotfix, and existing saves still load"),
-    ("Hotfix", "Bug fixes only"),
+    ("Major", "Saves from earlier versions can no longer be brought up to date"),
+    ("Minor", "A new feature is added, and earlier saves still load"),
+    ("Hotfix", "Bug fixes only: nothing new, and earlier saves still load"),
 ]
 
 

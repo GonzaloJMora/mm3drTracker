@@ -1,7 +1,7 @@
 {
   "region_name": "North Clock Town",
   "logic": "",
-  "map_coordinates": { "xPercent": 51.1, "yPercent": 34.83 },
+  "map_coordinates": { "xPercent": 51.1, "yPercent": 33.5 },
   "item_checks": [
     {
       "id": "nct_great_fairy_deku",
@@ -34,28 +34,27 @@
     {
       "id": "nct_tree_hp",
       "name": "Tree Heart Piece",
-      "logic": "",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
     },
     {
       "id": "nct_old_lady",
       "name": "Save Old Lady",
-      "logic": "kokiri_sword|zora_mask|goron_mask|great_fairy_sword",
+      "logic": "fighting",
       "vanilla_when": { "shuffle_masks": false },
       "vanilla_item": "blast_mask"
     },
     {
       "id": "nct_tingle_clock_town_map_buy",
       "name": "Tingle Clock Town Map",
-      "logic": "",
+      "logic": "projectile",
       "vanilla_when": { "shuffle_tingle_maps": false },
       "vanilla_item": "Clock Town Map"
     },
     {
       "id": "nct_tingle_woodfall_map_buy",
       "name": "Tingle Woodfall Map",
-      "logic": "",
+      "logic": "projectile",
       "vanilla_when": { "shuffle_tingle_maps": false },
       "vanilla_item": "Woodfall Map"
     },

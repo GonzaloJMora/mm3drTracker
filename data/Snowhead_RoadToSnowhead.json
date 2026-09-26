@@ -1,8 +1,26 @@
 {
   "region_name": "Road to Snowhead",
-  "logic": "",
+  "logic": "bow&(bomb_bag|blast_mask|goron_mask|(magic_meter&fire_arrow))",
   "map_coordinates": { "xPercent": 46.8, "yPercent": 20.3 },
   "item_checks": [
-
+    {
+      "id": "rts_pillar_hp",
+      "name": "Pillar HP",
+      "logic": "goron_mask&lens_of_truth&magic_meter&hookshot&ocarina_of_time&scarecrow_song",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "rts_road_to_snowhead_grotto",
+      "name": "Road to Snowhead Grotto",
+      "logic": "goron_mask&magic_meter&(bomb_bag|blast_mask)&mask_of_truth"
+    },
+    {
+      "id": "rts_great_fairy_reward",
+      "name": "Great Fairy Reward",
+      "logic": "goron_mask&magic_meter&ocarina_of_time&goron_lullaby_full&snowhead_stray_fairy>=15",
+      "vanilla_when": [{ "shuffle_main_inventory": false }, { "shuffle_fairy_rewards": "off" }],
+      "vanilla_item": "Progressive Magic Meter"
+    }
   ]
 }

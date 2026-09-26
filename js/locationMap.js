@@ -19,11 +19,19 @@
             .getPropertyValue("--mobile-breakpoint").trim() || "1499px"
     })`;
 
-    // A region with no map_coordinates gets no marker; the validator below
+    // Percent of the map, so anything outside 0 to 100 lands off it. A marker
+    // without both would be drawn at the map's top-left corner, looking placed.
+    function hasUsableCoordinates(data) {
+        const at = data.map_coordinates;
+        const percent = value => typeof value === "number" && value >= 0 && value <= 100;
+        return Boolean(at) && percent(at.xPercent) && percent(at.yPercent);
+    }
+
+    // A region with no usable map_coordinates gets no marker; the validator below
     // says so.
     function regionMarkerConfigs(regions) {
         return regions
-            .filter(data => data && data.map_coordinates)
+            .filter(data => data && hasUsableCoordinates(data))
             .map(data => ({
                 regionName: data.region_name,
                 xPercent: data.map_coordinates.xPercent,
@@ -31,8 +39,8 @@
             }));
     }
 
-    // Every region belongs on the map, so a missing map_coordinates is always a
-    // mistake — and a silent one: the region still renders and still counts, but
+    // Every region belongs on the map, so a missing or unusable map_coordinates is
+    // always a mistake — and a silent one: the region still renders and still counts, but
     // with no marker and a display:none list, its checks can't be reached at all.
     //
     // Only regions that rendered are reported. One locationTracker.js already
@@ -40,13 +48,14 @@
     // matters.
     function validateMarkerCoordinates(regions) {
         const missing = regions
-            .filter(data => data && regionLookup.has(data.region_name) && !data.map_coordinates)
+            .filter(data => data && regionLookup.has(data.region_name) && !hasUsableCoordinates(data))
             .map(data => data.region_name);
 
         if (!missing.length) return;
 
         console.warn(
-            `locationMap: ${missing.length} region(s) have no map_coordinates, so they get no marker. ` +
+            `locationMap: ${missing.length} region(s) have no map_coordinates with an xPercent and yPercent ` +
+            `from 0 to 100, so they get no marker. ` +
             `On desktop that leaves their checks unreachable — the accordion list is mobile-only.`
         );
         missing.forEach(name => console.warn(`  ${name}`));
@@ -100,9 +109,9 @@
             marker.className = "location-map-marker";
             marker.style.left = `${xPercent}%`;
             marker.style.top = `${yPercent}%`;
-            // title is the hover tooltip; aria-label is the accessible name, or
-            // a screen reader reads this as just "button".
-            marker.title = regionName;
+            // The hover tooltip is drawn by tooltip.js (registerMarkerTooltip);
+            // aria-label is the accessible name, or a screen reader reads this as
+            // just "button".
             marker.setAttribute("aria-label", regionName);
             // Not data-region-name — that means "a region's accordion", and the
             // map comes first in the DOM, so an unscoped query would find a
@@ -111,6 +120,9 @@
 
             marker.addEventListener("click", (e) => {
                 if (e.shiftKey) return; // coordinate finder handles this instead
+                // The overlay opens over the marker, which the pointer never
+                // leaves, so the tooltip would stay up on top of it.
+                if (window.Tooltip) window.Tooltip.hide();
                 openOverlayFor(regionName);
             });
 
@@ -119,6 +131,30 @@
         });
 
         syncMarkerColors();
+    }
+
+    // The region's name and its live count. tooltip.js redraws an open tooltip when
+    // the checks change, so the count is never stale. Registered once, and
+    // delegated from document, so it survives the markers being rebuilt.
+    function registerMarkerTooltip() {
+        if (!window.Tooltip) return;
+        window.Tooltip.register(".location-map-marker", (marker) => {
+            const regionName = marker.dataset.markerRegion;
+            const entry = regionLookup.get(regionName);
+            if (!entry) return null;
+
+            const box = document.createElement("div");
+            box.className = "tooltip-heading";
+            box.textContent = regionName;
+            const counts = entry.headerBtn.dataset.counts;
+            if (counts) {
+                const count = document.createElement("span");
+                count.className = "marker-tooltip-count";
+                count.textContent = counts;
+                box.appendChild(count);
+            }
+            return box;
+        });
     }
 
     // Full pass, used when the markers are first built. Ongoing updates arrive
@@ -261,41 +297,122 @@
     // Gap between the overlay's bottom edge and the bottom of the window.
     const VIEWPORT_MARGIN = 12;
 
-    // How tall the overlay may get. It starts on the map and is allowed to use
-    // the empty page below it, which is what keeps the text readable.
-    //
-    // One ceiling — a windowful measured from the top of the page — and it alone
-    // guarantees the overlay never makes the page scroll: its bottom lands at
-    // clientHeight minus the margin, and scrollHeight is never below
-    // clientHeight, so it always sits inside the height the page already had.
-    //
-    // Do not add the item grids' bottom edge back as a second ceiling. It looks
-    // like the thing holding the scrollbar off and it isn't; all it does is cost
-    // the overlay a couple of rungs of the text ladder.
-    //
-    // clientHeight rather than innerHeight, because clientHeight is what
-    // scrollHeight is compared against. Document coordinates rather than
-    // viewport, so the budget can't change with scroll position — otherwise the
-    // same region renders at a different size depending on where you were when
-    // you clicked, and one opened while scrolled down hides checks below the fold
-    // when you scroll back up.
-    function overlayHeightBudget() {
+    // Where the overlay hangs from and the least it must cover, in document
+    // coordinates so the scroll position can't change the size.
+    function overlayBox() {
         const mapRect = mapContainerEl.getBoundingClientRect();
-        const mapHeight = mapRect.height + OVERLAY_BORDER * 2;
-        const overlayTop = mapRect.top + window.scrollY - OVERLAY_BORDER;
+        const columnRect = mapContainerEl.parentElement.getBoundingClientRect();
+        return {
+            // How far the map sits below the column's top.
+            lift: Math.max(0, mapRect.top - columnRect.top),
+            // The overlay always covers at least the column and the map.
+            floor: Math.max(mapRect.height, columnRect.height) + OVERLAY_BORDER * 2,
+            top: columnRect.top + window.scrollY - OVERLAY_BORDER
+        };
+    }
 
+    // How tall the overlay may get: a windowful measured down from the top of the
+    // location column, which on its own keeps the overlay from ever making the page
+    // scroll. clientHeight, because it is what scrollHeight is compared against.
+    // Don't add the item grids' bottom edge as a second ceiling: it looks like what
+    // holds the scrollbar off and isn't, and only costs text size. ARCHITECTURE.md,
+    // *Fitting a region into the map overlay*.
+    function overlayHeightBudget(box) {
         // Before layout settles this reads short or negative. Falling back to the
-        // map's own height costs text size, never a broken box.
-        const available = document.documentElement.clientHeight - VIEWPORT_MARGIN - overlayTop;
-        return available > mapHeight ? available : mapHeight;
+        // covered height costs text size, never a broken box.
+        const available = document.documentElement.clientHeight - VIEWPORT_MARGIN - box.top;
+        return available > box.floor ? available : box.floor;
     }
 
+    // The ladder's sizes are for a map of map_overlay.base_map_width; on a bigger
+    // one everything in the overlay grows with it, so the room is used.
+    function overlayScale() {
+        const base = (window.TrackerData.config.map_overlay || {}).base_map_width;
+        if (!(base > 0)) return 1;
+        const width = mapContainerEl.getBoundingClientRect().width;
+        return Math.max(1, Math.round((width / base) * 100) / 100);
+    }
+
+    // config/map.json's text size ladder, read once. A rung whose values aren't
+    // valid CSS would be dropped by the browser without a word, and would still
+    // "fit", stopping the ladder there, so it's skipped and named instead. Each
+    // value is tested the way applyTextSize() uses it, inside calc(): "0" and
+    // "small" are valid alone and invalid there. With no rung left, the overlay is
+    // fitted at the stylesheet's text size.
+    let overlayTextSizes = [];
+
+    const scaledBy = (value, scale) => `calc(${value} * ${scale})`;
+
+    // A padding's parts, split on spaces outside parentheses, so a calc() with
+    // spaces in it stays one part.
+    function paddingParts(value) {
+        const parts = [];
+        let depth = 0;
+        let part = "";
+        for (const char of value.trim()) {
+            if (char === "(") depth++;
+            if (char === ")") depth--;
+            if (/\s/.test(char) && depth === 0) {
+                if (part) parts.push(part);
+                part = "";
+            } else {
+                part += char;
+            }
+        }
+        if (part) parts.push(part);
+        return parts;
+    }
+
+    function readTextSizes(mapOverlay) {
+        const sizes = mapOverlay && mapOverlay.text_sizes;
+        if (!Array.isArray(sizes)) {
+            console.warn(`locationMap: config/map.json has no "text_sizes" list, so the overlay keeps the stylesheet's text size.`);
+            return [];
+        }
+        const text = value => typeof value === "string" && value.trim() !== "";
+        const validFont = value => text(value) && CSS.supports("font-size", scaledBy(value, 1));
+        const validPadding = value => {
+            if (!text(value)) return false;
+            const parts = paddingParts(value);
+            return parts.length <= 4 && parts.every(part => CSS.supports("padding", scaledBy(part, 1)));
+        };
+        const bad = [];
+        const usable = sizes.filter((size, index) => {
+            if (size && validFont(size.font_size) && validPadding(size.padding)) return true;
+            bad.push(index);
+            return false;
+        });
+        if (bad.length) {
+            console.warn(
+                `locationMap: text_sizes ${bad.map(index => `[${index}]`).join(", ")} in config/map.json ` +
+                `need a valid "font_size" and "padding", and are skipped.`
+            );
+        }
+        if (!usable.length) {
+            console.warn(`locationMap: config/map.json's "text_sizes" has no usable size, so the overlay keeps the stylesheet's text size.`);
+        }
+        return usable;
+    }
+
+    // A null size leaves the stylesheet's own.
     function applyTextSize(contentDiv, size) {
-        contentDiv.style.setProperty("--overlay-check-font", size.font_size);
-        contentDiv.style.setProperty("--overlay-check-padding", size.padding);
+        if (!size) {
+            contentDiv.style.removeProperty("--overlay-check-font");
+            contentDiv.style.removeProperty("--overlay-check-padding");
+            return;
+        }
+        const scaled = value => scaledBy(value, "var(--overlay-scale, 1)");
+        contentDiv.style.setProperty("--overlay-check-font", scaled(size.font_size));
+        contentDiv.style.setProperty("--overlay-check-padding", paddingParts(size.padding).map(scaled).join(" "));
     }
 
-    // Walks config.json's map_overlay.text_sizes largest-first and stops at the
+    function clearOverlayBox(overlay) {
+        overlay.style.top = "";
+        overlay.style.bottom = "";
+        overlay.style.height = "";
+    }
+
+    // Walks config/map.json's map_overlay.text_sizes largest-first and stops at the
     // first that fits, so only the regions that need it shrink. Column count
     // comes from the width, row count from the item count — CSS can do neither,
     // because it cannot count children.
@@ -309,15 +426,18 @@
             contentDiv.style.gridTemplateColumns = "";
             contentDiv.style.gridTemplateRows = "";
             contentDiv.style.overflowY = "";
-            overlay.style.bottom = "";
-            overlay.style.height = "";
+            clearOverlayBox(overlay);
             return;
         }
 
-        const sizes = (window.TrackerData.config.map_overlay || {}).text_sizes || [];
-        if (!sizes.length) return;
+        // Without a ladder the fit still runs, once, so a region too big for the
+        // box scrolls rather than being cut off.
+        const sizes = overlayTextSizes.length ? overlayTextSizes : [null];
 
-        const budget = overlayHeightBudget();
+        const box = overlayBox();
+        const budget = overlayHeightBudget(box);
+        overlay.style.setProperty("--overlay-scale", String(overlayScale()));
+        overlay.style.top = `${-(box.lift + OVERLAY_BORDER)}px`;
         overlay.style.bottom = "auto";
         overlay.style.height = `${budget}px`;
 
@@ -356,8 +476,7 @@
                 contentDiv.style.gridTemplateColumns = "minmax(0, 1fr)";
                 contentDiv.style.gridTemplateRows = `repeat(${items.length}, auto)`;
                 contentDiv.style.overflowY = "auto";
-                overlay.style.bottom = "";
-                overlay.style.height = "";
+                clearOverlayBox(overlay);
                 return;
             }
 
@@ -389,16 +508,7 @@
         // Give back the unused budget, so a small region still sits on the map
         // rather than in an oversized box.
         const unused = Math.max(0, chosen.availableHeight - actualNeeded);
-        const mapHeight = mapContainerEl.getBoundingClientRect().height + OVERLAY_BORDER * 2;
-        const finalHeight = Math.max(mapHeight, budget - unused);
-
-        if (finalHeight <= mapHeight) {
-            // Back to exactly covering the map — let the CSS inset do it.
-            overlay.style.bottom = "";
-            overlay.style.height = "";
-        } else {
-            overlay.style.height = `${finalHeight}px`;
-        }
+        overlay.style.height = `${Math.max(box.floor, budget - unused)}px`;
     }
 
     function closeOverlay() {
@@ -462,16 +572,16 @@
         img.alt = mapConfig.alt;
         img.draggable = false;
 
-        // The panel sizing uses the dimensions from config.json so it can run
+        // The panel sizing uses the dimensions from config/map.json so it can run
         // immediately instead of waiting on the full-size image. Once the image is
         // actually here, confirm the two agree — if they ever drift apart the
         // markers creep off position, which is a miserable bug to track down.
         img.addEventListener("load", () => {
             if (img.naturalWidth !== mapConfig.width || img.naturalHeight !== mapConfig.height) {
                 console.warn(
-                    `locationMap: config.json says the map is ${mapConfig.width}x${mapConfig.height} ` +
+                    `locationMap: config/map.json says the map is ${mapConfig.width}x${mapConfig.height} ` +
                     `but ${mapConfig.image} is ${img.naturalWidth}x${img.naturalHeight}. ` +
-                    `Update config.json or every marker will drift.`
+                    `Update config/map.json or every marker will drift.`
                 );
             }
         }, { once: true });
@@ -486,10 +596,10 @@
     // config.map drives the container, the image and the aspect ratio the whole
     // panel is sized from, so there is no partial version of this worth drawing.
     function mapConfigProblem(mapConfig) {
-        if (!mapConfig) return "config.json has no \"map\" block";
-        if (!mapConfig.image) return "config.json's \"map\" block has no \"image\" path";
+        if (!mapConfig) return "config/map.json has no \"map\" block";
+        if (!mapConfig.image) return "config/map.json's \"map\" block has no \"image\" path";
         if (!(mapConfig.width > 0) || !(mapConfig.height > 0)) {
-            return "config.json's \"map\" block needs a positive \"width\" and \"height\"";
+            return "config/map.json's \"map\" block needs a positive \"width\" and \"height\"";
         }
         return null;
     }
@@ -527,13 +637,14 @@
     window.TrackerData.onReady(({ config, regions }) => {
       // Anything thrown in here lands before locationMapReady is dispatched, so
       // the container, the markers and every listener below would be lost
-      // together — off one bad key in config.json.
+      // together — off one bad key in config/map.json.
       try {
         const problem = mapConfigProblem(config.map);
         if (problem) throw new Error(problem);
 
         createMapContainer(config.map);
         buildRegionLookup();
+        overlayTextSizes = readTextSizes(config.map_overlay);
 
         // Its own try/catch, so a diagnostic can't be the thing that stops the
         // markers. After buildRegionLookup(), which tells it what rendered.
@@ -556,6 +667,7 @@
         markerConfigs = regionMarkerConfigs(regions);
         createMarkers(markerConfigs);
         setupCoordinateFinder();
+        registerMarkerTooltip();
 
         // An announcement rather than a watcher, because it has to reach the open
         // region too — and that node has been moved out into the overlay, where a

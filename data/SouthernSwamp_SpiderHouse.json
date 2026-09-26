@@ -1,8 +1,92 @@
 {
   "region_name": "Swamp Spider House",
-  "logic": "",
+  "logic": "(deku_mask&(bottle|bow|zora_mask|hookshot))|odolwa_defeated",
   "map_coordinates": { "xPercent": 47.4, "yPercent": 63.3 },
-  "item_checks": [
-
+  "vanilla_when": { "tokensanity": false },
+  "vanilla_item": "Swamp Skulltula Token",
+  "subregions": [
+    {
+      "name": "Main Room",
+      "item_checks": [
+        { "id": "ssh_main_room_water", "name": "Main Room Water", "logic": "fighting|projectile" },
+        { "id": "ssh_main_room_lower_left_soil", "name": "Main Room Lower Left Soil", "logic": "bottle&(fighting|projectile)" },
+        { "id": "ssh_main_room_lower_right_soil", "name": "Main Room Lower Right Soil", "logic": "bottle&(fighting|projectile)" },
+        { "id": "ssh_main_room_pillar", "name": "Main Room Pillar", "logic": "fighting|projectile" },
+        { "id": "ssh_main_room_jar", "name": "Main Room Jar", "logic": "fighting|projectile" }
+      ]
+    },
+    {
+      "name": "Monument Room",
+      "item_checks": [
+        { "id": "ssh_monument_room_crate_1", "name": "Monument Room Crate 1", "logic": "fighting|projectile" },
+        { "id": "ssh_monument_room_crate_2", "name": "Monument Room Crate 2", "logic": "fighting|projectile" },
+        { "id": "ssh_monument_room_lower_wall", "name": "Monument Room Lower Wall", "logic": "((bomb_bag|blast_mask|goron_mask)&magic_bean&(bottle|(ocarina_of_time&song_of_storms))&(fighting|projectile))|hookshot|zora_mask" },
+        { "id": "ssh_monument_room_torch", "name": "Monument Room Torch", "logic": "fighting|projectile" },
+        { "id": "ssh_monument_room_on_monument", "name": "Monument Room On Monument", "logic": "fighting|projectile" }
+      ]
+    },
+    {
+      "name": "Main Room Upper",
+      "item_checks": [
+        { "id": "ssh_main_room_upper_soil", "name": "Main Room Upper Soil", "logic": "bottle&(fighting|projectile)" },
+        { "id": "ssh_main_room_upper_pillar", "name": "Main Room Upper Pillar", "logic": "fighting|projectile" },
+        { "id": "ssh_main_room_near_ceiling", "name": "Main Room Near Ceiling", "logic": "deku_mask|zora_mask|hookshot" }
+      ]
+    },
+    {
+      "name": "Pot Room",
+      "item_checks": [
+        { "id": "ssh_pot_room_jar", "name": "Pot Room Jar", "logic": "fighting|projectile" },
+        { "id": "ssh_pot_room_pot_1", "name": "Pot Room Pot 1", "logic": "fighting|projectile" },
+        { "id": "ssh_pot_room_pot_2", "name": "Pot Room Pot 2", "logic": "fighting|projectile" },
+        { "id": "ssh_pot_room_behind_vines", "name": "Pot Room Behind Vines", "logic": "kokiri_sword|great_fairy_sword" },
+        { "id": "ssh_pot_room_wall", "name": "Pot Room Wall", "logic": "fighting|projectile" },
+        { "id": "ssh_pot_room_beehive_1", "name": "Pot Room Beehive 1", "logic": "projectile" },
+        { "id": "ssh_pot_room_beehive_2", "name": "Pot Room Beehive 2", "logic": "projectile" }
+      ]
+    },
+    {
+      "name": "Gold Room",
+      "item_checks": [
+        { "id": "ssh_gold_room_pillar", "name": "Gold Room Pillar", "logic": "fighting|projectile" },
+        { "id": "ssh_gold_room_beehive", "name": "Gold Room Beehive", "logic": "projectile" },
+        { "id": "ssh_gold_room_wall", "name": "Gold Room Wall", "logic": "hookshot|zora_mask|(deku_mask&projectile)" }
+      ],
+      "subregions": [
+        {
+          "name": "Gold Room Upper Left",
+          "logic": "hookshot|(deku_mask&projectile)",
+          "item_checks": [
+            { "id": "ssh_gold_room_near_ceiling", "name": "Gold Room Near Ceiling", "logic": "(magic_bean&(bottle|(ocarina_of_time&song_of_storms))&(fighting|projectile))|hookshot|zora_mask" }
+          ],
+          "subregions": [
+            {
+              "name": "Tree Room",
+              "logic": "magic_bean&(bottle|(ocarina_of_time&song_of_storms))",
+              "item_checks": [
+                { "id": "ssh_tree_room_tree_1", "name": "Tree Room Tree 1", "logic": "fighting|projectile" },
+                { "id": "ssh_tree_room_tree_2", "name": "Tree Room Tree 2", "logic": "fighting|projectile" },
+                { "id": "ssh_tree_room_tree_3", "name": "Tree Room Tree 3", "logic": "fighting|projectile" },
+                { "id": "ssh_tree_room_grass_1", "name": "Tree Room Grass 1", "logic": "fighting|projectile" },
+                { "id": "ssh_tree_room_grass_2", "name": "Tree Room Grass 2", "logic": "fighting|projectile" },
+                { "id": "ssh_tree_room_beehive", "name": "Tree Room Beehive", "logic": "projectile" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Skulltula Tokens Reward",
+      "item_checks": [
+        {
+          "id": "ssh_skulltula_tokens_reward",
+          "name": "Swamp Spider House Reward",
+          "logic": "swamp_skulltula_token>=30",
+          "vanilla_when": { "shuffle_masks": false },
+          "vanilla_item": "mask_of_truth"
+        }
+      ]
+    }
   ]
 }

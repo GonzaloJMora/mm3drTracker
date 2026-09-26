@@ -1,7 +1,7 @@
 {
   "region_name": "Stock Pot Inn",
   "logic": "",
-  "map_coordinates": { "xPercent": 53.85, "yPercent": 34.83 },
+  "map_coordinates": { "xPercent": 54.62, "yPercent": 33.5 },
   "item_checks": [
     {
       "id": "spi_reservation",
@@ -17,8 +17,7 @@
     },
     {
       "id": "spi_staff_room_chest",
-      "name": "Staff Room Chest",
-      "logic": ""
+      "name": "Staff Room Chest"
     },
     {
       "id": "spi_mystery_milk_delivery",
@@ -51,14 +50,14 @@
     {
       "id": "spi_midnight_meeting",
       "name": "Midnight Meeting",
-      "logic": "kafei_mask",
+      "logic": "kafei_mask&(deku_mask|room_key)",
       "vanilla_when": { "shuffle_anju_and_kafei": false },
       "vanilla_item": "letter_to_kafei"
     },
     {
       "id": "spi_anju_and_kafei",
       "name": "Anju and Kafei",
-      "logic": "kafei_mask&letter_to_kafei&pendant_of_memories&ocarina_of_time&eponas_song&(gibdo_mask|garo_mask)&hookshot&(kokiri_sword|great_fairy_sword|goron_mask|zora_mask)",
+      "logic": "kafei_mask&letter_to_kafei&pendant_of_memories&ocarina_of_time&eponas_song&(gibdo_mask|garo_mask)&hookshot&fighting",
       "vanilla_when": { "shuffle_anju_and_kafei": false },
       "vanilla_item": "couples_mask"
     }

@@ -18,7 +18,7 @@ main {
 .grid-container {
     display: grid;
     grid-template-columns: repeat(2, max-content); 
-    gap: 15px;
+    gap: calc(15px * var(--ui-scale));
     flex-shrink: 0; 
 }
 
@@ -26,14 +26,14 @@ main {
 .item-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr); 
-    gap: 10px;
+    gap: calc(10px * var(--ui-scale));
     width: 100%;
-    max-width: 360px; 
+    max-width: calc(360px * var(--ui-scale)); 
     margin: 0;
     background-color: #1a1a1a;
-    border: 2px solid #333;
-    border-radius: 8px;
-    padding: 15px;
+    border: calc(2px * var(--ui-scale)) solid #333;
+    border-radius: calc(8px * var(--ui-scale));
+    padding: calc(15px * var(--ui-scale));
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     justify-items: center; 
     justify-content: center; 
@@ -47,7 +47,7 @@ main {
     align-items: center;
     background-color: #262626;
     border: 1px solid #444;
-    border-radius: 6px;
+    border-radius: calc(6px * var(--ui-scale));
     aspect-ratio: 1 / 1;
     width: 100%;
     cursor: pointer;
@@ -58,10 +58,10 @@ main {
 /* Counter positioned in the bottom right corner */
 .slot-counter {
     position: absolute;
-    bottom: 4px;
-    right: 6px;
+    bottom: calc(4px * var(--ui-scale));
+    right: calc(6px * var(--ui-scale));
     font-family: sans-serif;
-    font-size: 13px;
+    font-size: calc(13px * var(--ui-scale));
     font-weight: bold;
     color: #ffffff;
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
@@ -94,13 +94,13 @@ main {
     filter: grayscale(25%) brightness(50%) opacity(35%);
 }
 
-.item-slot.bombers-code-slot {
+.item-slot.digit-slot {
     background-color: #262626;
     border-color: #444;
 }
 
-/* Standard centered Bombers Code numbers */
-.item-slot.bombers-code-slot .slot-counter {
+/* A digit slot's number, centered */
+.item-slot.digit-slot .slot-counter {
     position: absolute;
     top: 0;
     left: 0;
@@ -112,14 +112,14 @@ main {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: min(45px, 10vw);
+    font-size: min(calc(45px * var(--ui-scale)), 10vw);
     color: #ffffffcb;
 }
 
 /* Hover only with a real pointer: a touch browser keeps :hover on whatever was
    tapped last, so a tapped slot would stay highlighted. */
 @media (hover: hover) {
-    .item-slot.bombers-code-slot:hover {
+    .item-slot.digit-slot:hover {
         background-color: #333;
         border-color: #888;
     }
@@ -138,6 +138,14 @@ main {
     user-select: none;
     -webkit-user-select: none;
     pointer-events: none;
+}
+
+/* Desktop: an explicit width. With 100% the grid would settle at its slots' content
+   width once --ui-scale lifts max-width past that, and stop growing. */
+@media not all and (max-width: 1499px) {
+    .item-grid {
+        width: calc(360px * var(--ui-scale));
+    }
 }
 
 /* Mobile adjustments */
@@ -200,7 +208,7 @@ main {
         container-type: inline-size;
     }
 
-    .item-slot.bombers-code-slot .slot-counter {
+    .item-slot.digit-slot .slot-counter {
         font-size: 80cqw;
     }
 

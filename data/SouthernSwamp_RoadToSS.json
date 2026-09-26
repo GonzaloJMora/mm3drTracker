@@ -3,6 +3,44 @@
   "logic": "",
   "map_coordinates": { "xPercent": 50.1, "yPercent": 55.1 },
   "item_checks": [
-
+    {
+      "id": "rss_road_to_ss_grotto",
+      "name": "Road to Southern Swamp Grotto"
+    },
+    {
+      "id": "rss_road_to_ss_tree",
+      "name": "Road to Southern Swamp Tree",
+      "logic": "projectile",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "rss_archery_1",
+      "name": "Swamp Archery 1",
+      "logic": "bow",
+      "vanilla_when": { "shuffle_main_inventory": false },
+      "vanilla_item": "Progressive Bow"
+    },
+    {
+      "id": "rss_archery_2",
+      "name": "Swamp Archery 2",
+      "logic": "bow",
+      "vanilla_when": { "shuffle_pieces_of_heart": false },
+      "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "rss_tingle_woodfall_map_buy",
+      "name": "Tingle Woodfall Map",
+      "logic": "projectile",
+      "vanilla_when": { "shuffle_tingle_maps": false },
+      "vanilla_item": "Woodfall Map"
+    },
+    {
+      "id": "rss_tingle_snowhead_map_buy",
+      "name": "Tingle Snowhead Map",
+      "logic": "projectile",
+      "vanilla_when": { "shuffle_tingle_maps": false },
+      "vanilla_item": "Snowhead Map"
+    }
   ]
 }

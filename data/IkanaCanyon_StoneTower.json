@@ -1,8 +1,22 @@
 {
   "region_name": "Stone Tower",
-  "logic": "",
+  "logic": "hookshot&(garo_mask|gibdo_mask)&ocarina_of_time&eponas_song&bow&magic_meter&ice_arrow&elegy_of_emptiness&goron_mask&zora_mask&light_arrow",
   "map_coordinates": { "xPercent": 80.4, "yPercent": 35.7 },
   "item_checks": [
-
+    {
+      "id": "st_inverted_left_chest",
+      "name": "Inverted Left Chest",
+      "logic": "magic_bean&(bottle|song_of_storms)"
+    },
+    {
+      "id": "st_inverted_center_chest",
+      "name": "Inverted Center Chest",
+      "logic": "magic_bean&(bottle|song_of_storms)"
+    },
+    {
+      "id": "st_inverted_right_chest",
+      "name": "Inverted Right Chest",
+      "logic": "magic_bean&(bottle|song_of_storms)"
+    }
   ]
 }

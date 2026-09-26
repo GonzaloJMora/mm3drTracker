@@ -14,6 +14,15 @@
     <link rel="manifest" href="site.webmanifest">
     <meta name="apple-mobile-web-app-title" content="MM3D Randomizer Tracker">
 
+    <!-- Without these, link previews scrape the page and grab images/logo.png, which
+         crops badly since it isn't square. -->
+    <meta property="og:title" content="MM3D Randomizer Tracker">
+    <meta property="og:description" content="A browser-based item/location tracker for Majora's Mask 3D randomizer runs.">
+    <meta property="og:image" content="https://gonzalojmora.github.io/mm3drTracker/images/icons/icon-512.png">
+    <meta property="og:url" content="https://gonzalojmora.github.io/mm3drTracker/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/itemContainers.css">
     <link rel="stylesheet" href="css/tooltip.css">
@@ -78,7 +87,7 @@
                             <span><strong>Not a starting item</strong></span>
                         </li>
                     </ul>
-                    <!-- One .item-grid per key in config.json grids, built by itemGrids.js -->
+                    <!-- One .item-grid per key in config/grids.json, built by itemGrids.js -->
                     <div class="grid-container"></div>
                     <!-- The item grids section's settings that no slot shows, in the phone layout.
                          On desktop settingsPage.js moves them into the settings panel instead. -->

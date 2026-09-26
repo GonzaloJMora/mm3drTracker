@@ -62,6 +62,14 @@
         return views;
     }
 
+    // A digit slot has no Items.json entry, so its name comes from digit_slots and
+    // its place in that list. Without a name the slot id is shown; validate() says so.
+    function digitName(config, slotId) {
+        const name = config.digit_slots && config.digit_slots.name;
+        if (typeof name !== "string" || name.trim() === "") return slotId;
+        return `${name} ${window.GameState.digitIds(config).indexOf(slotId) + 1}`;
+    }
+
     function renderSlot(container, slotId, config, itemMap, showNotes) {
         const slot = document.createElement("div");
         slot.classList.add("item-slot");
@@ -87,8 +95,8 @@
 
         let img = null;
         if (kind === "digit") {
-            slot.classList.add("bombers-code-slot");
-            setSlotTooltip(slot, { name: "Bomber's Code Digit " + slotId.at(-1) }, showNotes);
+            slot.classList.add("digit-slot");
+            setSlotTooltip(slot, { name: digitName(config, slotId) }, showNotes);
         } else {
             img = document.createElement("img");
             img.classList.add("item-image");
@@ -105,7 +113,6 @@
 
         const view = {
             slot, img, counterNode, kind, chain, itemMap, showNotes,
-            sizes: kind === "capacity" ? config.item_counts[slotId] : null,
             max: kind === "counter" ? config.item_counts[slotId] : null
         };
         draw(view, window.GameState.slotValue(slotId));
@@ -146,12 +153,6 @@
                 if (img.getAttribute("src") !== item.image) img.src = item.image;
                 setSlotTooltip(slot, item, view.showNotes);
             }
-        } else if (kind === "capacity") {
-            slot.dataset.stage = value;
-            if (owned) {
-                counterNode.innerText = view.sizes[value];
-                if (value === view.sizes.length - 1) counterNode.classList.add("max-count");
-            }
         } else if (kind === "counter") {
             slot.dataset.count = value;
             if (owned) {
@@ -170,6 +171,11 @@
     function validate(config, itemMap) {
         const missing = [];
 
+        const digitIds = window.GameState.digitIds(config);
+        if (digitIds.length && digitName(config, digitIds[0]) === digitIds[0]) {
+            console.warn(`ItemGrids: config/inventory.json's "digit_slots" has no "name", so each digit slot's tooltip shows its slot id.`);
+        }
+
         Object.keys(config.grids).forEach(gridName => {
             const slots = config.grids[gridName];
 
@@ -184,7 +190,7 @@
                     return;
                 }
                 if (slotId === "") return;
-                if (slotId.startsWith("bombers_code_digit_")) return;
+                if (window.GameState.digitIds(config).includes(slotId)) return;
 
                 const at = `grids.${gridName}[${index}]`;
                 const chain = config.progressions[slotId];

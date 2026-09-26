@@ -1,8 +1,146 @@
 {
-  "region_name": "Pirate's Fortress",
-  "logic": "",
+  "region_name": "Pirates' Fortress",
+  "logic": "ocarina_of_time&eponas_song&zora_mask",
   "map_coordinates": { "xPercent": 33.3, "yPercent": 32.7 },
   "item_checks": [
-
+    {
+      "id": "pf_exterior_ledge_chest",
+      "name": "Exterior Ledge Chest",
+      "logic": "magic_meter"
+    },
+    {
+      "id": "pf_exterior_sand_chest",
+      "name": "Exterior Sand Chest",
+      "logic": "magic_meter"
+    },
+    {
+      "id": "pf_exterior_corner_chest",
+      "name": "Exterior Corner Chest",
+      "logic": "magic_meter"
+    }
+  ],
+  "subregions": [
+    {
+      "name": "Sewer Maze Room",
+      "logic": "magic_meter&goron_mask",
+      "item_checks": [
+        {
+          "id": "pf_sewer_maze_chest",
+          "name": "Sewer Maze Chest"
+        }
+      ],
+      "subregions": [
+        {
+          "name": "Cage Room",
+          "item_checks": [
+            {
+              "id": "pf_cage_room_shallow_chest",
+              "name": "Cage Room Shallow Chest"
+            },
+            {
+              "id": "pf_cage_room_deep_chest",
+              "name": "Cage Room Deep Chest"
+            },
+            {
+              "id": "pf_sewer_cage_hp",
+              "name": "Sewer Cage HP",
+              "vanilla_when": { "shuffle_pieces_of_heart": false },
+              "vanilla_item": "heart_piece"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Interior",
+      "logic": "(magic_meter&goron_mask)|hookshot",
+      "item_checks": [
+        {
+          "id": "pf_interior_lower_chest",
+          "name": "Interior Lower Chest",
+          "logic": "hookshot"
+        },
+        {
+          "id": "pf_interior_upper_chest",
+          "name": "Interior Upper Chest",
+          "logic": "hookshot"
+        },
+        {
+          "id": "pf_interior_invisible_soldier",
+          "name": "Interior Invisible Soldier",
+          "logic": "lens_of_truth&bottle",
+          "vanilla_when": { "shuffle_masks": false },
+          "vanilla_item": "stone_mask"
+        }
+      ],
+      "subregions": [
+        {
+          "name": "Hookshot Room",
+          "item_checks": [
+            {
+              "id": "pf_hookshot_room_chest",
+              "name": "Hookshot Room Chest",
+              "logic": "bow",
+              "vanilla_when": { "shuffle_main_inventory": false },
+              "vanilla_item": "hookshot"
+            },
+            {
+              "id": "pf_hookshot_room_zora_egg",
+              "name": "Hookshot Room Zora Egg",
+              "logic": "bow&hookshot&bottle",
+              "vanilla_when": true,
+              "vanilla_item": "zora_egg"
+            }
+          ]
+        },
+        {
+          "name": "Barrel Maze",
+          "logic": "hookshot",
+          "item_checks": [
+            {
+              "id": "pf_barrel_maze_zora_egg",
+              "name": "Barrel Maze Zora Egg",
+              "logic": "bottle",
+              "vanilla_when": true,
+              "vanilla_item": "zora_egg"
+            }
+          ]
+        },
+        {
+          "name": "Lava Room",
+          "logic": "hookshot",
+          "item_checks": [
+            {
+              "id": "pf_lava_room_tank_chest",
+              "name": "Lava Room Tank Chest"
+            },
+            {
+              "id": "pf_lava_room_zora_egg",
+              "name": "Lava Room Zora Egg",
+              "logic": "bottle",
+              "vanilla_when": true,
+              "vanilla_item": "zora_egg"
+            }
+          ]
+        },
+        {
+          "name": "Guard Room",
+          "logic": "hookshot",
+          "item_checks": [
+            {
+              "id": "pf_guard_room_chest",
+              "name": "Guard Room Chest"
+            },
+            {
+              "id": "pf_guard_room_zora_egg",
+              "name": "Guard Room Zora Egg",
+              "logic": "bottle",
+              "vanilla_when": true,
+              "vanilla_item": "zora_egg"
+            }
+          ]
+        }
+      ]
+    }
   ]
 }
