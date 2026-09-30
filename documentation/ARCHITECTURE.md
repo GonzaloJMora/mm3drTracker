@@ -27,7 +27,7 @@ that. `python -m http.server` in the repo root is enough.
    The shared globals are `window.GameState`, `window.SettingsState`,
    `window.TrackerView`, `window.TrackerLaunch` and `window.TrackerData`, plus one
    object per helper: `LogicParser`, `Tooltip`, `RequirementsView`,
-   `SettingControls`, `ItemGrids`.
+   `SettingControls`, `ItemGrids`, `StorageKeys`, `PhoneLayout`.
 
    Every file is wrapped in an IIFE or defines nothing but its one global, and a
    new file has to be too. Not for tidiness: a top-level `let` or `const` in a
@@ -55,20 +55,29 @@ that. `python -m http.server` in the repo root is enough.
 
 The app is two pages. `index.html` is the settings page, the one a visitor lands
 on: pick the seed's settings, then Launch New Tracker opens `tracker.html`, which
-runs with them. The tracker's own Launch New Tracker asks with `confirm()` and
-goes back, because nothing on a tracker is saved yet.
+runs with them. The tracker's Back to Settings goes back without asking while the
+tab autosaves the run: leaving saves it, and Load From Autosave brings it back. A
+tab that isn't autosaving asks first (*Saving*, *The autosave*).
 
-The settings cross over in `sessionStorage`, under `mm3drTracker.v0.launch`, as
-`{ picks }`: every setting that differs from its default. `launch.js` reads and
+The settings cross over in `sessionStorage`, under the tracker's `launch` key
+(*Storage keys*, below), as
+`{ picks }`: every setting that differs from its default. `trackerLaunch.js` reads and
 writes it on both pages and `settingsState.js` applies it at load, so the settings
 page opens on the last tracker's settings and a reloaded tracker keeps its own.
 Session storage belongs to one tab, so two tabs can run two trackers with
 different settings. Picks cross over rather than locked values, and the tracker
-works the locks out again for itself.
+works the locks out again for itself. The handoff also carries the run's id,
+which its autosave is filed under, and a tracker opened from a save gets the rest
+of it the same way, as `{ picks, runId, save, stamp }`: the save's item slots,
+completed checks and view toggles as plain named values, and which stored copy of
+the run is this tab's (*Saving*). The tracker rewrites the handoff every time it
+autosaves, its own picks included, so a reload opens where the run is. Its own
+picks, because a tracker page the browser brings back with Back can find the
+handoff of a later launch in the same tab.
 
 Opened with nothing handed over — a bookmark, a fresh tab — `tracker.html` goes to
 the settings page before its body draws: it marks `<html>` with
-`data-requires-launch`, and `launch.js` runs in `<head>`. The one exception is
+`data-requires-launch`, and `trackerLaunch.js` runs in `<head>`. The one exception is
 `tracker.html?defaults`. When Launch New Tracker can't store the picks, whether
 storage is blocked or just full, the settings page shows its storage warning,
 asks with `confirm()`, and opens that address, where the tracker starts on the
@@ -82,10 +91,14 @@ settings page still tests storage at load, to warn up front.
 ```
 header
  ├─ logo
- └─ #tracker-toolbar            (Reset to Defaults, Load From Autosave, Load From File, Launch New Tracker)
+ ├─ .mobile-tabs                (phone layout only: the Settings / Starting Items switch)
+ ├─ #header-menu-button         (phone layout only: opens the toolbar as a menu)
+ ├─ #tracker-toolbar            (Reset to Defaults, Load From Autosave, Load From File, Resume Tracker, Launch New Tracker)
+ └─ #header-keep-out            (phone layout only: Resume Tracker, kept out of the menu)
 main
+ ├─ #home-screen-tip            (iPhone and iPad only, any browser, until closed)
+ ├─ #save-load-message          (only after loading a save, or failing to)
  ├─ #settings-storage-warning   (only if the browser blocks storage)
- ├─ .mobile-tabs                (visible ≤ 1499px only: Settings, Starting Items)
  └─ .tracker-layout-wrapper
      ├─ #settings-section > .settings-panel > #settings-list    (every list section, in menu order)
      └─ #starting-section > .starting-items
@@ -98,8 +111,8 @@ footer#app-version              (the version, from data/version.json)
 ```
 
 On desktop the two halves sit side by side, the settings panel taking the width
-the grids leave; below the breakpoint they are tabs, through the same
-`mobileTabManager.js` as the tracker's. Edits apply as they are made. A setting
+the grids leave; below the breakpoint the header's switch shows one at a time,
+through the same `mobileTabManager.js` as the tracker's (§13). Edits apply as they are made. A setting
 picked away from its default is marked with a dot and counted in its section's
 heading; a value a lock forces is not a pick, so it adds neither. A locked
 setting's control is disabled, with a note naming the picks that lock it.
@@ -134,20 +147,45 @@ block of rows once and moves it when the window crosses the breakpoint, the way
 the map overlay moves a region, so there is never a second copy to keep in step.
 The heading counts follow it.
 
-Load From Autosave and Load From File stay disabled until there is saving. The
-page loads no region files (§5).
+**Loading a save** (`loadSave.js`). Load From Autosave is enabled while there is
+an autosave or a previous run; with a previous run it opens a chooser showing each
+one's date, progress and version, and otherwise loads the autosave straight away.
+A loaded save's settings fill in and are held by `SettingsState`: their controls
+are disabled and slot clicks do nothing, and Resume Tracker appears beside Launch
+New Tracker. A setting the save didn't hold takes its default and stays editable,
+highlighted as not in this save, row or slot alike. A message above the settings
+says what was loaded, and for a save updated from an older version, which settings
+took defaults. A save that can't be read is refused with the reason, and nothing
+is held.
+
+With a save loaded, Reset to Defaults lets go of it and resets everything, and
+Launch New Tracker lets go of it but keeps its settings, unlocked, so a new run can
+start on them; pressing Launch New Tracker again starts it. Launching a new run
+moves the autosave into the previous-run slot first, and says so.
+
+Load From File takes a file exported from the tracker, or a code pasted into its
+box, through the same loading as the autosave. A loaded file always starts a run
+of its own here, so resuming it moves the autosave into the previous-run slot
+rather than writing over it, whichever run the file came from. A file that was
+updated on loading also asks to be exported again once resumed, since the file
+itself still holds the old version. The page loads no region files (§5).
 
 ### The tracker page: two trackers side by side
 
 ```
 header
  ├─ logo
- └─ #tracker-toolbar            (Hide Non-Randomized Checks, Show Only Accessible Checks on phones, Export, Launch New Tracker)
+ ├─ .mobile-tabs                (phone layout only: the Items / Locations switch)
+ ├─ #header-menu-button         (phone layout only: opens the toolbar as a menu)
+ ├─ #tracker-toolbar            (Hide Non-Randomized Checks, Show Only Accessible Checks on phones, Export, Back to Settings)
+ └─ #location-status-line       (phone layout only: accessible, checked and remaining)
 main
+ ├─ #home-screen-tip            (iPhone and iPad only, any browser, until closed)
+ ├─ #autosave-warning           (only if this tab isn't autosaving: another tab, or storage refused)
+ ├─ #tracker-save-warning       (only if saveLayout.json failed to load)
  ├─ #tracker-map-warning        (only if the map could not be built)
  ├─ #tracker-logic-warning      (only if locationFlags.json or logicHelpers.json failed to load)
  ├─ #tracker-region-warning     (only if a region file failed to load)
- ├─ .mobile-tabs                (visible ≤ 1499px only)
  └─ .tracker-layout-wrapper
      ├─ #item-section  > .grid-container > one .item-grid[data-grid] per config.grids key
      └─ #location-section
@@ -160,9 +198,11 @@ footer#app-version              (the version, from data/version.json)
 The order inside `#location-section` is the runtime one, not the source one:
 `#region-sidebar` is the only child in `tracker.html`, and `locationPanelLayout.js`
 inserts the map ahead of it. The same file places `#location-summary-row` (the
-stats box from `locationStatsTracker.js` and the legend from `locationLegend.js`):
-in `header`, between the logo and the toolbar, on desktop, and on mobile in `<main>`
-above the tab bar, so it stays visible on both tabs.
+progress numbers from `locationStatsTracker.js` and the legend from
+`locationLegend.js`): in `header`, under the toolbar and lined up with the map, on
+desktop (§10b). In the phone layout the
+row is hidden: its numbers are the header's status line, and the legend moves into
+the header's menu (§13).
 
 - **Item tracker** (left): four grids of clickable item slots.
 - **Location tracker** (right): on desktop, the game's map with per-region
@@ -173,30 +213,44 @@ above the tab bar, so it stays visible on both tabs.
 
 ## 3. JavaScript files
 
-All of these load on the tracker page except the last two. The settings page
-loads `launch.js`, `dataLoader.js`, `tooltip.js`, `gameStateManager.js`,
-`settingsState.js`, `itemGrids.js`, `mobileTabManager.js` and those two.
+Both pages load `storageKeys.js`, `phoneLayout.js` and `trackerLaunch.js` in
+`<head>`, in that order. The settings page then loads `dataLoader.js`, `tooltip.js`,
+`gameStateManager.js`, `settingsState.js`, `itemGrids.js`, `saveCodec.js`,
+`saveStore.js`, `offline.js`, `mobileTabManager.js`, `headerMenu.js`, and three of its own: `settingControls.js`,
+`settingsPage.js` and `loadSave.js`. The tracker page loads everything else, and
+those it shares. `offlineWorker.js`, the service worker, sits at the site's root rather than
+in `js/`, and runs apart from both pages (*Offline*).
 
 | File | Owns | Key globals / DOM |
 |---|---|---|
-| `launch.js` | **In `<head>`, on both pages.** Reads and writes the settings handed from the settings page to the tracker, in `sessionStorage`, and says whether storage works at all, by trying a write: a browser can read storage and still refuse to write it. On a page marked `data-requires-launch` (the tracker), goes to `index.html` before the body draws when nothing was handed over, unless the address has `?defaults` (§2, *Pages*). | `window.TrackerLaunch` |
-| `dataLoader.js` | **The first script in the body**, so only `launch.js` runs before it. The only file that reads `data/`. Fetches `config.json` and the files it lists, `Items.json`, `manifest.json`, `settings.json`, every region file, `locationFlags.json` and `logicHelpers.json` exactly once, then announces them with `trackerDataReady`. Its script tag on the settings page carries `data-skip-regions`, which leaves out the region files, `locationFlags.json` and `logicHelpers.json`. Renders the three load-failure messages (§8). | `window.TrackerData`, `#tracker-load-error`, `#tracker-region-warning`, `#tracker-logic-warning` |
+| `storageKeys.js` | **In `<head>`, first, on both pages.** Names everything kept in browser storage: `key(name)` puts the tracker's id, from the page's `<meta name="tracker-id">`, in front of the name (*Storage keys*). | `window.StorageKeys` |
+| `phoneLayout.js` | **In `<head>`, on both pages.** Whether the page is in the phone layout (`active`) and a listener for crossing the breakpoint (`onChange`), from `--mobile-breakpoint` in `common.css` (§10). | `window.PhoneLayout` |
+| `trackerLaunch.js` | **In `<head>`, on both pages.** Opens the tracker (`open(picks, { runId, save, stamp })`, `openOnDefaults()`) and goes back to the settings page (`toSettings()`); the two pages' addresses live here only. Reads and writes the settings handed from the settings page to the tracker, in `sessionStorage`, with the run's id, a save and its stamp handed over with them (`readRunId()`, `readSave()`, `readStamp()`, and `updateSave(picks, { runId, save, stamp })` as the tracker autosaves), and says whether storage works at all, by trying a write: a browser can read storage and still refuse to write it. On a page marked `data-requires-launch` (the tracker), goes to the settings page before the body draws when nothing was handed over, unless the address has `?defaults` (§2, *Pages*). | `window.TrackerLaunch` |
+| `dataLoader.js` | **The first script in the body**, so only the three in `<head>` run before it. The only file that reads `data/`. Fetches `config.json` and the files it lists, `Items.json`, `manifest.json`, `settings.json`, every region file, `locationFlags.json` and `logicHelpers.json` exactly once, then announces them with `trackerDataReady`. Every file is asked of the site rather than taken from the browser's cache, so a page never gets data from before a release beside data from after it. Its script tag on the settings page carries `data-skip-regions`, which leaves out the region files, `locationFlags.json` and `logicHelpers.json`. Renders the three load-failure messages (§8). | `window.TrackerData`, `#tracker-load-error`, `#tracker-region-warning`, `#tracker-logic-warning` |
 | `logicParser.js` | Parses a logic string into a tree, evaluates that tree against an inventory, and annotates each node as satisfied / blocking / optional. No DOM, no data of its own. `locationTracker.js` evaluates through it and the requirements tooltip reads the same tree, so the two cannot disagree (§9). | `window.LogicParser` |
 | `tooltip.js` | The tooltip: follows the pointer on hover, or docks to the bottom of the screen when pinned from a check's button on touch. Owns showing, hiding, positioning, the edge flip and pinning; owns nothing about what is in it. An owner calls `Tooltip.register(selector, build)` and gets called back with the hovered element (§14). | `window.Tooltip`, `.tracker-tooltip` |
 | `requirementsView.js` | Turns an annotated logic tree into the *Items Required* chips. Presentation only. | `window.RequirementsView` |
-| `gameStateManager.js` | `window.GameState` — the inventory source of truth. Works out the logic tokens (`tokens`: the values logic can name that are not items) from the definitions in `config/logicTokens.json`, on every state change. `slotKind(config, id)` names what kind of slot an id is — progression, counter, digit or toggle — from config alone, so it works before `init`. `init` takes the starting items, sets those slots and records each one's floor; `slotValue(id)` reads a slot's stage or count back out of `items`, and `slotRange(id)` gives the values clicking can move it through. Also builds the **F1 debug panel**, which lists the changed settings and the starting items as well, and creates `window.TrackerDebug` for the other files' console helpers. | `window.GameState`, `window.TrackerDebug`, `#tracker-debug-panel` |
-| `settingsState.js` | `window.SettingsState` — the randomizer settings, read and validated out of `settings.json` (§7, *Settings*). Answers a setting's value with any lock applied (`get`, `isForced`), whether a clause matches (`matches`, `clauseProblem`), and what every grant adds up to (`startingItems`). `set` and `reset` change the picks and announce `settingsChanged`; `sections`, `describe`, `lockedBy` and `picks` are what the settings page reads. `slotSettings(slot)` says which setting controls a grid slot and which only fill it in, worked out from the grants, and `step(id, direction)` moves a controlling setting to its next choice along its slot. `numberOf(id)` is the number a dropdown's chosen option carries, for the right of `>=`, and `isNumeric(id)` says whether a dropdown carries numbers at all (§9); `list()` is every setting with its value, default and lock state, for the F1 panel. Applies the picks handed over through `launch.js` once the file is read (§2, *Pages*). No DOM. | `window.SettingsState` |
-| `trackerToolbar.js` | The toolbar in the header, and its view toggles: Hide Non-Randomized Checks, and Show Only Accessible Checks in the phone layout. Each button names the class it puts on `<body>` and its `localStorage` key in data attributes; the choices read back through `TrackerView`, and a flip announces `trackerViewChanged` (§10b, *Hiding checks*). Loaded before the trackers, so their first sweep already knows the state. Launch New Tracker asks with `confirm()`, then goes back to the settings page (§2, *Pages*). Export is in its markup but disabled until it is wired up. | `window.TrackerView`, `#tracker-toolbar` |
-| `itemGrids.js` | **On both pages.** Draws the item grids: one grid per key in `config/grids.json`'s `grids` — the count and order come from config, nothing here — with every slot drawn from `GameState`, so a slot starts wherever the starting items put it. Hands back a view per slot for the page to add its own clicks to and redraw through `draw`. Validates every grid slot at load (§8), and registers the item tooltip: name, the song's `notes_image` where there is one, and any line a page puts in the slot's `data-tooltip-note`. | `window.ItemGrids`, one `.item-grid[data-grid="<key>"]` per grid |
-| `itemTracker.js` | The tracker's grids: starts `GameState` from the starting items, has `itemGrids.js` draw the grids, and handles left-click (advance) / right-click (retreat) cycling between a slot's floor and its top, giving a locked slot no click handler. Pushes every change into `GameState`. | `.grid-container` |
-| `locationTracker.js` | Builds every region's accordion (`.region-group` = header + `.region-content` of `.region-check-item`s) into `#region-dropdown-container`. Evaluates logic strings (`canAccess()`), sets `accessible` / `inaccessible` on checks and a rolled-up status class on each region header, and announces both. Also validates its regions at load (§8): the location flags and logic helpers, the logic tokens, the check ids and names, the `check_groups` ids, each check's `vanilla_when` and `vanilla_item` and their agreement across one location, and items demanded twice. Registers the requirements tooltip for its checks, and puts the sweep and `canAccess()` on `TrackerDebug`. Marks a region with nothing accessible, and keeps rows a tap hid shown until their region closes (*Hiding checks*). | `#region-dropdown-container` |
+| `gameStateManager.js` | `window.GameState` — the inventory source of truth. Works out the logic tokens (`tokens`: the values logic can name that are not items) from the definitions in `config/logicTokens.json`, on every state change. `slotKind(config, id)` names what kind of slot an id is — progression, counter, digit or toggle — from config alone, so it works before `init`. `slotBounds(config, id)` gives every value a slot can hold and `grantedValue(config, id, grant)` what a grant from `settings.json` means for it, also from config alone, so the settings and the save layout check use the same rules. `init` takes the starting items, sets those slots and records each one's floor, then any saved slot values, each kept between its floor and its top; `setSlot(id, value)` is the one way a slot changes after that; `slotValue(id)` reads a slot's stage or count back out of `items`, and `slotRange(id)` gives the values clicking can move it through. `snapshot()` is every grid slot's value, for a save. Also builds the **F1 debug panel**, which lists the changed settings and the starting items as well, and creates `window.TrackerDebug` for the other files' console helpers. | `window.GameState`, `window.TrackerDebug`, `#tracker-debug-panel` |
+| `settingsState.js` | `window.SettingsState` — the randomizer settings, read and validated out of `settings.json` (§7, *Settings*). Answers a setting's value with any lock applied (`get`, `isForced`), whether a clause matches (`matches`, `clauseProblem`), and what every grant adds up to (`startingItems`). `set` and `reset` change the picks and announce `settingsChanged`; `holdFromSave(values, editable)` fills in a loaded save's settings and holds all but the ones it didn't have, which `set` and `step` then refuse, until `releaseSave()` or `reset`; `sections`, `describe`, `lockedBy` and `picks` are what the settings page reads. `slotSettings(slot)` says which setting controls a grid slot and which only fill it in, worked out from the grants, and `step(id, direction)` moves a controlling setting to its next choice along its slot. `numberOf(id)` is the number a dropdown's chosen option carries, for the right of `>=`, and `isNumeric(id)` says whether a dropdown carries numbers at all (§9); `list()` is every setting with its value, default and lock state, for the F1 panel, and `snapshot()` every setting's pick, for a save. Applies the picks handed over through `trackerLaunch.js` once the file is read (§2, *Pages*). No DOM. | `window.SettingsState` |
+| `trackerToolbar.js` | The toolbar in the header, its view toggles and Back to Settings: Hide Non-Randomized Checks, and Show Only Accessible Checks in the phone layout. Each button names the class it puts on `<body>` and its storage name (*Storage keys*) in data attributes; the choices read back through `TrackerView`, and a flip announces `trackerViewChanged` (§10b, *Hiding checks*). A handed-over save sets them, and `TrackerView.snapshot()` gives them to one. Loaded before the trackers, so their first sweep already knows the state. Back to Settings goes to the settings page, asking first only while the tab isn't autosaving (§2, *Pages*). Export is in its markup and belongs to `exportSave.js`. | `window.TrackerView`, `#tracker-toolbar` |
+| `itemGrids.js` | **On both pages.** Draws the item grids: one grid per key in `config/grids.json`'s `grids` — the count and order come from config, nothing here — with every slot drawn from `GameState`, so a slot starts wherever the starting items put it. Hands back a view per slot for the page to add its own clicks to and redraw through `draw`. Validates every grid slot at load (§8), and registers the item tooltip: name, the song's `notes_image` where there is one and the song is owned, and any line a page puts in the slot's `data-tooltip-note`. | `window.ItemGrids`, one `.item-grid[data-grid="<key>"]` per grid |
+| `itemTracker.js` | The tracker's grids: starts `GameState` from the starting items, has `itemGrids.js` draw the grids, and handles left-click (advance) / right-click (retreat) cycling between a slot's floor and its top, giving a locked slot no click handler. A click changes the slot through `GameState.setSlot` and redraws it from what `GameState` then holds. | `.grid-container` |
+| `itemCheckStateManager.js` | `window.ItemCheckState` — which locations are completed, the source of truth a save reads and writes (*Completed checks*, §6). A location is one check id, or every id in a `check_group` with it. Also holds each check's accessible and non-randomized status from the last sweep, derived and never saved, and counts checks as locations for every count on the page (`count`, `overall`, `progress`). `toggle` / `setCompleted` announce `checkCompletionChanged`. `init` takes a handed-over save's completed ids, and `snapshot()` gives them to one. Puts `completedChecks()` on `TrackerDebug`. No DOM. | `window.ItemCheckState` |
+| `locationTracker.js` | Builds every region's accordion (`.region-group` = header + `.region-content` of `.region-check-item`s) into `#region-dropdown-container`. Evaluates logic strings (`canAccess()`), sets `accessible` / `inaccessible` on checks and a rolled-up status class on each region header, and announces both. Draws `completed` on the rows from `ItemCheckState`, and hands each sweep's statuses to it. Also validates its regions at load (§8): the location flags and logic helpers, the logic tokens, the check ids and names, the `check_groups` ids, each check's `vanilla_when` and `vanilla_item` and their agreement across one location, and items demanded twice. Registers the requirements tooltip for its checks, and puts the sweep and `canAccess()` on `TrackerDebug`. Marks a region with nothing accessible, and keeps rows a tap hid shown until their region closes (*Hiding checks*). | `#region-dropdown-container` |
 | `locationLegend.js` | The **Legend** box only: one row per entry in `config/legend.json`'s `legend`, each swatch colored by the same status class the region headers and map markers use. Hands the box over on an event; where it sits is not its business. | `#location-legend-box` |
-| `locationStatsTracker.js` | The **Location Progress** box only: computes checked / accessible / remaining, deduped via `config/checkGroups.json`'s `check_groups`. Creates its own box element, hands it off via an event. Re-counts when `locationTracker.js` says the checks changed. | `#location-stats-box` |
-| `locationPanelLayout.js` | Where the summary row and map container sit (the row in the header on desktop, the map first in `#location-section`), sizing the desktop map to the item grids' height, and scaling the grids up on windows with room (§11). It owns `#location-summary-row`, which holds the stats box and the legend side by side. Nothing about tracking. | builds `#location-summary-row`, sizes `#location-map-container` |
+| `locationStatsTracker.js` | The **Location Progress** numbers only: computes accessible / checked / remaining, one per location, from `ItemCheckState`. Creates its own element, hands it off via an event, and writes the same numbers into the phone layout's status line. Re-counts when `locationTracker.js` says the checks changed. | `#location-stats-box`, `#location-status-line` |
+| `locationPanelLayout.js` | Where the summary row and map container sit (the row in the header on desktop, the map first in `#location-section`; in the phone layout the row is hidden and the legend goes into the header's menu), sizing the desktop map to the item grids' height, and scaling the grids up on windows with room (§11). It owns `#location-summary-row`, which holds the progress numbers and the legend, and lines it up with the map (§10b). Nothing about tracking. | builds `#location-summary-row`, sizes `#location-map-container` |
 | `locationMap.js` | Desktop map view: builds `#location-map-container` (image + marker layer), one marker per region JSON with `map_coordinates`, matched to the real `.region-group` by its `data-region-name`. Clicking a marker **moves** that node into a fixed overlay and back to its original position on close, and announces the close with `regionOverlayClosed`. Also fits the region's checks to the overlay (§12). | `#location-map-container`, `#location-map-marker-layer` |
+| `saveCodec.js` | Turns a snapshot of the tracker's state into a save code and back, reading each code with the layout of the format it was written in, and wraps a code in the readable object an autosave or exported file holds (*Saving*). No DOM and no data of its own, so Node can run it too. | `window.SaveCodec` |
+| `saveStore.js` | **On both pages.** Where saves are kept in this browser: the autosave, the previous run and the backup, in `localStorage`. The one file that touches those keys; makes run ids and tells this tab's writes from another's. | `window.SaveStore` |
+| `saveManager.js` | The tracker's autosave: collects the snapshot from each owner, encodes it through `SaveCodec`, and writes it to `SaveStore` and this tab's handoff shortly after every change and at once when the page is hidden. Stops writing the autosave, with a banner, when another tab writes it or has moved this run on, checked at load and again when the browser restores the page from its back/forward cache, and keeps the banner in step with the slots while it is up. Keeps the handoff up to date. At load it checks that `saveLayout.json` covers every setting, slot, check and toggle, and fits their values. Puts `saveCode()`, `decodeSave(code)` and `openSave(code)` on `TrackerDebug`. | `window.TrackerSave`, `#autosave-warning` |
+| `exportSave.js` | **Tracker page only.** The Export dialog: the run as a file to download or, on a touch device that can share files, to share, and its code to copy. Exports this tab's own state, even while another tab holds the autosave. | `#export-dialog` |
+| `loadSave.js` | **Settings page only.** Load From Autosave and its chooser, Load From File (a file or a pasted code), the message about a loaded save, and Resume Tracker, which hands the save to the tracker. Puts `putSave(text, slot)` on `TrackerDebug`. | `#save-load-message`, `#autosave-chooser`, `#load-file-dialog` |
+| `offline.js` | **On both pages.** Registers `offlineWorker.js`, or removes it and its stored copy when `data/offline.json`'s `enabled` is false (*Offline*). Asks for persistent storage only when the tracker runs as an installed app, and on an iPhone or iPad, in any browser, shows the Home Screen tip once. | `#home-screen-tip` |
 | `mobileTabManager.js` | **On both pages.** `switchMobileTab()` toggles `.active-section` between the sections the tab buttons name in `data-section`: `#item-section` and `#location-section` on the tracker, `#settings-section` and `#starting-section` on the settings page. It does so at any width; CSS is what confines the tabs to the phone layout (§10). Announces a switch with `mobileTabChanged`. Also shows the back-to-top button once the page is scrolled half a screen, and remembers each tab's scroll position. | `.mobile-tabs`, `.tab-btn`, `#back-to-top` |
+| `headerMenu.js` | **On both pages.** The phone layout's header (§13): opens and closes the toolbar as the bar's menu, moves the buttons marked `data-menu-keep-out` under the bar and back into the toolbar on desktop, and lets the bar scroll away (`bar-loose`) when it grows past a quarter of the window. The toolbar's buttons keep their own handlers; this file only shows and hides them. | `#header-menu-button`, `#header-keep-out` |
 | `settingControls.js` | **Settings page only.** One control per setting class: a slider for `toggle` (an invisible checkbox over a drawn track), a select for `dropdown`, a number field clamped to `min`–`max` for `number`. `create(description, onChange)` returns `{ element, update(value, locked) }`. A new class is one `register` call here, alongside its value rules in `settingsState.js`. | `window.SettingControls` |
-| `settingsPage.js` | **Settings page only.** Builds the settings panel from every list section in menu order, and the Starting Items half from the item grids section: the grids through `itemGrids.js`, each slot's clicks and tooltip line from `SettingsState.slotSettings`. The slot legend above the grids is markup in `index.html`. The section's other settings are one block, moved between the end of the settings panel on desktop and the space under the grids on a phone (§2, *The settings page*). On `settingsChanged` it redraws every control, count and lock note, and re-runs `GameState.init` to redraw the slots. Owns Reset to Defaults, which asks with `confirm()`, and Launch New Tracker, which hands `SettingsState.picks()` to `launch.js` and opens `tracker.html`, or, when they can't be stored, asks with `confirm()` and opens `tracker.html?defaults`. Warns on the page when storage is blocked at load or a launch couldn't store the picks. | `#settings-list`, `#starting-extras`, `#settings-storage-warning` |
+| `settingsPage.js` | **Settings page only.** Builds the settings panel from every list section in menu order, and the Starting Items half from the item grids section: the grids through `itemGrids.js`, each slot's clicks and tooltip line from `SettingsState.slotSettings`. The slot legend above the grids is markup in `index.html`. The section's other settings are one block, moved between the end of the settings panel on desktop and the space under the grids on a phone (§2, *The settings page*). On `settingsChanged` it redraws every control, count and lock note, and re-runs `GameState.init` to redraw the slots. Draws a setting a loaded save holds as locked, and one it didn't hold as highlighted. Owns Reset to Defaults, which asks with `confirm()` and lets go of a loaded save, and Launch New Tracker, which with a save loaded lets go of it and keeps its settings, and otherwise moves the autosave to the previous run (asking first), hands `SettingsState.picks()` and a new run id to `trackerLaunch.js` and opens `tracker.html`, or, when they can't be stored, asks with `confirm()` and opens `tracker.html?defaults`. Warns on the page when storage is blocked at load or a launch couldn't store the picks. | `#settings-list`, `#starting-extras`, `#settings-storage-warning` |
 
 ---
 
@@ -213,6 +267,7 @@ All events are `CustomEvent`s on `window`.
 | `regionsRendered` | `locationTracker.js`, once every region accordion is in the DOM | `locationMap.js` (builds its region lookup) | — |
 | `regionStatusChanged` | `locationTracker.js`, when a region's rolled-up status or its counts change | `locationMap.js` (recolors that marker, sets its count, updates an open overlay's titlebar) | `{ regionName, status, accessible, remaining }` |
 | `trackerChecksUpdated` | `locationTracker.js`, at the end of every `evaluateAllRegions()` sweep | `locationStatsTracker.js` (recount), `tooltip.js` (redraws an open tooltip) | — |
+| `checkCompletionChanged` | `itemCheckStateManager.js`, when a location is completed or uncompleted | `locationTracker.js` (sets `completed` on every row of those ids, then runs the sweep) | `{ ids }`, every check id of the location |
 | `locationStatsBoxReady` | `locationStatsTracker.js`, after it builds its box | `locationPanelLayout.js` (puts it in the summary row) | `{ box }` |
 | `locationLegendReady` | `locationLegend.js`, after it builds its box. Never fires if `config.legend` is empty or has no usable entry | `locationPanelLayout.js` (puts it in the summary row) | `{ box }` |
 | `locationMapReady` | `locationMap.js`, right after it builds the container (before markers are built) | `locationPanelLayout.js` (positions + sizes it) | `{ mapContainer, aspectRatio }` |
@@ -256,16 +311,19 @@ and `DOMContentLoaded` before firing `trackerDataReady` once.
 
 Every consumer registers via `TrackerData.onReady(...)` at script-parse time, so
 they run **in `tracker.html` script order**, which makes the sequence
-deterministic. Before any of it, `launch.js` in `<head>` has either sent the page
-to the settings page (§2, *Pages*) or let it load:
+deterministic. Before any of it, the three scripts in `<head>` have run:
+`storageKeys.js` and `phoneLayout.js`, which only define their helpers, and
+`trackerLaunch.js`, which has either sent the page to the settings page (§2,
+*Pages*) or let it load:
 
 1. `dataLoader.js` — fetches `config.json` and the files it lists, `Items.json`,
    `manifest.json` and `settings.json`, and checks the shape of `check_groups`.
    Then every region file the manifest lists, dropping any that can't be read,
    and resolves each region's checks into one flat list (*Sub-regions*).
    `locationFlags.json` and `logicHelpers.json` load alongside all of these, and
-   read as empty if they fail rather than stopping the load. `version.json` is fetched on its own, for the
-   footer and the load-error report.
+   read as empty if they fail rather than stopping the load, and so does
+   `saveLayout.json`, which only turns saving off if it fails. `version.json` is
+   fetched on its own, for the footer and the load-error report.
 2. `logicParser.js`, `tooltip.js`, `requirementsView.js` — define their globals
    (`tooltip.js` also binds its `document` listeners). None of them waits for
    data; the trackers call them.
@@ -275,7 +333,8 @@ to the settings page (§2, *Pages*) or let it load:
 4. `settingsState.js` — defines `window.SettingsState` at parse time.
 5. `trackerToolbar.js` — defines `window.TrackerView` and applies both saved view
    toggles at parse time, so every sweep below already counts and hides the right
-   checks. It needs no data.
+   checks. It needs no data. `itemCheckStateManager.js`, loaded just before
+   `locationTracker.js`, defines `window.ItemCheckState` at parse time too.
 6. *(`trackerDataReady` fires here)*
 7. `settingsState.js` — reads and validates `settings.json`, then applies the
    picks handed over from the settings page. It is first in line
@@ -286,9 +345,13 @@ to the settings page (§2, *Pages*) or let it load:
    startingItems)` with `SettingsState.startingItems()` (populates `items`, sets
    each starting slot and its floor, dispatches the first `trackerStateUpdated`),
    has `itemGrids.js` render one grid per `config.grids` key with every slot drawn
-   from `GameState`, adds its clicks, and dispatches `itemGridsReady`.
+   from `GameState`, adds its clicks, and dispatches `itemGridsReady`. A save handed
+   over from the settings page goes into `GameState.init` here, so the grids draw
+   its slots.
 9. `locationTracker.js` — registers the check tooltip, renders all accordions
-   from `TrackerData.regions`, and dispatches `regionsRendered`. Then it indexes
+   from `TrackerData.regions`, and dispatches `regionsRendered`. Then it hands the
+   regions that rendered to `ItemCheckState.init`, before the validators, which
+   read its locations, and before any click. Then it indexes
    the location flags and logic helpers, which has to come first: the validators
    count them as known tokens, and the sweep reads them. The validators follow,
    each in its own try/catch: the flags and helpers themselves, the logic tokens
@@ -298,13 +361,19 @@ to the settings page (§2, *Pages*) or let it load:
    `evaluateAllRegions()` sweep against the real inventory. Everything from
    `regionsRendered` down is in a `finally`, so a region file that breaks still
    leaves the rest of the page told about the ones that rendered (§8).
-10. `locationStatsTracker.js` — builds its box, counts (the checks already exist),
+10. `locationStatsTracker.js` — builds its box, counts (the first sweep has
+    already filled `ItemCheckState`),
     dispatches `locationStatsBoxReady`, starts listening for
     `trackerChecksUpdated`. (It has no observer — see §4.)
 11. `locationLegend.js` — builds its box from `config.legend` and dispatches
     `locationLegendReady`, or does neither when no entry is usable.
 12. `locationMap.js` — builds the container, dispatches `locationMapReady`, then
     builds markers from `TrackerData.regions`.
+13. `saveManager.js` — once every owner has its state and the first sweep has
+    run: checks the save layout against the settings, slots, rendered checks and
+    toggles, then writes the first autosave, which is the state the tracker opened
+    with (*Saving*). `exportSave.js` follows it and enables Export only if saving
+    is on.
 
 Until step 6 has run, `<main>` is hidden: both pages start it with
 `awaiting-data`, and `dataLoader.js` takes the class off once every
@@ -312,21 +381,33 @@ Until step 6 has run, `<main>` is hidden: both pages start it with
 message. A refresh then shows the page whole rather than empty boxes filling in.
 It is `visibility`, not `display`, so the layout code can still measure while it
 is hidden, and a CSS animation shows the page after a few seconds if the scripts
-never run at all.
+never run at all. The header and the version footer are hidden with it, on both
+pages: the tracker's header takes its width from the scaled layout (§11), and the
+footer sits under `<main>`'s content, so shown early either one would jump when
+the page appeared.
+
+While `<main>` is hidden, both pages show a loading animation in the middle of
+the screen: `.page-loading`, the element straight after `<main>`. It is pure CSS
+and shows only while `<main>` still has `awaiting-data`, so it goes the moment
+`dataLoader.js` reveals the page or the load-failure message, with no code of its
+own. It waits a moment before appearing, so a fast load never flashes it, and
+hides again when the fallback shows the page. Its image is set in the CSS, not in
+`data/`, because it has to show before `data/` has loaded.
 
 `locationPanelLayout.js` sits outside this — it has no data dependency and just
 reacts to `locationStatsBoxReady` / `locationLegendReady` / `locationMapReady` /
 `itemGridsReady`, plus `window.load`, `resize`, and a `ResizeObserver` on
-`.grid-container` and the summary row. It still re-runs its sizing on every one
+`.grid-container`. It still re-runs its sizing on every one
 of those because the item grid's *rendered height* settles independently of when
 the data arrives — see §11.
 
-The settings page runs a shorter version of the same: `launch.js`, then
+The settings page runs a shorter version of the same: the same three in `<head>`, then
 `dataLoader.js` with no region files, `tooltip.js`, `gameStateManager.js` (for
 `slotKind`, which reading the grants needs, and to show the starting state),
-`settingsState.js`, `settingControls.js`, `itemGrids.js`, `settingsPage.js`, which
-builds the page in its `onReady` once the settings and the handed-over picks are
-in, and `mobileTabManager.js` for the tabs.
+`settingsState.js`, `settingControls.js`, `itemGrids.js`, `saveCodec.js`,
+`saveStore.js`, `settingsPage.js`, which builds the page in its `onReady` once the
+settings and the handed-over picks are in, `loadSave.js`, which enables Load From
+Autosave, and `mobileTabManager.js` for the tabs.
 
 ---
 
@@ -345,6 +426,28 @@ when a region's rolled-up status or its counts changed, so a click that moves
 neither writes nothing. `applyMarkerStatus()` then writes only what differs on
 the marker. `syncMarkerColors()` is the full sweep over every marker and runs
 only when the markers are built, never on a click.
+
+**Completed checks** — `ItemCheckState` is the only record of which checks are
+done; the `completed` class on a row is drawn from it and never read back. A tap
+calls `ItemCheckState.toggle(id)`, which announces `checkCompletionChanged` with
+every id of that location, and `locationTracker.js` sets the class on each of
+their rows, searching the whole page because a region may be in the map overlay.
+A loaded save goes through the same event, so the page is drawn one way whatever
+changed it.
+
+"These ids are one location" lives only there too. A check id maps to a location:
+its `check_group`, or itself. The region roll-up, the progress numbers and the
+vanilla-agreement validator all ask `ItemCheckState` rather than reading the
+groups themselves. Counting is its too: `ItemCheckState.count()` is the one rule
+every count uses, whether over every check (the progress numbers and a save's
+summary) or over one region's rows (the roll-up). A region counts a location once,
+so each region showing a shared location counts it, and two ids of one group in
+the same region count once. Location keys are internal; a save names check ids.
+
+The sweep records each check's accessible and non-randomized status in
+`ItemCheckState` as well, and the counts are worked out from that
+rather than from the classes. It is worked out again on every sweep and never
+saved, like `GameState.tokens`.
 
 **Couplings that are not events.** The files talk through `window` events, with
 three deliberate exceptions worth knowing before you move anything:
@@ -372,7 +475,7 @@ three deliberate exceptions worth knowing before you move anything:
   every region, marker and check, with nothing on the page to say so.
 
 **Accordion arrow** — the ▼/▲ character lives only in
-`css/locationContainers.css` (`.region-arrow::after`), switched by an
+`css/regionList.css` (`.region-arrow::after`), switched by an
 `.expanded` class on the header. JS toggles the class; it never writes the
 glyph. That is why closing a map overlay removes `.expanded` rather than
 restoring a character.
@@ -396,6 +499,8 @@ Other files read them off `window.TrackerData`; none of them call `fetch`.
 | `<Region>.json` | `region_name`, `logic` (region entry requirement), `map_coordinates: { xPercent, yPercent }`, `item_checks: [{ id, name, logic, vanilla_when?, vanilla_item? }]`, and an optional `subregions` tree that lets checks sharing a requirement write it once (*Sub-regions* below), where `vanilla_when` is the clause under which the check is not randomized (see *Settings*) and `vanilla_item` is what it holds then: an `Items.json` id, shown by the tracker's name for it, or plain text for an item the tracker doesn't track (§14). **`region_name` must be present, text, and unique** — see §8. | `TrackerData.regions` (manifest order, unreadable files dropped; empty on the settings page), and `TrackerData.regionFile(region)`, the file a region came from | `locationTracker.js` (accordion + logic), `locationMap.js` (marker position) |
 | `logicHelpers.json` | `{ "helpers": [{ id, name, logic }] }`: a list of items written once and used by name, like any melee damage source (*Logic helpers* below). Loaded on the tracker only. | `TrackerData.logicHelpers` (empty on the settings page, and if the file can't be read) | `locationTracker.js` (resolves each helper as a logic token) |
 | `locationFlags.json` | `{ "flags": [{ id, name, at: { check } or { region }, logic? }] }`: progress elsewhere that a check depends on, like a boss being beatable (*Location flags* below). Loaded on the tracker only. | `TrackerData.locationFlags` (empty on the settings page, and if the file can't be read) | `locationTracker.js` (resolves each flag as a logic token) |
+| `saveLayout.json` | `{ app, format, fields: [...] }`: which bits of a save code hold which setting, view toggle, item slot and check, in order (*Saving*). Only ever appended to, by `scripts/updateSaveLayout.py`. Loaded on both pages; a failed load turns saving and loading off and nothing else. Older formats' layouts sit under `saveLayouts/` once there are any, fetched only when a save needs one. | `TrackerData.saveLayout` (null if it can't be used), `TrackerData.saveLayoutFor(format)` | `saveManager.js` |
+| `offline.json` | `{ enabled, files: [...] }`: every file the offline copy stores, and the off switch. Written by `scripts/updateOfflineFiles.py`, never by hand (*Offline*). Fetched fresh every time, like every data file, which matters most here since it holds the off switch. | `TrackerData.offline` (null if it can't be read) | `offline.js`; `offlineWorker.js` reads it itself |
 | `version.json` | `{ "version": "x.y.z" }`, written by `scripts/release.py` rather than by hand (README.md, *Releasing*). Fetched apart from the core files, so a report that they failed to load still carries the version. | `TrackerData.version` (null until it arrives, and if it cannot be read) | `dataLoader.js` (the `#app-version` footer and the load-error report) |
 
 Map marker positions live per-region in `map_coordinates`.
@@ -630,10 +735,11 @@ once, at load, and keep the rest of the app up.**
 | Flags and helpers need each other in a loop | `locationTracker.js` | Named with the path around the loop. That path reads false; an alternative outside the loop can still meet the token. |
 | A region's sub-region tree throws while being walked | `dataLoader.js` | Only that region is affected: it keeps whatever `item_checks` it listed, and the error names it. |
 | A region file is readable, but something inside it throws while rendering | `locationTracker.js` | That one region is skipped and named, with the thrown message; every other region still renders. The render call sits in its own try/catch inside the loop for exactly this. |
-| Two checks share an `id`, or a check has no `id` | `locationTracker.js` → `validateCheckIds()` | One warning naming the id and the regions using it. Nothing is skipped — a repeat is *legal*, it is how `check_groups` works, so the tracker cannot tell a typo from a group. The symptom is a check ticking itself off somewhere else and the progress total quietly shrinking. |
+| A check has no `id` | `locationTracker.js` | The region is not rendered, and is named with the checks missing one. A save keeps a check by its id, so an id-less check couldn't be saved, and every one of them would tick together. |
+| Two checks share an `id` | `locationTracker.js` → `validateCheckIds()` | One warning naming the id and the regions using it. Nothing is skipped — a repeat is *legal*, it is how `check_groups` works, so the tracker cannot tell a typo from a group. The symptom is a check ticking itself off somewhere else and the progress total quietly shrinking. |
 | A check has no `name` | `locationTracker.js` → `validateCheckNames()` | One warning naming the check. It draws as a blank row that can still be ticked. |
 | A `check_groups` entry is not a list of at least two check ids, or `check_groups` itself is not a list | `dataLoader.js` | One warning naming the group, which is dropped: its checks tick off and count on their own. Checked before anything reads the groups, because a group that throws takes the check click and the progress box down with it. |
-| A `check_groups` id matches no check on the page, or is in two groups | `locationTracker.js` → `validateCheckGroups()` | One warning per id. An unmatched id leaves its location unlinked; an id in two groups counts with the later group while a click ticks both. |
+| A `check_groups` id matches no check on the page, or is in two groups | `locationTracker.js` → `validateCheckGroups()` | One warning per id. An unmatched id leaves its location unlinked; an id in two groups merges both groups into one location, so every id in either ticks off and counts together. |
 | A region has no `map_coordinates`, or its `xPercent` and `yPercent` aren't numbers from 0 to 100 | `locationMap.js` → `validateMarkerCoordinates()` | One warning naming the region. It still renders its accordion and still counts, but it gets no marker — and on desktop the accordion list is `display: none`, so its checks are unreachable from anywhere. |
 | A `map_overlay.text_sizes` rung has no `font_size` or `padding`, or one that isn't valid CSS once multiplied by the overlay's scale (`0` and `small` are valid alone but not there), or the list is missing, isn't a list, or is empty | `locationMap.js` | One warning naming the rungs, which are skipped, and one more when none is left. The overlay is then fitted once at the stylesheet's text size, which still grows with the map, so a region too big for the box scrolls rather than being cut off. |
 | `config.map` is missing or unusable, or building the map throws | `locationMap.js` | One error, and a `#tracker-map-warning` banner above the tracker saying the desktop location view is missing. No map is built; the item tracker and the phone layout's region list still work. |
@@ -646,12 +752,16 @@ once, at load, and keep the rest of the app up.**
 | A section's `view` is neither `list` nor `item_grids`, or a second section is `item_grids` | `settingsState.js` | One warning. That section is listed in the settings panel. |
 | A setting's `class` has no control in `settingControls.js` | `settingsPage.js` | One warning naming the setting. Its row is left out of the settings page; the setting still has its default. |
 | Two settings each grant only the same grid slot | `settingsState.js` | One warning. The first in `settings.json` steps through that slot on the settings page; the other still works from its row. |
-| The settings handed over from the settings page can't be read | `launch.js` | One warning. Every setting keeps its default. |
+| The settings handed over from the settings page can't be read | `trackerLaunch.js` | One warning. Every setting keeps its default. |
+| `saveLayout.json` can't be read, or has no `fields` list | `dataLoader.js` | One error, and a `#tracker-save-warning` banner saying saving and loading are off. Everything else works. |
+| `saveLayout.json` reads but can't be used: no `app` or `format`, a field with an unknown kind, no id, a width outside 1–16, more options than its bits hold, or a field listed twice | `saveManager.js` | Named, and saving is off. |
+| Something to save is missing from `saveLayout.json`, or its field can't hold its values | `saveManager.js` | One warning per problem, pointing at `scripts/updateSaveLayout.py`. That setting, slot, check or toggle is left out of saves; the rest still save. |
+| A handed-over save names a slot the grids don't have, has no number for one, or marks a check this tracker doesn't show | `gameStateManager.js`, `itemCheckStateManager.js` | One warning each, naming them. They're left out; a slot value past its floor or top is kept inside them without a warning. |
 | A handed-over pick names no setting, or a value its setting can't take — the data changed since it was picked, or the storage was edited | `settingsState.js` | One warning per pick, in the same report as the problems in `settings.json`. That setting keeps its default and the rest still apply. |
 | A check's `vanilla_when` is malformed or names an unknown setting or value | `locationTracker.js` → `validateVanillaClauses()` | One warning per check. The clause never matches, so the check shows as randomized. |
 | A check's `vanilla_item` is not text, is written like an id (lowercase and underscores) but matches no item, or sits on a check with no `vanilla_when` | `locationTracker.js` → `validateVanillaItems()` | One warning per check. The tooltip leaves the "Vanilla:" line out; plain text is always accepted, since most vanilla contents are not tracked items. |
 | Checks that are one location — a `check_group`, or a repeated id — have different `vanilla_when` or different `vanilla_item` | `locationTracker.js` → `validateVanillaAgreement()` | One warning per set, for each field that disagrees. Both are compared as written, not by what they match right now, so the disagreement shows under any settings. |
-| A `legend` entry is missing its `status` or `label`, or names a status `style.css` pairs no color with | `locationLegend.js` | One warning naming the entry, which is not drawn. The check asks CSS rather than a list, so status names still live only in `style.css`. |
+| A `legend` entry is missing its `status` or `label`, or names a status `common.css` pairs no color with | `locationLegend.js` | One warning naming the entry, which is not drawn. The check asks CSS rather than a list, so status names still live only in `common.css`. |
 
 Three rules worth keeping if you add more:
 
@@ -788,6 +898,254 @@ settings only go after `>=`, and a name after `>=` that is not a dropdown carryi
 values is named too. A string that fails to parse is named once more, with every
 place that uses it, since the parser names only the string.
 
+## 9b. Saving
+
+A save holds only what the player entered: the settings picks, each item slot's
+value, which checks are completed, and the view toggles. Logic, regions and
+vanilla clauses are not in it, so they change with the app and an old save picks
+the changes up.
+
+**One owner per piece.** `SettingsState`, `GameState`, `ItemCheckState` and
+`TrackerView` each hand over their part through `snapshot()`, and each takes it
+back at start-up: a save is only ever loaded as the tracker opens, handed over
+from the settings page with the picks (§2, *Pages*), never into a tracker already
+running. `saveManager.js` puts the snapshot together:
+
+```
+{ settings: { id: pick }, slots: { id: value }, checks: [ids], view: { buttonId: bool } }
+```
+
+A slot's value is its stage or count, not the item flags, so changing what a
+progression's stages are called needs no change to saves.
+
+A completed check the tracker didn't draw, in a region whose file failed to load,
+stays in every save it writes, so the check is ticked again once the file loads.
+It counts nowhere meanwhile. One in a `check_group` whose other checks were drawn
+isn't kept apart: the group already carries the location.
+
+**The code.** `saveCodec.js` packs a snapshot into bits and writes them as
+base64url text. First the format number and how many fields were written, 16
+bits each, then every field in layout order, then a CRC-32 of all of it, so a
+mistyped or cut-short code is refused rather than read wrong. A code is short
+enough to paste into a message, and nothing in it depends on the screen, so it
+moves between a phone and a desktop.
+
+| Field | Written as |
+|---|---|
+| A toggle or dropdown setting | its value's position in the field's `options` |
+| A number setting, an item slot | the value minus the field's `min` |
+| A check, a view toggle | 1 bit |
+| A check in a `check_group` | a bit for each of its ids, all set together |
+| A retired field | its width in zeros, never read |
+
+**The layout** (`data/saveLayout.json`) is the list those fields come from, with
+the app's name and the format number. Positions never move:
+
+- **Adding is appending.** A new setting, slot, check or toggle goes on the end.
+  An older save ends sooner, and the header's field count is what tells the
+  decoder where: everything past it takes its default. Without the count, the
+  zero bits padding out the last byte would read as a dropdown's first option.
+- **A dropdown keeps its own option list**, so reordering the options in
+  `settings.json` changes nothing saved. New options go on the end of it.
+- **Renaming is free.** The code holds no names, so renaming an id in the layout
+  and the data together keeps every save reading the same.
+- **Removing leaves a placeholder**: the field becomes `{ "kind": "retired",
+  "bits": N }`, so the bits after it stay where they were.
+- **Each field is exactly as wide as its values need.** One that outgrows its
+  width, a dropdown gaining an option past what its bits hold, takes a new format,
+  which is only data (below).
+
+`scripts/updateSaveLayout.py` does the appending. It reads the settings, the grids,
+every region's checks (sub-regions resolved in the same order `dataLoader.js`
+uses) and the toggle buttons in `tracker.html`. It stops without writing when a
+field has outgrown its width, and it names an id that has gone without retiring
+it, since that may be a rename. `--check` reports without writing.
+
+**A new format** is for anything appending can't do: a field that has outgrown its
+width, or reclaiming the bits of retired fields. The current layout is copied to
+`data/saveLayouts/format<N>.json` before it changes, and the format goes up. A
+code is always read with the layout of the format it was written in, into named
+values, and those are compared with the current layout: what the save held that is
+gone comes back as *dropped*, and what the current layout has that the save didn't
+as *missing*, which takes its default. A save from a newer format than the app
+knows is refused whole, never read partway.
+
+**The wrapper.** An autosave or exported file holds the code in a readable object,
+`{ app, format, version, savedAt, code }`. Only `code` is read back; `app` has to
+match the layout's, so another app's file is refused. A bare code, pasted on its
+own, is read the same way.
+
+### Storage keys
+
+Browser storage is shared by every page on a site, and more than one tracker can be
+served from the same one, so every key starts with the tracker's id:
+`<tracker-id>.<name>`. The id is the page's `<meta name="tracker-id">`, the same on
+both pages, and `storageKeys.js` is the only file that reads it, so the generic code
+never names the game. It lives in the page rather than in `data/` because the handoff
+key is needed before any data has loaded. The same id is the save layout's `app`,
+which says whose save a file is; `saveManager.js` warns if the two differ.
+
+| Name | Where | Holds |
+|---|---|---|
+| `launch` | `sessionStorage` | The handoff from the settings page to the tracker (§2, *Pages*) |
+| `autosave`, `previousRun`, `autosaveBackup` | `localStorage` | The saves (*The autosave*) |
+| `hideNonRandomized`, `showOnlyAccessible` | `localStorage` | The view toggles, named on their buttons |
+| `homeScreenTipClosed` | `localStorage` | That the iPhone Home Screen tip was closed |
+
+**A fixture per released format** keeps these rules honest.
+`tests/fixtures/saves/format<N>.json` is a file the tracker exported with that
+format's layout, byte for byte, and `format<N>.expected.json` beside it is what it
+decodes to: the snapshot, and empty `missing` and `dropped` lists. Neither is ever
+edited once its format has shipped. Whatever the layout becomes, the fixture has to
+keep decoding to the same snapshot, except that fields appended since then show up
+in `missing` and fields retired since in `dropped`. A change that breaks that has
+broken players' saves. The fixture's settings are mostly off their defaults, with
+high values, items at their top stages and checks spread from the first field to
+the last, since a save of defaults would decode correctly through most mistakes.
+The CI check that loads each fixture is not written yet.
+
+### The autosave
+
+`saveStore.js` keeps three slots in `localStorage`, each a wrapper plus the run's
+id, the tab that wrote it and its progress (checked locations out of all of them,
+counted by `ItemCheckState` like every other count, so hidden non-randomized checks
+are left out), which the chooser and the load message show:
+
+| Slot | Holds |
+|---|---|
+| autosave | the current run |
+| previous run | the run before it, moved there when a new run launches |
+| backup | the original of an autosave just updated from an older version, until the updated one has loaded cleanly |
+
+**Writing.** The tracker saves half a second after the last change (an item, a
+check, a toggle) and at once when the page is hidden or closed, since a phone can
+close a background tab before a scheduled save runs. Each save also rewrites the
+tab's handoff, so a reload resumes the run. The first save comes right after
+load: it confirms a save that was just updated, and the backup is removed then. A
+browser that refuses the write, full or blocking site data, gets one banner saying
+autosave isn't working, and the tracker carries on.
+
+A written save is safe from a closed tab, a normal quit and a phone closing the tab
+in the background. What it isn't safe from is the whole browser being killed in the
+seconds after: browsers write `localStorage` to disk in batches a few seconds
+later, so a crash loses whatever they hadn't written yet.
+
+**One tab writes at a time.** A tab writes the autosave only while it owns it: from
+load, when the autosave is empty or already this tab's copy of its run, until
+another tab writes it. Then it stops and says so in a banner; Autosave This Tab
+takes over again, and whatever the autosave holds becomes the previous run rather
+than being lost. A tab opened on a different run than the autosave's starts out not
+owning it. The banner follows the slots while it is up, since other tabs can go on
+changing them. When the autosave holds another run and the previous run holds
+another tab's copy of this tab's run, taking over would replace that copy, so the
+banner says so and points to Load From Autosave instead. A tab that doesn't own the autosave still rewrites its own handoff,
+which no other tab reads, so a reload keeps its progress. Back to Settings asks
+first there, since the settings page only loads what the autosave holds.
+
+Two tabs can hold the same run, so the run's id alone can't say whose copy the
+autosave is. The handoff's stamp does: the `savedAt` of the copy the tab last
+wrote, or resumed from. A reloaded tab whose stamp doesn't match was overtaken by
+another tab on the same run, and starts out not owning the autosave rather than
+writing its older state over the newer one. A handoff with no stamp, from a new
+run or a file, goes by the run alone. The same check runs when the browser
+restores a tracker page from its back/forward cache, since not every browser tells
+a restored page what other tabs wrote while it was away.
+
+**A run's id** is made when a new run launches and travels in the handoff, so the
+autosave, the previous run and the chooser can tell runs apart. Resuming the
+previous run swaps the two slots, so neither is lost. Resuming a run no slot holds,
+a file among them, moves the autosave into the previous run, replacing what was
+there. The run can
+move on after the settings page loaded it, in another tab or through the browser's
+Back and Forward, so Resume reads the slots again and carries on from the newest
+copy of that run rather than from what it read at load, looking first in the slot
+it was loaded from: after Autosave This Tab in a second tab, both slots can hold
+the run. A save loaded from the backup passes over a stored copy that still won't
+read, since that is why the backup was offered.
+
+### Export and Load From File
+
+Export writes the same record the autosave keeps, less the tab that wrote it,
+built by `TrackerSave.record()` so the two can't drift apart. It goes out three
+ways:
+
+- **Download File**, as the readable wrapper. The name is the layout's app name
+  with the local date and time, and no spaces or colons, so it is a valid file
+  name everywhere: `<app>-<yyyy>-<mm>-<dd>-<hhmm>.json`.
+- **Copy Code**, the bare code, also shown below it in a read-only box sized to the
+  code, which a tap or click selects whole. The clipboard needs a secure page, so over
+  plain HTTP on a local network the button says it couldn't copy and selects the
+  code instead.
+- **Share**, only on a touch device whose browser can share a file, on a secure
+  page. Desktop browsers on Windows also say they can share a file, but hand it to
+  a system panel that is little use here, so the input decides, not the window
+  size.
+
+Load From File reads a file or a pasted code with the same decoder as the
+autosave. A file is text: a wrapper, or a bare code, which carries no app name and
+so is taken as this app's. Anything over 64 KB is refused unread, since a save is
+far smaller and a large file is something picked by mistake. A file always starts
+a run of its own, so resuming it moves the autosave into the previous run and never
+writes over newer progress there. A file never fills the backup slot, since it is
+its own backup. Enter in the paste box loads the
+code, since a code never holds a line break.
+
+## 9c. Offline
+
+The tracker works with no connection once it has been opened online. `offlineWorker.js`, a
+service worker at the site's root so it covers both pages, keeps a copy of every
+file, and answers from it when the site can't.
+
+**Online, the site answers first.** Every request is asked of the site rather than
+taken from the browser's cache, and the answer is stored. The site is asked because
+a host can let the browser keep a file for minutes after a release, which could hand a page
+old scripts beside new data. So a player online has the latest files, and there is
+no "update available" step: the version number only changes at a release, and a
+copy that answered first would serve stale files until then. A running page is
+never changed under the player either, since files are only fetched when a page
+loads. A file that can't be stored, with storage full, still answers the page.
+
+One cache the worker can't skip: Chromium can reuse a script from its in-memory
+cache when a tab reloads or moves between the pages, and that request never reaches
+the worker. A new tab always gets the latest.
+
+**Offline, the stored copy answers.** With no connection a request fails at once
+and the copy answers instead. A connection that neither fails nor answers gets a
+few seconds before the copy answers; the site's late reply still updates it. A
+server error (a 5xx) is the site failing rather than the file changing, so the copy
+answers that too when it has the file. A 404 goes through: that file is gone.
+
+**The copy is the whole site, kept current.** The first visit stores every file in
+`data/offline.json`, so pages never opened online still open offline. At most once
+an hour while a page is open online, the worker re-checks every file in the
+background; the browser asks the site whether each changed, so an unchanged file
+costs a short reply. A file missing from the list is stored the first time a page
+uses it, so a stale list only costs completeness. `scripts/updateOfflineFiles.py`
+writes the list from the pages, the manifest and everything under `css/`, `js/`,
+`data/` and `images/`; its `--check` reports without writing.
+
+**The off switch** is `"enabled": false` in `data/offline.json`. Every page reads
+that file fresh from the site, and on seeing it tells the worker
+serving it to stop, then removes every registration and the stored copy. The
+worker itself also stops if it reads the flag during a refresh. Told to stop, it
+passes requests straight to the site and stores nothing, or the pages it still
+serves would store the copy again as it was deleted. A fixed `offlineWorker.js` needs no
+switch at all: the browser checks the worker file against the site itself.
+
+**It needs a secure page**, HTTPS or `localhost`. Over plain HTTP on a local network
+nothing registers, and the tracker works online as before.
+
+**Keeping the storage.** Safari on an iPhone or iPad deletes a site's storage, the
+autosave with it, after days of use without a visit; an app added to the Home
+Screen is exempt. So on an iPhone or iPad, not in the Home Screen app, a tip
+suggests adding it, once, until closed. It checks the device rather than the
+browser, so it shows in every browser there, all of which run on Safari's engine.
+Other phones don't clear storage this way, and never see it. A Home Screen app keeps storage of its own,
+apart from Safari's, and export moves a run between the two. Other browsers are
+asked to keep the storage (`navigator.storage.persist()`) only when the tracker
+runs as an installed app, where they agree without asking; in a tab, Firefox
+would ask with a prompt.
+
 ---
 
 
@@ -795,16 +1153,15 @@ place that uses it, since the parser names only the string.
 
 ## 10. Desktop vs mobile — the 1500px split
 
-The number lives in `css/style.css` as `--mobile-breakpoint`. The JS files that
-need it — `locationPanelLayout.js`, `locationMap.js` and `settingsPage.js` — read
-it from there rather than repeating it, so JS can never disagree with CSS about
-where mobile starts — that disagreement hides the region list *and* leaves the
-map sizing itself against a `display: none` element. `@media` cannot read a
-custom property, so every media query still spells the number out. Changing
-the breakpoint means changing each of those, the property itself, and the
-last-resort fallback literal each of those three files carries for the case where
-the stylesheet fails to load — a stale fallback is invisible until exactly that
-happens.
+The number lives in `css/common.css` as `--mobile-breakpoint`. `phoneLayout.js`
+reads it from there, and every script that asks which layout the page is in asks
+`PhoneLayout`, so JS can never disagree with CSS about where mobile starts — that
+disagreement hides the region list *and* leaves the map sizing itself against a
+`display: none` element. `@media` cannot read a custom property, so every media
+query still spells the number out. Changing the breakpoint means changing each of
+those, the property itself, and the last-resort fallback literal in
+`phoneLayout.js` for the case where the stylesheet fails to load — a stale fallback
+is invisible until exactly that happens.
 
 Every query asks the same question: is this the phone layout? The phone side is
 `max-width: 1499px`, and a desktop-only block is `not all and (max-width: 1499px)`
@@ -846,18 +1203,21 @@ Consequences:
 
 ## 10b. The summary row and the status colors
 
-`#location-summary-row` holds the stats box and the legend side by side.
-`locationPanelLayout.js` builds it and fills it as the two boxes announce
-themselves, in either order; neither box knows the other exists.
+`#location-summary-row` holds the progress numbers and the legend on one line.
+`locationPanelLayout.js` builds it and fills it as the two pieces announce
+themselves, in either order; neither knows the other exists.
 
-Both boxes are as wide as their own content and the pair is centered. On desktop
-the row sits in the header between the logo and the toolbar, as wide as its two
-boxes. When large text will not fit them side by side, the boxes shrink and wrap
-their labels first, and if that is still not enough the row stacks the legend under
-the stats box. Past that the header wraps: the toolbar drops under the logo and the
-row. The map keeps its size and the taller header pushes the page down.
+On desktop the row describes the locations, so it sits over the map: the header
+becomes two columns, the logo and a column that starts at the map's left edge, with
+the toolbar at its top and the row along its bottom. The map is centered in its
+column and its size is worked out in whole pixels, so `locationPanelLayout.js`
+measures where it actually starts each time it sizes it and hands that to the CSS as
+`--summary-inset`. The numbers sit left and the legend right; on a narrower window
+the legend wraps under the numbers. Large text wraps both further and the header
+grows; the map keeps its size and the taller header pushes the page down. In the
+phone layout the row is hidden (§13).
 
-**Keep the legend no taller than the logo beside it on desktop**, or the header
+**Keep the toolbar and the row no taller than the logo on desktop**, or the header
 grows at the default text size and the page scrolls: the scale's height budget
 counts the header as its logo (§11).
 
@@ -886,7 +1246,7 @@ above zero. That is the yellow, green and purple markers by construction, so nei
 counted-marker size keys off a `has-count` class, and a two-digit count off a
 `wide-count` class (see *Markers* below).
 
-**Status is a color and a shape, paired once** in `style.css`. Each status class
+**Status is a color and a shape, paired once** in `common.css`. Each status class
 sets `--status-color` and `--status-shape`, plus `--status-outline` and
 `--status-outline-pct` where a shape needs a wider marker outline and
 `--status-wide-ratio` where it needs a smaller two-digit count (see *Markers*
@@ -921,8 +1281,9 @@ count.
 Two toolbar toggles take checks out of view. `trackerToolbar.js` holds each as a
 class on `<body>`, read back through `TrackerView.hidesNonRandomized()` and
 `TrackerView.showsOnlyAccessible()`, and flipping either fires
-`trackerViewChanged`. Both are preferences rather than part of a run, so each is
-kept in `localStorage` and carries over to every tracker. Storage that throws — a
+`trackerViewChanged`. A save carries both, and a tracker opened from one takes its
+values. Each is also kept in `localStorage`, which is what a new tracker starts
+from, and flipping one updates it. Storage that throws — a
 private window, a browser blocking site data — just starts with everything shown.
 
 **Hide Non-Randomized Checks** takes those checks out of the tracker as if the
@@ -930,7 +1291,7 @@ regions did not have them, and everything that counts reads it at the moment it
 counts:
 
 - CSS hides the rows, and the legend's *Not Randomized* row, off one class on
-  `<body>`. The rule sits beside the status pairing in `style.css`, the one place
+  `<body>`. The rule sits beside the status pairing in `common.css`, the one place
   status names live.
 - `determineRegionLocationAccessibility()` skips them, so a region's counts, color
   and marker all move together. A region with nothing but non-randomized checks
@@ -939,7 +1300,7 @@ counts:
   included, so *Checked* only counts what is still shown.
 
 When it flips, `locationTracker.js` runs the sweep again, which carries the new
-counts to the markers, the overlay titlebar and the stats box through the events
+counts to the markers, the overlay titlebar and the progress numbers through the events
 they already listen to; `locationMap.js` re-fits an open overlay, whose region
 just gained or lost rows; and `tooltip.js`, redrawing on the click itself, closes
 a panel whose check was hidden under it.
@@ -975,7 +1336,7 @@ status color inset in front — rather than by the button, because `clip-path`
 clips text along with paint and a count on the button would be cut off where the
 shape tapers. A slanted edge shows less outline than a straight one from the same
 inset, so the slanted shapes get a wider one. That width is set with the shape in
-`style.css` (`--status-outline`) rather than keyed off a status name in
+`common.css` (`--status-outline`) rather than keyed off a status name in
 the map CSS, so it follows the shape if a status is ever given a different one. A
 two-digit count has the same problem: on a shape that tapers it has less room than
 the marker's width suggests, so those pairings also set a
@@ -1026,7 +1387,7 @@ to the grids' height, so the two always end together.
 ### Scale
 
 `--ui-scale` (1 or more) multiplies every pixel size that belongs to the grids in
-`itemContainers.css`. `applyScale` picks the largest value at which the grids and a
+`itemGrids.css`. `applyScale` picks the largest value at which the grids and a
 full-height map fit side by side without the page scrolling, across the window's
 width and in the height left under the header and above the footer. The smaller
 of the two wins, and it never goes below 1. So
@@ -1050,7 +1411,9 @@ base size and the map is limited by the column's width.
   window: large text pushes the map down the page, and the page scrolls, instead
   of the map shrinking.
 - **`--layout-max-width`** is set to the width the scaled layout takes, so the
-  header and `main` line up and stay centered on a very wide window.
+  header and `main` line up and stay centered on a very wide window. It isn't
+  known until the grids are drawn, which is one reason the header stays hidden
+  with `<main>` while the page loads.
 - **The grid has an explicit width on desktop** (`calc(360px * var(--ui-scale))`).
   At `100%` it settles at its slots' content width and stops growing once the scale
   lifts `max-width` past that.
@@ -1216,10 +1579,10 @@ refit.
 ---
 
 
-## 13. The mobile (tabbed) layout
+## 13. The phone layout
 
-Everything below `--mobile-breakpoint` shares one layout: the summary row, a tab
-bar, and whichever of the two panels is active. It is not only a phone layout — it
+Everything below `--mobile-breakpoint` shares one layout: a bar frozen at the top,
+and whichever of the two panels its switch shows. It is not only for phones — it
 covers everything up to the breakpoint, so it has to use a wide window well too.
 
 **Both panels flow into columns**, and the browser picks the counts, so there is
@@ -1231,10 +1594,32 @@ near the breakpoint, which shrinks the slots enough to read as one thin row rath
 than a block. The `min()` in the track definition matters too: without it a narrow
 phone gets a track wider than its screen.
 
-**The tab bar is `position: sticky`.** It needs its own opaque background (the
-list scrolls under it otherwise) and a z-index above the region headers. Sticky
-fails silently: if anything above `.mobile-tabs` ever gets an `overflow` other
-than `visible`, it stops sticking with no error.
+**The header is the bar, and it is `position: sticky`.** It holds the logo, a
+two-part switch (the tab buttons) and a menu button, and on the tracker a line
+with the progress numbers. It needs its own opaque background (the page scrolls
+under it) and a z-index above the region headers. Sticky fails silently: if an
+ancestor of `header` ever gets an `overflow` other than `visible`, it stops
+sticking with no error.
+
+**The toolbar is the bar's menu.** The same buttons serve both layouts with the
+same handlers; `headerMenu.js` only opens and closes the menu. A view toggle leaves
+it open, so its new state shows; any other button is an action and closes it, as
+do a tap outside and Esc. On the tracker the legend moves into the menu
+(`locationPanelLayout.js`, the way the settings page moves its inventory options),
+and the progress box is hidden, since the status line has its numbers.
+
+**A button marked `data-menu-keep-out` stays out of the menu**, shown under the bar
+in `#header-keep-out`, and goes back to its place in the toolbar on desktop. Resume
+Tracker is one: with a save loaded it is the next step, so it shouldn't sit behind
+a menu.
+
+**The bar lets go when it grows.** At the largest text sizes a frozen bar would
+cover much of the screen, so once it is taller than a quarter of the window it
+takes `bar-loose` and scrolls away with the page. Opening the menu scrolls it into
+view, since a loose bar can be taller than the window.
+
+**Anything switched on is `--active-green`**, the active half of the switch and a
+pressed toggle alike: dark enough for the white text on it to read clearly.
 
 **Scroll position is remembered per tab** in `mobileTabManager.js`, in memory
 only - it is where you were looking, not what you collected, so it is not part of
@@ -1271,9 +1656,10 @@ instant `scrollTo(0, 0)` always works.
 
 ## 14. Tooltips (`tooltip.js`)
 
-Hovering an item shows its name, and for a song the button sequence from
-`notes_image`. The settings page leaves the notes out, since nothing there asks
-you to play a song. Hovering a location check shows what it needs, colored by
+Hovering an item shows its name, and for a song you own the button sequence from
+`notes_image`. A song still grayed out shows only its name: the notes are what
+getting it teaches you. The settings page leaves the notes out, since nothing
+there asks you to play a song. Hovering a location check shows what it needs, colored by
 whether you have it.
 
 Both come from one element. `tooltip.js` owns showing, hiding, following the

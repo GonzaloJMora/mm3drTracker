@@ -246,7 +246,9 @@
                 fragment.appendChild(note);
             }
 
-            if (slot.dataset.tooltipImage) {
+            // Only once the song is owned: a grayed-out slot names what is missing,
+            // and the notes are what you learn by getting it.
+            if (slot.dataset.tooltipImage && !slot.classList.contains("dimmed")) {
                 const notes = document.createElement("img");
                 // Not .item-image — itemTracker.js counts those to decide when the
                 // grids have stopped growing, and the map sizes itself off it.

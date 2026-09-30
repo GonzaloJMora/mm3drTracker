@@ -1,0 +1,235 @@
+.region-sidebar {
+    background-color: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* The region list. Only ever rendered on mobile — above the breakpoint
+   #region-sidebar is display:none and this is the storage bin locationMap.js
+   moves a region in and out of for its overlay. */
+#region-dropdown-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+}
+
+/* Dropdown Accordion Styling */
+.region-group {
+    margin-bottom: 10px;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #262626;
+}
+
+.region-header {
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+    width: 100%;
+    text-align: left;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Pushed right rather than by space-between, which would strand the status
+   glyph away from the name it belongs to. */
+.region-header .region-arrow {
+    margin-left: auto;
+}
+
+/* Hover only with a real pointer: a touch browser applies :hover on tap and keeps
+   it until the next tap somewhere else, so a tapped header would stay light gray
+   after closing. */
+@media (hover: hover) {
+    .region-header:hover {
+        background-color: #444;
+    }
+}
+
+/* Name and count share one flex item and flow as text, so large text wraps the
+   count onto the next line rather than pushing it past the header's edge. */
+.region-title {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+/* Reads as a detail of the region, not part of its name. The zero-width space is
+   the line-break opportunity between the two: a name runs straight into "(",
+   which the browser will not break on its own. */
+.region-count {
+    margin-left: 8px;
+    font-weight: normal;
+    opacity: 0.8;
+}
+
+.region-count::before {
+    content: "\200B";
+}
+
+/* The accordion arrows */
+.region-header .region-arrow::after { content: "\25BC"; }
+.region-header.expanded .region-arrow::after { content: "\25B2"; }
+
+/* Color and shape both come from the status pairing in common.css. A region with
+   no status yet has neither variable, so it keeps the default color and its
+   glyph stays transparent. */
+.region-header {
+    color: var(--status-color, #ffffff);
+}
+
+.region-header::before,
+.region-check-item::before {
+    content: "";
+    flex: 0 0 auto;
+    background-color: var(--status-color, transparent);
+    clip-path: var(--status-shape, circle(50%));
+}
+
+.region-header::before {
+    width: 12px;
+    height: 12px;
+}
+
+.region-check-item::before {
+    width: 10px;
+    height: 10px;
+}
+
+.region-content {
+    display: none;
+    padding: 10px;
+    background-color: #202020;
+}
+
+.region-content.open {
+    display: block;
+}
+
+.region-check-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+    color: var(--status-color, #e0e0e0);
+}
+
+/* Pointer only, like the header's hover. */
+@media (hover: hover) {
+    .region-check-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+        /* Brightening only applies to a check with no status of its own — this
+           rule outranks the base color, so a plain white here would drop the
+           status color on hover. */
+        color: var(--status-color, #ffffff);
+    }
+}
+
+.region-check-item.completed {
+    opacity: 0.4;
+}
+
+/* On the name, not the row: the line would otherwise propagate into the info
+   button and strike its glyph too. */
+.region-check-item.completed .region-check-name {
+    text-decoration: line-through;
+}
+
+/* A single word wider than the row, which only very large text produces, breaks
+   instead of pushing the info button out of the row. */
+.region-check-name {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+/* The requirements button is touch-only: above the breakpoint hovering the row
+   does the same job. display:none rather than hidden because the row is moved
+   into the map overlay, where fitOverlayContent() measures what it contains. */
+.region-check-info {
+    display: none;
+}
+
+/* Mobile adjustments */
+@media screen and (max-width: 1499px) {
+    .region-content.open {
+        /* Wide enough that the info button leaves room for the longer names just
+           below the breakpoint, where a narrower value squeezes in one more,
+           tighter column. */
+        columns: 270px;
+        column-gap: 15px;
+    }
+
+    .region-check-item {
+        break-inside: avoid; /* never split a check across two columns */
+        /* 8 rather than 12 to pay for the info button: a phone column has almost
+           no slack, and the narrower padding keeps most names on one line. */
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .region-check-info {
+        display: block;
+        flex: 0 0 auto;
+        margin-left: auto;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        position: relative;
+        border: 1px solid #666;
+        border-radius: 50%;
+        background: transparent;
+        color: #aaa;
+        font: bold 13px/1 Arial, sans-serif;
+        cursor: pointer;
+    }
+
+    .region-check-info::before {
+        content: "i";
+    }
+
+    /* The tap target is bigger than the circle. Paying for 44px of layout would
+       wrap several more names. */
+    .region-check-info::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 44px;
+        height: 44px;
+        transform: translate(-50%, -50%);
+    }
+
+    .region-check-info[aria-expanded="true"] {
+        border-color: #4da3ff;
+        color: #4da3ff;
+    }
+}
+
+/* Desktop shows the map instead; the list stays in the DOM as the holding area.
+   Asked as "not the phone layout" — see the breakpoint note in common.css. */
+@media not all and (max-width: 1499px) {
+    #region-sidebar {
+        display: none;
+    }
+}

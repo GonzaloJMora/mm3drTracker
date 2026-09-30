@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- data-requires-launch: opened without settings from index.html, launch.js sends
+<!-- data-requires-launch: opened without settings from index.html, trackerLaunch.js sends
      this page back there. -->
 <html lang="en" data-requires-launch>
 <head>
@@ -9,6 +9,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#121212">
     <title>MM3D Randomizer Tracker</title>
+    <!-- This tracker's name in the browser's storage (storageKeys.js). The same on both
+         pages, and the same as "app" in data/saveLayout.json. -->
+    <meta name="tracker-id" content="mm3drTracker">
     
     <link rel="icon" type="image/png" href="images/icons/icon.png">
     <link rel="icon" sizes="32x32" href="images/icons/favicon.ico">
@@ -26,44 +29,52 @@
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary">
 
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/itemContainers.css">
-    <link rel="stylesheet" href="css/locationContainers.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/pageLayout.css">
+    <link rel="stylesheet" href="css/itemGrids.css">
+    <link rel="stylesheet" href="css/regionList.css">
     <link rel="stylesheet" href="css/locationStats.css">
     <link rel="stylesheet" href="css/locationLegend.css">
     <link rel="stylesheet" href="css/locationPanelLayout.css">
     <link rel="stylesheet" href="css/locationMap.css">
     <link rel="stylesheet" href="css/tooltip.css">
     <link rel="stylesheet" href="css/trackerToolbar.css">
+    <link rel="stylesheet" href="css/saveDialog.css">
 
+    <script src="js/storageKeys.js"></script>
+    <script src="js/phoneLayout.js"></script>
     <!-- In <head> so a redirect happens before the body draws. -->
-    <script src="js/launch.js"></script>
+    <script src="js/trackerLaunch.js"></script>
 </head>
 
 <body>
 
+    <!-- In the phone layout the header is a bar frozen at the top: the logo, the switch
+         between the two views, and the menu button, which opens the toolbar as a menu
+         (headerMenu.js). On desktop the switch and the menu button are hidden. -->
     <header>
         <img src="images/logo.png" alt="Majora's Mask 3D Randomizer Tracker">
+        <div class="mobile-tabs">
+            <button type="button" class="tab-btn active" data-tab="items" data-section="item-section">Items</button>
+            <button type="button" class="tab-btn" data-tab="locations" data-section="location-section">Locations</button>
+        </div>
+        <button type="button" id="header-menu-button" class="toolbar-btn" aria-label="Menu" aria-expanded="false" aria-controls="tracker-toolbar"></button>
         <div id="tracker-toolbar">
-            <!-- data-view-toggle is the class trackerToolbar.js puts on <body>; data-storage-key is where the choice is saved. -->
+            <!-- data-view-toggle is the class trackerToolbar.js puts on <body>; data-storage-key names where the choice is saved (storageKeys.js). -->
             <button type="button" id="toggle-non-randomized" class="toolbar-btn" aria-pressed="false"
-                    data-view-toggle="hide-non-randomized" data-storage-key="mm3drTracker.v0.hideNonRandomized">Hide Non-Randomized Checks</button>
+                    data-view-toggle="hide-non-randomized" data-storage-key="hideNonRandomized">Hide Non-Randomized Checks</button>
             <!-- Phone layout only (trackerToolbar.css). -->
             <button type="button" id="toggle-only-accessible" class="toolbar-btn phone-only" aria-pressed="false"
-                    data-view-toggle="only-accessible" data-storage-key="mm3drTracker.v0.showOnlyAccessible">Show Only Accessible Checks</button>
+                    data-view-toggle="only-accessible" data-storage-key="showOnlyAccessible">Show Only Accessible Checks</button>
             <button type="button" id="export-tracker" class="toolbar-btn" disabled>Export</button>
-            <button type="button" id="launch-new-tracker" class="toolbar-btn">Launch New Tracker</button>
+            <button type="button" id="back-to-settings" class="toolbar-btn">Back to Settings</button>
         </div>
+        <!-- Phone layout only: the progress box's numbers as one line (locationStatsTracker.js). -->
+        <p id="location-status-line"></p>
     </header>
 
     <!-- awaiting-data: hidden until dataLoader.js has the data and every file has drawn from it. -->
     <main class="awaiting-data">
-        <!-- Mobile Tab Navigation (Hidden on Desktop) -->
-        <div class="mobile-tabs">
-            <button class="tab-btn active" data-tab="items" data-section="item-section">Item Tracker</button>
-            <button class="tab-btn" data-tab="locations" data-section="location-section">Locations</button>
-        </div>
-
         <div class="tracker-layout-wrapper">
             <!-- Item Tracker Section -->
             <div id="item-section" class="tracker-section active-section">
@@ -80,6 +91,10 @@
         </div>
     </main>
 
+    <!-- Loading animation (common.css, *Loading*). Has to come after main: CSS shows it
+         only while main still has awaiting-data. -->
+    <div class="page-loading" aria-hidden="true"></div>
+
     <!-- Filled from data/version.json by dataLoader.js. -->
     <footer id="app-version"></footer>
 
@@ -95,11 +110,18 @@
     <script src="js/trackerToolbar.js"></script>
     <script src="js/itemGrids.js"></script>
     <script src="js/itemTracker.js"></script>
+    <script src="js/itemCheckStateManager.js"></script>
     <script src="js/locationTracker.js"></script>
     <script src="js/locationStatsTracker.js"></script>
     <script src="js/locationLegend.js"></script>
     <script src="js/locationPanelLayout.js"></script>
     <script src="js/locationMap.js"></script>
     <script src="js/mobileTabManager.js"></script>
+    <script src="js/headerMenu.js"></script>
+    <script src="js/saveCodec.js"></script>
+    <script src="js/saveStore.js"></script>
+    <script src="js/saveManager.js"></script>
+    <script src="js/exportSave.js"></script>
+    <script src="js/offline.js"></script>
 </body>
 </html>

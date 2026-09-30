@@ -41,6 +41,9 @@
         main.insertBefore(note, main.firstChild);
     }
 
+    const HELD_NOTE = "Locked by the loaded save";
+    const NOT_IN_SAVE_NOTE = "Not in this save: check it matches your seed";
+
     // A section without an item grids view has nothing for the Starting Items half
     // to show, so that half and its tab go.
     function removeStartingHalf() {
@@ -184,6 +187,8 @@
         function slotNote({ controller, setters }) {
             if (controller) {
                 if (settings.isForced(controller)) return lockNote(settings, controller);
+                if (settings.isHeld(controller)) return HELD_NOTE;
+                if (settings.isNotInSave(controller)) return NOT_IN_SAVE_NOTE;
                 return setters.length ? `Also set by ${namesOf(setters)}` : "";
             }
             return setters.length ? `Set by ${namesOf(setters)}` : "Not a starting item";
@@ -196,11 +201,18 @@
             const isPicked = id => Object.prototype.hasOwnProperty.call(picked, id);
             rows.forEach(({ id, control, row, note }) => {
                 const value = settings.get(id);
-                const locked = settings.isForced(id);
-                control.update(value, locked);
+                const forced = settings.isForced(id);
+                const held = settings.isHeld(id);
+                const notInSave = settings.isNotInSave(id);
+                control.update(value, forced || held);
                 row.classList.toggle("changed", isPicked(id));
-                note.textContent = locked ? lockNote(settings, id) : "";
-                note.hidden = !locked;
+                row.classList.toggle("not-in-save", notInSave);
+                // A held row gets no note of its own: the loaded save's message says
+                // they're all locked, and a line under every row would bury the rest.
+                note.textContent = forced ? lockNote(settings, id)
+                    : notInSave ? NOT_IN_SAVE_NOTE
+                    : "";
+                note.hidden = !note.textContent;
             });
 
             counts.forEach(({ idsNow, count }) => {
@@ -219,6 +231,8 @@
                     const description = settings.describe(controller);
                     const value = settings.get(controller);
                     view.slot.classList.toggle("locked-on", settings.isForced(controller));
+                    view.slot.classList.toggle("held", settings.isHeld(controller));
+                    view.slot.classList.toggle("not-in-save", settings.isNotInSave(controller));
                     if (description.labelsInSlot && description.slotChoices.includes(value)) {
                         view.counterNode.innerText = valueName(description, value);
                         // Green at the top choice, like the tracker's own size slots,
@@ -240,42 +254,57 @@
         // and sit under the grids in the phone layout, where they belong to the
         // Starting Items tab. The one block of rows moves between the two, the way
         // the map overlay moves a region, so there is never a second copy to keep
-        // in step. The breakpoint is read from CSS, like locationMap.js does.
-        const phoneLayout = window.matchMedia(`(max-width: ${
-            getComputedStyle(document.documentElement).getPropertyValue("--mobile-breakpoint").trim() || "1499px"
-        })`);
-
+        // in step.
         function placeOptions() {
             if (optionsBlock) {
-                (phoneLayout.matches ? extras : list).appendChild(optionsBlock);
+                (window.PhoneLayout.active ? extras : list).appendChild(optionsBlock);
                 extras.hidden = !extras.contains(optionsBlock);
             }
             refresh();
         }
 
         placeOptions();
-        phoneLayout.addEventListener("change", placeOptions);
+        window.PhoneLayout.onChange(placeOptions);
 
         const reset = document.getElementById("reset-settings");
         if (reset) {
             reset.addEventListener("click", () => {
-                if (window.confirm("Reset every setting to its default?")) settings.reset();
+                const question = settings.holdsSave()
+                    ? "Let go of the loaded save and reset every setting to its default?"
+                    : "Reset every setting to its default?";
+                if (window.confirm(question)) settings.reset();
             });
             reset.disabled = false;
         }
 
+        // With a save loaded, the first press only lets go of it, keeping its
+        // settings, so they can be changed before a new run starts on them.
         const launch = document.getElementById("launch-new-tracker");
         if (launch) {
             launch.addEventListener("click", () => {
-                if (window.TrackerLaunch.write(settings.picks())) {
-                    window.location.href = "tracker.html";
+                if (settings.holdsSave()) {
+                    if (window.confirm("Start a new tracker on these settings? They unlock so you can change them first, " +
+                        "and the save's items and checked locations aren't carried over. Press Launch New Tracker " +
+                        "again when you're ready.")) {
+                        settings.releaseSave();
+                    }
                     return;
                 }
+
+                // The run in the autosave isn't lost: it becomes the previous run.
+                const autosave = window.SaveStore.read("autosave");
+                if (autosave && !autosave.unreadable) {
+                    if (!window.confirm("Launch a new tracker? Your autosaved run becomes the previous run, " +
+                        "replacing the one there, and Load From Autosave can still bring it back.")) return;
+                    window.SaveStore.moveToPreviousRun();
+                }
+
+                if (window.TrackerLaunch.open(settings.picks(), { runId: window.SaveStore.newRunId() })) return;
                 // The check at load can pass while these picks still don't fit, so
                 // the warning may be news, and the picks are asked about before they go.
                 showStorageWarning();
                 if (window.confirm("This browser can't store these settings, so they can't reach the tracker. Open the tracker with the default settings?")) {
-                    window.location.href = window.TrackerLaunch.defaultsUrl;
+                    window.TrackerLaunch.openOnDefaults();
                 }
             });
             launch.disabled = false;

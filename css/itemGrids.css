@@ -1,0 +1,182 @@
+/* The item grids, on both pages: the container, each grid and its slots (drawn by
+   itemGrids.js), with their desktop and phone sizing. Where the grids sit on the
+   page is pageLayout.css. */
+
+/* Container housing each individual item-grid. */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, max-content); 
+    gap: calc(15px * var(--ui-scale));
+    flex-shrink: 0; 
+}
+
+/* Container housing a group of item-slot instances. */
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); 
+    gap: calc(10px * var(--ui-scale));
+    width: 100%;
+    max-width: calc(360px * var(--ui-scale)); 
+    margin: 0;
+    background-color: #1a1a1a;
+    border: calc(2px * var(--ui-scale)) solid #333;
+    border-radius: calc(8px * var(--ui-scale));
+    padding: calc(15px * var(--ui-scale));
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    justify-items: center; 
+    justify-content: center; 
+}
+
+/* Individual item slot */
+.item-slot {
+    position: relative; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #262626;
+    border: 1px solid #444;
+    border-radius: calc(6px * var(--ui-scale));
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    user-select: none;
+}
+
+/* Counter positioned in the bottom right corner */
+.slot-counter {
+    position: absolute;
+    bottom: calc(4px * var(--ui-scale));
+    right: calc(6px * var(--ui-scale));
+    font-family: sans-serif;
+    font-size: calc(13px * var(--ui-scale));
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    pointer-events: none;
+    user-select: none;
+}
+
+.slot-counter.max-count {
+    color: #00ff00;
+}
+
+.item-slot.empty-slot {
+    background-color: transparent !important;
+    border: none !important;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* A starting item with nothing left to cycle through. Still hoverable, so its
+   tooltip works. */
+.item-slot.locked {
+    cursor: default;
+}
+
+.item-slot .item-image {
+    filter: grayscale(0%) brightness(100%);
+}
+
+.item-slot.dimmed .item-image {
+    filter: grayscale(25%) brightness(50%) opacity(35%);
+}
+
+.item-slot.digit-slot {
+    background-color: #262626;
+    border-color: #444;
+}
+
+/* A digit slot's number, centered */
+.item-slot.digit-slot .slot-counter {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    bottom: auto;
+    right: auto;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: min(calc(45px * var(--ui-scale)), 10vw);
+    color: #ffffffcb;
+}
+
+/* Hover only with a real pointer: a touch browser keeps :hover on whatever was
+   tapped last, so a tapped slot would stay highlighted. */
+@media (hover: hover) {
+    .item-slot.digit-slot:hover {
+        background-color: #333;
+        border-color: #888;
+    }
+
+    .item-slot:hover {
+        background-color: #333;
+        border-color: #888;
+    }
+}
+
+.item-image {
+    width: 85%;
+    height: 85%;
+    object-fit: contain;
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+/* Desktop: an explicit width. With 100% the grid would settle at its slots' content
+   width once --ui-scale lifts max-width past that, and stop growing. */
+@media not all and (max-width: 1499px) {
+    .item-grid {
+        width: calc(360px * var(--ui-scale));
+    }
+}
+
+/* Mobile adjustments */
+@media screen and (max-width: 1499px) {
+    .grid-container {
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+    .item-grid {
+        max-width: 100%; /* Larger grids on mobile screens */
+    }
+}
+
+/* The phone layout's grids. */
+@media screen and (max-width: 1499px) {
+    /* As many columns as fit, rather than one centered column with empty space
+       either side. The min() stops a narrow phone getting a track wider than
+       the screen. */
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+        justify-content: center;
+        align-items: start;
+        gap: 15px;
+        width: 100%;
+        /* Two grids across at most — beyond that the slots get thin. */
+        max-width: 1015px;
+        margin: 0 auto;
+    }
+
+    /* Makes individual item grids fill the mobile screen nicely and center */
+    .item-grid {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .item-slot {
+        container-type: inline-size;
+    }
+
+    .item-slot.digit-slot .slot-counter {
+        font-size: 80cqw;
+    }
+}

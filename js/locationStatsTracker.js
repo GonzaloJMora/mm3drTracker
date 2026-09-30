@@ -1,73 +1,20 @@
 // locationStatsTracker.js
-// The location-progress box only: counting checked / accessible / remaining,
-// deduped via config/checkGroups.json's check_groups, and rendering them. It builds its own
+// The location progress numbers only: counting checked / accessible / remaining, one
+// per location as ItemCheckState defines it, and rendering them. It builds its own
 // box and hands it over on "locationStatsBoxReady"; where that box sits is
 // locationPanelLayout.js's problem.
 
 (function () {
-    let checkGroupsCache = [];
-    let canonicalKeyMap = null;
     let statsBoxEl = null;
     let statsContentEl = null;
     let updateScheduled = false;
 
-    // Maps an individual check id -> canonical group key.
-    // Ids not in any check_group map to themselves (each is its own group).
-    function buildCanonicalKeyMap(checkGroups) {
-        const idToKey = new Map();
-        checkGroups.forEach((group, idx) => {
-            const key = `group_${idx}`;
-            group.forEach(id => idToKey.set(id, key));
-        });
-        return idToKey;
-    }
-
     // ---------- Stat computation ----------
 
+    // Read at count time rather than kept from an event, so the hide choice can't be
+    // stale whichever order the listeners run in.
     function computeStats() {
-        // Built once - check_groups comes from config/checkGroups.json and never changes.
-        if (!canonicalKeyMap) canonicalKeyMap = buildCanonicalKeyMap(checkGroupsCache);
-        const idToKey = canonicalKeyMap;
-        // Global, not scoped to #region-dropdown-container — a region's checks
-        // may be sitting in the map overlay, and still have to count.
-        const items = document.querySelectorAll(".region-check-item");
-
-        // canonicalKey -> { completed: bool, accessible: bool }
-        const canonical = new Map();
-        // Read at count time rather than kept from an event, so it can't be stale
-        // whichever order the listeners run in.
-        const skipVanilla = Boolean(window.TrackerView && window.TrackerView.hidesNonRandomized());
-
-        items.forEach(item => {
-            if (skipVanilla && item.classList.contains("vanilla")) return;
-            const checkId = item.dataset.checkId;
-            const key = idToKey.get(checkId) || checkId;
-
-            const completed = item.classList.contains("completed");
-            const accessible = item.classList.contains("accessible");
-
-            if (!canonical.has(key)) {
-                canonical.set(key, { completed: false, accessible: false });
-            }
-            const entry = canonical.get(key);
-            entry.completed = entry.completed || completed;
-            entry.accessible = entry.accessible || accessible;
-        });
-
-        let checked = 0;
-        let accessible = 0;
-        canonical.forEach(entry => {
-            if (entry.completed) {
-                checked++;
-            } else if (entry.accessible) {
-                accessible++;
-            }
-        });
-
-        const total = canonical.size;
-        const remaining = total - checked;
-
-        return { checked, accessible, remaining, total };
+        return window.ItemCheckState.overall(Boolean(window.TrackerView && window.TrackerView.hidesNonRandomized()));
     }
 
     // ---------- Rendering ----------
@@ -91,19 +38,15 @@
         lastRenderedStats = stats;
 
         statsContentEl.innerHTML = `
-            <div class="location-stats-row">
-                <span class="location-stats-label">Checked</span>
-                <span class="location-stats-value">${stats.checked}</span>
-            </div>
-            <div class="location-stats-row">
-                <span class="location-stats-label">Accessible</span>
-                <span class="location-stats-value">${stats.accessible}</span>
-            </div>
-            <div class="location-stats-row">
-                <span class="location-stats-label">Remaining</span>
-                <span class="location-stats-value">${stats.remaining}</span>
-            </div>
+            <span class="location-stats-item"><span class="location-stats-value">${stats.accessible}</span> <span class="location-stats-label">accessible</span></span>
+            <span class="location-stats-item"><span class="location-stats-value">${stats.checked}</span> <span class="location-stats-label">checked</span></span>
+            <span class="location-stats-item"><span class="location-stats-value">${stats.remaining}</span> <span class="location-stats-label">remaining</span></span>
         `;
+
+        // The same numbers as one line, which the phone layout's frozen bar shows in
+        // place of the box.
+        const line = document.getElementById("location-status-line");
+        if (line) line.textContent = `${stats.accessible} accessible | ${stats.checked} checked | ${stats.remaining} remaining`;
     }
 
     // rAF while the window is drawing; the timeout is what makes it happen at all
@@ -130,7 +73,9 @@
         const box = document.createElement("div");
         box.id = "location-stats-box";
 
+        // For screen readers; on screen the numbers' own labels say enough.
         const heading = document.createElement("h3");
+        heading.className = "visually-hidden";
         heading.textContent = "Location Progress";
         box.appendChild(heading);
 
@@ -157,9 +102,9 @@
 
     // ---------- Init ----------
 
-    window.TrackerData.onReady(({ config }) => {
-        checkGroupsCache = config.check_groups || [];
-
+    // locationTracker.js loads first, so its first sweep has filled ItemCheckState
+    // by the time this counts.
+    window.TrackerData.onReady(() => {
         createStatsBox();
         renderStats(computeStats());
         startListening();
