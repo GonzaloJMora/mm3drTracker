@@ -20,6 +20,10 @@
     const controlledSlot = new Map();
     let alwaysGrants = [];
     let config = null;
+    // A loaded save's settings can't be changed until the save is let go, apart
+    // from the ones it didn't hold. Separate from forced locks, which still apply.
+    const held = new Set();
+    const notInSave = new Set();
 
     // What each class accepts as a value, and which grants a value switches on.
     // A new class is an entry here plus its control on the settings page.
@@ -64,6 +68,7 @@
 
     function set(id, value) {
         const setting = settings.get(id);
+        if (held.has(id)) return false;
         if (!setting || !CLASSES[setting.class].isValue(setting, value)) {
             console.warn(`SettingsState: ${JSON.stringify(value)} is not a value of "${id}".`);
             return false;
@@ -73,9 +78,41 @@
         return true;
     }
 
+    // Starts over, so it lets go of a loaded save too.
     function reset() {
+        held.clear();
+        notInSave.clear();
         settings.forEach(setting => chosen.set(setting.id, setting.default));
         announce({ reset: true });
+    }
+
+    // A loaded save's settings: values is { id: value } and editable the ids it
+    // didn't hold. Everything else is held. A setting with no usable value takes
+    // its default and stays editable too. Returns the ids that took a default.
+    function holdFromSave(values, editable = []) {
+        held.clear();
+        notInSave.clear();
+        const defaulted = [];
+        settings.forEach(setting => {
+            const value = values[setting.id];
+            const usable = !editable.includes(setting.id) && CLASSES[setting.class].isValue(setting, value);
+            chosen.set(setting.id, usable ? value : setting.default);
+            if (usable) {
+                held.add(setting.id);
+            } else {
+                notInSave.add(setting.id);
+                defaulted.push(setting.id);
+            }
+        });
+        announce({ loaded: true });
+        return defaulted;
+    }
+
+    // Lets go of a loaded save and keeps its values, for a new run on them.
+    function releaseSave() {
+        held.clear();
+        notInSave.clear();
+        announce({ released: true });
     }
 
     // A pick can lock or unlock other settings, so a listener redraws them all.
@@ -92,6 +129,13 @@
             const value = chosen.get(setting.id);
             if (value !== setting.default) result[setting.id] = value;
         });
+        return result;
+    }
+
+    // Every setting's pick, default or not, for a save.
+    function snapshot() {
+        const result = {};
+        settings.forEach(setting => { result[setting.id] = chosen.get(setting.id); });
         return result;
     }
 
@@ -151,10 +195,8 @@
     // How far along its slot a grant puts it, so choices can be ordered the way
     // clicking that slot on the tracker moves.
     function grantRank({ slot, value }) {
-        const kind = window.GameState.slotKind(config, slot);
-        if (kind === "progression") return config.progressions[slot].indexOf(value);
-        if (kind === "counter" || kind === "digit") return value;
-        return 0;
+        const rank = window.GameState.grantedValue(config, slot, value);
+        return rank === null ? -1 : rank;
     }
 
     // A controlling setting's choices in slot order: a choice that grants nothing
@@ -174,7 +216,7 @@
     // before, wrapping. A locked setting doesn't move.
     function step(id, direction) {
         const setting = settings.get(id);
-        if (!setting || !controlledSlot.has(id) || isForced(id)) return false;
+        if (!setting || !controlledSlot.has(id) || isForced(id) || held.has(id)) return false;
         const choices = choicesInSlotOrder(setting).map(choice => choice.value);
         const at = choices.indexOf(chosen.get(id));
         return set(id, choices[(at + direction + choices.length) % choices.length]);
@@ -396,7 +438,7 @@
         return true;
     }
 
-    // The picks handed over from the settings page (launch.js). One that no longer
+    // The picks handed over from the settings page (trackerLaunch.js). One that no longer
     // fits the data keeps its default rather than stopping the rest.
     function applyHandoff(problems) {
         const handed = window.TrackerLaunch ? window.TrackerLaunch.read() : null;
@@ -420,34 +462,23 @@
     // Only a grid slot can be granted, because a grant is what that slot starts at.
     function grantProblem(gridSlots, slot, value, setting) {
         if (!gridSlots.has(slot)) return "is not a slot in any grid in config/grids.json";
-        const kind = window.GameState.slotKind(config, slot);
+        const { kind, high } = window.GameState.slotBounds(config, slot);
 
         if (value === "value") {
             if (!setting || setting.class !== "number") return 'uses "value", which only a number setting has';
             return kind === "counter" ? null : `uses "value" on a ${kind} slot, which needs a counter`;
         }
-        if (kind === "toggle") {
-            return value === true ? null : "can only be granted true";
-        }
-        if (kind === "counter") {
-            const max = config.item_counts[slot];
-            return Number.isInteger(value) && value >= 1 && value <= max ? null : `needs a count from 1 to ${max}`;
-        }
-        if (kind === "progression") {
-            const stages = config.progressions[slot];
-            return stages.includes(value) ? null : `needs one of its stages (${stages.join(", ")})`;
-        }
-        const top = config.digit_slots.max_value;
-        return Number.isInteger(value) && value >= 1 && value <= top ? null : `needs a digit from 1 to ${top}`;
+        // A grant of 0 would start nothing, so a count or digit starts from 1.
+        const fits = window.GameState.grantedValue(config, slot, value);
+        if (fits !== null && fits <= high) return null;
+        if (kind === "toggle") return "can only be granted true";
+        if (kind === "counter") return `needs a count from 1 to ${high}`;
+        if (kind === "progression") return `needs one of its stages (${config.progressions[slot].join(", ")})`;
+        return `needs a digit from 1 to ${high}`;
     }
 
     function readAllGrants(data, problems) {
-        const gridSlots = new Set(
-            Object.values(config.grids)
-                .filter(Array.isArray)
-                .flat()
-                .filter(slot => typeof slot === "string" && slot !== "")
-        );
+        const gridSlots = new Set(window.GameState.gridSlots(config));
 
         const read = (raw, where, setting) => {
             if (raw === undefined) return [];
@@ -608,7 +639,13 @@
         get,
         set,
         reset,
+        holdFromSave,
+        releaseSave,
+        holdsSave: () => held.size > 0 || notInSave.size > 0,
+        isHeld: id => held.has(id),
+        isNotInSave: id => notInSave.has(id),
         picks,
+        snapshot,
         isForced,
         lockedBy,
         describe,

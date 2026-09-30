@@ -19,23 +19,66 @@ those are in §2.
 
 The settings page is where a visitor lands. The settings cross to the tracker in
 `sessionStorage`, which belongs to the tab, and come back the same way to prefill
-the settings page.
+the settings page. The run itself is kept in `localStorage`, which outlives the tab:
+the tracker autosaves there, and the settings page loads from there.
 
 ```mermaid
+%%{init: {"flowchart": {"rankSpacing": 30}}}%%
 flowchart LR
     SP["<b>index.html</b><br/>settings page"]
-    ST[("sessionStorage<br/>mm3drTracker.v0.launch")]
+    ST[("sessionStorage<br/>launch key")]
     TR["<b>tracker.html</b><br/>tracker"]
 
     SP -- "Launch New Tracker<br/>writes the picks" --> ST
     ST -- "settingsState.js<br/>applies them" --> TR
-    TR -- "Launch New Tracker,<br/>after confirm()" --> SP
+    TR -- "Back to Settings" --> SP
     SP -- "picks can't be stored:<br/>after confirm(),<br/>?defaults" --> TR
     TR -. "opened with nothing<br/>handed over" .-> SP
 ```
 
-Legend: dotted = `launch.js` redirecting before the page draws. A tracker opened
+Legend: dotted = `trackerLaunch.js` redirecting before the page draws. A tracker opened
 with `?defaults` never redirects, and opens on the default settings.
+
+A run goes round through the autosave, or through an exported file or code, which
+can go to another device. Resume Tracker hands a loaded save over the same way
+Launch New Tracker hands over the picks, and each autosave also rewrites the
+handoff's save, so a reload opens where the run is:
+
+```mermaid
+flowchart TB
+    TR["<b>tracker.html</b>"]
+    LS[("localStorage<br/>autosave · previous run")]
+    FILE[("a file or code")]
+    SP["<b>index.html</b>"]
+    ST[("sessionStorage")]
+
+    TR -- "autosaves" --> LS
+    TR -- "each autosave<br/>rewrites the handoff" --> ST
+    TR -- "Export" --> FILE
+    LS -- "Load From Autosave" --> SP
+    FILE -- "Load From File" --> SP
+    SP -- "Resume Tracker" --> ST
+    ST -- "applied at load" --> TR
+```
+
+Once a page has been opened online, `offlineWorker.js` answers every request for either page
+(`ARCHITECTURE.md`, *Offline*). The site answers first and each answer is stored;
+with no connection, no answer within a few seconds, or a server error, the stored
+copy answers:
+
+```mermaid
+%%{init: {"flowchart": {"rankSpacing": 20}}}%%
+flowchart LR
+    PG["a page"]
+    SW["<b>offlineWorker.js</b>"]
+    SITE["the site"]
+    COPY[("stored copy")]
+
+    PG --> SW
+    SW -- "online" --> SITE
+    SITE -- "stored as it arrives" --> COPY
+    SW -- "offline, no answer,<br/>or a server error" --> COPY
+```
 
 ### Who reads what
 
@@ -43,6 +86,7 @@ Nothing reads `data/` but `dataLoader.js`, and every consumer waits for it throu
 `TrackerData.onReady()`.
 
 ```mermaid
+%%{init: {"flowchart": {"rankSpacing": 30}}}%%
 flowchart LR
     subgraph D["data/"]
         CFG["config.json<br/>and config/*.json"]
@@ -52,6 +96,8 @@ flowchart LR
         REG["Region JSON Files"]
         FLG["locationFlags.json"]
         HLP["logicHelpers.json"]
+        LAY["saveLayout.json"]
+        OFF["offline.json"]
         VER["version.json"]
     end
 
@@ -66,6 +112,9 @@ flowchart LR
         LEG["locationLegend.js"]
         LM["locationMap.js"]
         SPJ["settingsPage.js"]
+        SM["saveManager.js"]
+        LSV["loadSave.js"]
+        OFJ["offline.js"]
     end
 
     CFG --> DL
@@ -75,6 +124,8 @@ flowchart LR
     REG --> DL
     FLG --> DL
     HLP --> DL
+    LAY --> DL
+    OFF --> DL
     VER --> DL
     DL --> SS
     DL --> IG
@@ -84,10 +135,13 @@ flowchart LR
     DL --> LEG
     DL --> LM
     DL --> SPJ
+    DL --> SM
+    DL --> LSV
+    DL --> OFJ
 ```
 
-On the settings page `settingsState.js`, `itemGrids.js` and `settingsPage.js` wait
-for the data, and `dataLoader.js` leaves out the region files, `locationFlags.json`
+On the settings page `settingsState.js`, `itemGrids.js`, `settingsPage.js`,
+`loadSave.js` and `offline.js` wait for the data, and `dataLoader.js` leaves out the region files, `locationFlags.json`
 and `logicHelpers.json`.
 
 ### Who renders what
@@ -112,6 +166,42 @@ flowchart LR
     LST -- "hides non-randomized?" --> TB
 ```
 
+Both location files also go through the check state: `locationTracker.js` ticks
+checks and hands over each sweep's statuses, and `locationStatsTracker.js` counts
+from them.
+
+```mermaid
+flowchart LR
+    LT["locationTracker.js"]
+    LST["locationStatsTracker.js"]
+    ICS["itemCheckStateManager.js<br/>window.ItemCheckState"]
+
+    LT -- "toggle · statuses" --> ICS
+    LST -- "locations · statuses" --> ICS
+```
+
+A save is put together from the four owners' snapshots, encoded, and kept through
+`saveStore.js`; each owner takes its part back at start-up when the tracker is
+opened from a save (`ARCHITECTURE.md`, *Saving*):
+
+```mermaid
+flowchart LR
+    SM["saveManager.js<br/>window.TrackerSave"]
+    SS["settingsState.js"]
+    GSM["gameStateManager.js"]
+    ICS["itemCheckStateManager.js"]
+    TB["trackerToolbar.js"]
+    SC["saveCodec.js<br/>window.SaveCodec"]
+    SST["saveStore.js<br/>window.SaveStore"]
+
+    SM -- "snapshot()" --> SS
+    SM -- "snapshot()" --> GSM
+    SM -- "snapshot()" --> ICS
+    SM -- "snapshot()" --> TB
+    SM -- "encode · decode" --> SC
+    SM -- "autosave" --> SST
+```
+
 And what each one renders into:
 
 ```mermaid
@@ -125,13 +215,15 @@ flowchart LR
     LM["locationMap.js"]
     MTM["mobileTabManager.js"]
     TB["trackerToolbar.js"]
+    HM["headerMenu.js"]
 
     G[".grid-container<br/>.item-grid[data-grid]"]
     RDC["#region-dropdown-container<br/>.region-group"]
-    SB["#location-summary-row<br/>stats box · legend"]
+    SB["#location-summary-row<br/>progress numbers · legend"]
     MC["#location-map-container<br/>image · markers · overlay"]
     TABS[".mobile-tabs · .tracker-section<br/>#back-to-top"]
     HDR["#tracker-toolbar<br/>view toggles on body"]
+    SL["#location-status-line<br/>phone layout"]
 
     IT -- "itemGrids.js" --> G
     LT --> RDC
@@ -143,6 +235,9 @@ flowchart LR
     LM -. "moves a node" .-> MC
     MTM --> TABS
     TB --> HDR
+    HM -- "opens as a menu" --> HDR
+    LPL -. "legend" .-> HDR
+    LST --> SL
 ```
 
 Legend: solid arrow = reads, calls or renders into. Dotted = moves a live DOM
@@ -157,7 +252,7 @@ flowchart LR
     IG["itemGrids.js<br/>window.ItemGrids"]
     SS["settingsState.js<br/>window.SettingsState"]
     GSM["gameStateManager.js<br/>window.GameState"]
-    TL["launch.js<br/>window.TrackerLaunch"]
+    TL["trackerLaunch.js<br/>window.TrackerLaunch"]
 
     IG -- "slotKind · slotValue" --> GSM
     SPJ -- "init()" --> GSM
@@ -170,22 +265,27 @@ flowchart LR
 And what it renders into:
 
 ```mermaid
-%%{init: {"flowchart": {"wrappingWidth": 280}}}%%
+%%{init: {"flowchart": {"wrappingWidth": 280, "rankSpacing": 20}}}%%
 flowchart LR
     SPJ["settingsPage.js"]
     SC["settingControls.js<br/>window.SettingControls"]
     IG["itemGrids.js"]
     MTM["mobileTabManager.js"]
+    HM["headerMenu.js"]
 
     LIST["#settings-list<br/>every list section"]
     GRIDS[".grid-container<br/>the tracker's grids"]
     TABS[".mobile-tabs · .tracker-section<br/>#back-to-top"]
+    TBAR["#tracker-toolbar"]
+    KO["#header-keep-out<br/>Resume Tracker"]
 
     SPJ -- "create()" --> SC
     SPJ -- "rows" --> LIST
     SPJ -- "render()" --> IG
     IG --> GRIDS
     MTM --> TABS
+    HM -- "menu" --> TBAR
+    HM -. "moves" .-> KO
 ```
 
 The settings page's `init()` is not a tracker starting up: it re-runs on every
@@ -209,7 +309,7 @@ event bus section says why not.
 `trackerDataReady` reaches every consumer in §1, at load (§3). This is what
 happens *after* load.
 
-**State.** An item click, the toolbar, and the sweep they set off.
+**State.** An item click, a check click, the toolbar, and the sweep they set off.
 
 An item changes:
 
@@ -223,6 +323,17 @@ flowchart TB
     GSM -- "trackerStateUpdated" --> DBG
     GSM -- "trackerStateUpdated" --> LT
     GSM -- "trackerStateUpdated" --> TT
+```
+
+A check is ticked or unticked. A tap calls `ItemCheckState.toggle()`, which
+announces the change back, so a loaded save is drawn the same way:
+
+```mermaid
+flowchart TB
+    ICS["itemCheckStateManager.js"]
+    LT["locationTracker.js"]
+
+    ICS -- "checkCompletionChanged" --> LT
 ```
 
 A view toggle flips, the tab switches, or the map overlay closes a region:
@@ -301,7 +412,7 @@ Two of these are worth reading twice:
 
 Some files also listen to the browser rather than to each other.
 `locationPanelLayout.js` re-runs its sizing on `window.load`, on `resize`, and
-from a `ResizeObserver` on `.grid-container` and the summary row, and
+from a `ResizeObserver` on `.grid-container`, and
 `locationMap.js` re-fits an open overlay on `resize`. Crossing the breakpoint is a
 `matchMedia` change: `locationMap.js` closes an open overlay, the only thing that
 hands a checked-out region back to the list when the window narrows;
@@ -318,7 +429,7 @@ data **and** `DOMContentLoaded` are both done. Consumers register via
 `TrackerData.onReady(...)` at parse time, so they fire in `tracker.html` script
 order and the sequence is deterministic.
 
-Before any of it, `launch.js` in the page head has sent a tracker with no settings
+Before any of it, `trackerLaunch.js` in the page head has sent a tracker with no settings
 handed over to the settings page. While the rest of the page parses,
 `gameStateManager.js` builds the empty F1 panel, `trackerToolbar.js` applies both
 saved view toggles, and `locationTracker.js` starts listening for
@@ -363,6 +474,7 @@ sequenceDiagram
     LT->>LT: register the check<br/>tooltip builder
     LT->>LT: render the regions in manifest<br/>order, skipping any that break
     LT-->>LM: regionsRendered
+    Note over LT: ItemCheckState.init<br/>with what rendered
     LT->>LT: run every validator,<br/>then the first sweep
     LT-->>LST: trackerChecksUpdated
 ```

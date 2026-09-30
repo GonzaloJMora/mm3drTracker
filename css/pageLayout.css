@@ -1,0 +1,147 @@
+/* The page's layout, on both pages: main, the two halves side by side on desktop,
+   and in the phone layout the switch between them and the back-to-top button. */
+
+/* Main flex layout wrapper */
+main {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px;
+    width: 100%;
+    box-sizing: border-box;
+    align-items: flex-start;
+
+    /* Cap and center the layout. Past this width the map stops growing and the
+       gap between it and the item grids just opens up. */
+    max-width: var(--layout-max-width);
+    margin-inline: auto;
+}
+
+/* Desktop default styling for wrappers */
+.mobile-tabs {
+    display: none;
+}
+
+.tracker-layout-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    width: 100%;
+}
+
+.tracker-section {
+    display: contents; /* Keeps desktop side-by-side behavior completely unchanged */
+}
+
+/* --- MOBILE TAB VIEW (Screens under 1500px) --- */
+@media screen and (max-width: 1499px) {
+    main {
+        flex-direction: column;
+    }
+
+    /* The two views as one two-part switch, in the frozen bar. */
+    .mobile-tabs {
+        display: flex;
+        justify-self: center;
+        width: 100%;
+        max-width: 260px;
+        min-width: 0;
+        border: 1px solid #444;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .tab-btn {
+        flex: 1;
+        /* A word wider than half the switch, at very large text, breaks instead of
+           pushing the other half off it. */
+        min-width: 0;
+        overflow-wrap: break-word;
+        padding: 9px 6px;
+        background-color: #262626;
+        color: #fff;
+        border: 0;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 0.95rem;
+    }
+
+    .tab-btn + .tab-btn {
+        border-left: 1px solid #444;
+    }
+
+    .tab-btn.active {
+        background-color: var(--active-green);
+    }
+
+    .tracker-layout-wrapper {
+        display: block;
+        width: 100%;
+    }
+
+    /* "Starting Items" is "Starting" where the switch is narrow. */
+    @media (max-width: 479px) {
+        .tab-label-more {
+            display: none;
+        }
+    }
+
+    .tracker-section {
+        display: none; /* Hide both sections by default on mobile */
+    }
+
+    .tracker-section.active-section {
+        display: block; /* Only display the currently selected tab */
+        width: 100%;
+    }
+}
+
+/* ---------- Back to top (mobile only) ---------- */
+
+#back-to-top {
+    display: none;
+}
+
+@media screen and (max-width: 1499px) {
+    #back-to-top {
+        display: block;
+        position: fixed;
+        right: calc(16px + env(safe-area-inset-right, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background-color: #262626;
+        border: 1px solid #444;
+        color: #fff;
+        /* An icon in a fixed-size circle, not text: in px, so a large text
+           setting cannot push the arrow out of the circle. */
+        font-size: 16px;
+        cursor: pointer;
+        z-index: 60; /* above the pinned tabs */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+        /* Hidden until scrolled. visibility rather than display so it can fade,
+           pointer-events so it can't be tapped while invisible. */
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    #back-to-top.visible {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    @media (hover: hover) {
+        #back-to-top:hover {
+            background-color: #333;
+            border-color: #888;
+        }
+    }
+
+    #back-to-top::after {
+        content: "\25B2";
+    }
+}

@@ -8,6 +8,9 @@
    layout", every width is one layout or the other, and JS asks the same way. */
 :root {
     --mobile-breakpoint: 1499px;
+    /* Behind white text on anything switched on: a pressed toggle, the active half
+       of the phone switch. Dark enough for the text to read clearly. */
+    --active-green: #2e7d32;
 
     /* Where main stops growing. The header caps at the same width, so the toolbar
        ends where the tracker below it ends. On the tracker page
@@ -16,7 +19,7 @@
 
     /* How much larger the desktop item grids, and so the map beside them, are drawn
        than their base size. Never below 1. locationPanelLayout.js sets it from the
-       window; every pixel size in itemContainers.css that belongs to the grids is
+       window; every pixel size in itemGrids.css that belongs to the grids is
        multiplied by it. */
     --ui-scale: 1;
 
@@ -208,7 +211,7 @@ body {
 }
 
 /* Capped and centered like main, so the toolbar lines up with the tracker rather
-   than the window's edge. Logo left, toolbar right; stacked on mobile. */
+   than the window's edge. Logo left, toolbar right; a frozen bar on a phone. */
 header {
     margin-bottom: 12px;
     max-width: var(--layout-max-width);
@@ -240,14 +243,50 @@ header img {
     user-select: none;
 }
 
+/* A bar frozen at the top, edge to edge: the negative margins undo the body's
+   padding, and the padding puts it back inside, clear of the notch and the Home
+   Screen app's status bar. The toolbar opens under it as a menu (headerMenu.js). */
 @media screen and (max-width: 1499px) {
     header {
-        flex-direction: column;
+        position: sticky;
+        top: 0;
+        z-index: 60;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 6px 12px;
+        max-width: none;
+        margin: calc(-1 * max(20px, env(safe-area-inset-top))) calc(-1 * max(20px, env(safe-area-inset-right)))
+                12px calc(-1 * max(20px, env(safe-area-inset-left)));
+        padding: calc(10px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right))
+                 10px max(20px, env(safe-area-inset-left));
+        background-color: #121212;
+        border-bottom: 1px solid #262626;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
     }
 
     header img {
-        margin: 0 auto;
+        height: 40px;
     }
+
+    /* Taller than a share of the window at the largest text sizes, so it scrolls
+       away instead of covering the page. Still positioned, for the menu. */
+    header.bar-loose {
+        position: relative;
+    }
+}
+
+/* Read by screen readers, not drawn. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* ---------- Loading ---------- */
@@ -256,8 +295,22 @@ header img {
    has the data and every file has drawn from it; a refresh then never shows empty
    boxes filling in. visibility rather than display, so layout code can still
    measure. The animation shows the page anyway if the scripts never run at all,
-   rather than leaving it blank. */
+   rather than leaving it blank. Hidden content still widens the page, and an
+   empty section can squeeze its text past the window's edge, so overflow is
+   clipped until then (hidden is the fallback for Safari before 16). */
 main.awaiting-data {
+    visibility: hidden;
+    overflow-x: hidden;
+    overflow-x: clip;
+    animation: reveal-if-stuck 0s linear 8s forwards;
+}
+
+/* The header and the version footer wait with main. On the tracker the header's
+   width comes from the scaled layout, which isn't known until the grids are
+   drawn, and the footer sits under main's content, so either one shown early
+   would jump when the page appears. */
+body:has(> main.awaiting-data) > header,
+body:has(> main.awaiting-data) > #app-version {
     visibility: hidden;
     animation: reveal-if-stuck 0s linear 8s forwards;
 }
@@ -265,6 +318,82 @@ main.awaiting-data {
 @keyframes reveal-if-stuck {
     to {
         visibility: visible;
+    }
+}
+
+/* Shown only while main is still awaiting data, so it goes the moment
+   dataLoader.js reveals main, whether with the page or the load-failure box. It
+   waits 300ms so a fast load never flashes it, and hides again at 8s, when
+   reveal-if-stuck shows the page. */
+.page-loading {
+    display: none;
+}
+
+main.awaiting-data ~ .page-loading {
+    display: block;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 96px;
+    height: 96px;
+    margin: -48px 0 0 -48px;
+    pointer-events: none;
+    visibility: hidden;
+    background-color: #e6e6e6;
+    /* The path is set here rather than in data/, because it has to show before
+       data/ has loaded. The PNG is a mask: 8 frames of 32px in one row. */
+    -webkit-mask-image: url("../images/loading.png");
+    mask-image: url("../images/loading.png");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 800% 100%;
+    mask-size: 800% 100%;
+    image-rendering: pixelated;
+    /* 8 frames at 7 per second. jump-none lands on both ends of 0% to 100%, which
+       is frame 0 to frame 7. */
+    animation:
+        loading-frames calc(8s / 7) steps(8, jump-none) infinite,
+        loading-appear 0s linear 300ms forwards,
+        loading-expire 0s linear 8s forwards;
+}
+
+@keyframes loading-frames {
+    from {
+        -webkit-mask-position: 0 0;
+        mask-position: 0 0;
+    }
+    to {
+        -webkit-mask-position: 100% 0;
+        mask-position: 100% 0;
+    }
+}
+
+@keyframes loading-appear {
+    to {
+        visibility: visible;
+    }
+}
+
+@keyframes loading-expire {
+    to {
+        visibility: hidden;
+    }
+}
+
+@media screen and (max-width: 1499px) {
+    main.awaiting-data ~ .page-loading {
+        width: 64px;
+        height: 64px;
+        margin: -32px 0 0 -32px;
+    }
+}
+
+/* Still on frame 0; the 300ms and 8s timings are not motion and stay. */
+@media (prefers-reduced-motion: reduce) {
+    main.awaiting-data ~ .page-loading {
+        animation:
+            loading-appear 0s linear 300ms forwards,
+            loading-expire 0s linear 8s forwards;
     }
 }
 
@@ -288,7 +417,11 @@ main.awaiting-data {
 #tracker-load-error,
 #tracker-region-warning,
 #tracker-logic-warning,
-#tracker-map-warning {
+#tracker-map-warning,
+#tracker-save-warning,
+#autosave-warning,
+#save-load-message,
+#home-screen-tip {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
@@ -326,6 +459,10 @@ main.awaiting-data {
 #tracker-region-warning,
 #tracker-logic-warning,
 #tracker-map-warning,
+#tracker-save-warning,
+#autosave-warning,
+#save-load-message,
+#home-screen-tip,
 #settings-storage-warning {
     width: 100%;
     box-sizing: border-box;
@@ -359,6 +496,23 @@ main.awaiting-data {
 
 #tracker-region-warning .tracker-error-detail,
 #tracker-logic-warning .tracker-error-detail,
-#tracker-map-warning .tracker-error-detail {
+#tracker-map-warning .tracker-error-detail,
+#tracker-save-warning .tracker-error-detail {
+    margin-top: 8px;
+}
+
+/* A loaded save's message can run to several lines, and the two save banners can
+   carry a button. */
+#save-load-message p {
+    margin: 0 0 6px 0;
+}
+
+#save-load-message p:last-of-type {
+    margin-bottom: 0;
+}
+
+#save-load-message .toolbar-btn,
+#autosave-warning .toolbar-btn,
+#home-screen-tip .toolbar-btn {
     margin-top: 8px;
 }
