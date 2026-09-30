@@ -43,19 +43,43 @@ window.GameState = {
         return stage;
     },
 
+    // Every value a slot can hold, whatever the settings: a stage from -1 (not
+    // owned) or a count from 0, up to the last stage, the counter's cap or the
+    // highest digit. Read from config alone, like slotKind(), so the settings and the
+    // save layout check can ask before init().
+    slotBounds(config, slotId) {
+        const kind = this.slotKind(config, slotId);
+        const counted = kind === "counter" || kind === "digit";
+        let high = 0;
+        if (kind === "progression") high = config.progressions[slotId].length - 1;
+        else if (kind === "counter") high = config.item_counts[slotId];
+        else if (kind === "digit") high = config.digit_slots.max_value;
+        return { kind, low: counted ? 0 : -1, high };
+    },
+
+    // What a grant from settings.json means for its slot: the stage a progression's
+    // item id stands for, a count or digit as it is, true as a plain item's 0. Null
+    // when the grant doesn't fit that kind of slot. Config alone, like slotBounds().
+    grantedValue(config, slotId, granted) {
+        const kind = this.slotKind(config, slotId);
+        if (kind === "progression") {
+            const stage = config.progressions[slotId].indexOf(granted);
+            return stage >= 0 ? stage : null;
+        }
+        if (kind === "counter" || kind === "digit") {
+            return Number.isInteger(granted) && granted > 0 ? granted : null;
+        }
+        return granted === true ? 0 : null;
+    },
+
     // The values clicking can move a slot through. A starting item raises the
     // bottom to what it was granted, so it can't be clicked away, and a slot whose
     // bottom has reached its top is locked. A granted digit is fixed outright: a
     // code is not something you count up from.
     slotRange(slotId) {
-        const config = this.config;
-        const kind = this.slotKind(config, slotId);
-        let bottom = kind === "counter" || kind === "digit" ? 0 : -1;
-        let top = 0;
-        if (kind === "progression") top = config.progressions[slotId].length - 1;
-        else if (kind === "counter") top = config.item_counts[slotId];
-        else if (kind === "digit") top = config.digit_slots.max_value;
-
+        const { kind, low, high } = this.slotBounds(this.config, slotId);
+        let bottom = low;
+        let top = high;
         if (Object.prototype.hasOwnProperty.call(this.floors, slotId)) {
             bottom = this.floors[slotId];
             if (kind === "digit") top = bottom;
@@ -63,24 +87,38 @@ window.GameState = {
         return { kind, bottom, top };
     },
 
-    // A granted starting value as the stage or count its slot takes, or null when
-    // it does not fit that slot.
+    // A granted starting value as the value its slot takes, or null when it does not
+    // fit that slot or the slot is an item Items.json doesn't have.
     startingValue(slotId, granted) {
         const kind = this.slotKind(this.config, slotId);
-        if (kind === "progression") {
-            const stage = this.config.progressions[slotId].indexOf(granted);
-            return stage >= 0 ? stage : null;
-        }
-        if (!Object.prototype.hasOwnProperty.call(this.items, slotId)) return null;
-        if (kind === "counter" || kind === "digit") {
-            return Number.isInteger(granted) && granted > 0 ? granted : null;
-        }
-        return granted === true ? 0 : null;
+        if (kind !== "progression" && !Object.prototype.hasOwnProperty.call(this.items, slotId)) return null;
+        return this.grantedValue(this.config, slotId, granted);
+    },
+
+    // Every slot the grids draw, once each, in grid order. Config alone, so the
+    // settings can ask before init(); a grid that isn't a list is skipped, and
+    // itemGrids.js names it.
+    gridSlots(config = this.config) {
+        const ids = new Set();
+        Object.values((config && config.grids) || {}).forEach(grid => {
+            if (!Array.isArray(grid)) return;
+            grid.forEach(id => { if (typeof id === "string" && id !== "") ids.add(id); });
+        });
+        return [...ids];
+    },
+
+    // Slot id -> its value, for a save. Values rather than items, which hold one
+    // flag per progression stage.
+    snapshot() {
+        const slots = {};
+        this.gridSlots().forEach(slotId => { slots[slotId] = this.slotValue(slotId); });
+        return slots;
     },
 
     // startingState is SettingsState.startingItems(): slot id -> what the settings
-    // start that slot at. Each one also becomes that slot's floor.
-    init(itemsList, configData, startingState = {}) {
+    // start that slot at. Each one also becomes that slot's floor. saved is a save's
+    // slot values, applied on top and kept between each slot's floor and its top.
+    init(itemsList, configData, startingState = {}, saved = null) {
         this.config = configData;
         const firstRun = !this.dataChecked;
 
@@ -127,39 +165,58 @@ window.GameState = {
                 console.warn(`GameState: "${slotId}" can't start at ${JSON.stringify(startingState[slotId])}, so it starts empty.`);
                 return;
             }
-            const kind = this.slotKind(this.config, slotId);
-            const counted = kind === "counter" || kind === "digit";
-            this.applySlot(slotId, counted ? null : value, counted ? value : null);
+            this.applySlot(slotId, value);
             this.floors[slotId] = value;
         });
 
+        if (saved) this.applySaved(saved);
+
         this.broadcastChange();
     },
 
-    updateItemState(slotId, stageIndex, currentCount) {
-        this.applySlot(slotId, stageIndex, currentCount);
-        this.broadcastChange();
-    },
-
-    // Everything updateItemState does except announcing it, so init() can set a
-    // run of starting slots and announce once.
-    applySlot(slotId, stageIndex, currentCount) {
-        const isProgression = this.config.progressions.hasOwnProperty(slotId);
-        const countRule = this.config.item_counts[slotId];
-
-        if (isProgression) {
-            const chain = this.config.progressions[slotId];
-            chain.forEach(itemId => { this.items[itemId] = false; });
-            
-            for (let i = 0; i <= stageIndex; i++) {
-                if (chain[i]) this.items[chain[i]] = true;
+    applySaved(saved) {
+        const known = new Set(this.gridSlots());
+        const unknown = [];
+        const unreadable = [];
+        Object.keys(saved).forEach(slotId => {
+            const value = saved[slotId];
+            if (!known.has(slotId)) {
+                unknown.push(slotId);
+                return;
             }
+            if (!Number.isInteger(value)) {
+                unreadable.push(slotId);
+                return;
+            }
+            const { bottom, top } = this.slotRange(slotId);
+            this.applySlot(slotId, Math.min(Math.max(value, bottom), top));
+        });
+        if (unknown.length) {
+            console.warn(`GameState: the save names ${unknown.length} slot(s) the grids don't have, left out: ${unknown.join(", ")}`);
         }
-        else if ((countRule && Number.isInteger(countRule)) || this.digitIds(this.config).includes(slotId)) {
-            this.items[slotId] = currentCount;
+        if (unreadable.length) {
+            console.warn(`GameState: the save has no number for ${unreadable.length} slot(s), which keep their starting value: ${unreadable.join(", ")}`);
         }
-        else {
-            this.items[slotId] = (stageIndex !== -1);
+    },
+
+    // The one way a slot changes after init(): a stage or a count, as slotValue()
+    // reads it back.
+    setSlot(slotId, value) {
+        this.applySlot(slotId, value);
+        this.broadcastChange();
+    },
+
+    // Everything setSlot() does except announcing it, so init() can set a run of
+    // starting slots and announce once. A progression's stage owns every stage up
+    // to it, so logic asking for an earlier stage is met too.
+    applySlot(slotId, value) {
+        const kind = this.slotKind(this.config, slotId);
+        if (kind === "progression") {
+            this.config.progressions[slotId].forEach((itemId, stage) => { this.items[itemId] = stage <= value; });
+        } else if (kind === "counter" || kind === "digit") {
+            this.items[slotId] = value;
+        } else {
+            this.items[slotId] = value !== -1;
         }
     },
 

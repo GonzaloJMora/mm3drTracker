@@ -1,6 +1,6 @@
 // dataLoader.js
 // The single place anything reads out of data/, loaded ahead of every script but
-// launch.js.
+// trackerLaunch.js.
 // Nothing else may fetch: let each file load what it needs and the same files get
 // pulled repeatedly, right inside the window where the panel sizing is trying to
 // measure a settled layout.
@@ -23,6 +23,8 @@ window.TrackerData = {
     locationFlags: [],  // locationFlags.json's entries; empty on the settings page
     logicHelpers: [],   // logicHelpers.json's entries; empty on the settings page
     version: null,  // "x.y.z" from version.json; loaded on its own, so not covered by ready
+    saveLayout: null,  // saveLayout.json, what a save code holds; null if it could not be used
+    offline: null,  // offline.json, the offline copy's file list and off switch; null if it could not be read
     ready: false,
 
     // Race-free way to wait for the data: runs immediately if it's already here,
@@ -81,8 +83,12 @@ window.TrackerData = {
 
     // Every failure names the path: the browser's own messages for a failed fetch
     // or a parse error never do, and they end up in the load-error report.
+    //
+    // Every file is asked of the site rather than taken from the browser's cache,
+    // which can hold one for minutes after a release: the settings page loads some
+    // files and not others, so the tracker could get old ones beside new ones.
     function fetchJson(path) {
-        return fetch(path)
+        return fetch(path, { cache: "no-cache" })
             .catch(error => {
                 throw new Error(`${path} could not be fetched (${error.message})`);
             })
@@ -351,6 +357,25 @@ window.TrackerData = {
         const flagsReady = loadLogicFile(logicFiles[0], "flags", "location flag");
         const helpersReady = loadLogicFile(logicFiles[1], "helpers", "logic helper");
 
+        // Not a core file either: without it the tracker works and only saving is off.
+        const saveLayoutReady = fetchJson("data/saveLayout.json")
+            .then(layout => {
+                if (isObject(layout) && Array.isArray(layout.fields)) return layout;
+                throw new Error('data/saveLayout.json has no "fields" list');
+            })
+            .catch(error => {
+                console.error("dataLoader: failed to load data/saveLayout.json, so saving and loading are off", error);
+                return null;
+            });
+
+        // Only offline.js reads it, and without it the offline copy is left as it is.
+        const offlineReady = fetchJson("data/offline.json")
+            .then(offline => (isObject(offline) ? offline : null))
+            .catch(error => {
+                console.warn("dataLoader: failed to load data/offline.json, so the offline copy is left as it is", error);
+                return null;
+            });
+
         const [config, rawItems, manifest, settings] = await Promise.all([
             loadConfig(),
             fetchJson("data/Items.json"),
@@ -405,6 +430,8 @@ window.TrackerData = {
         const logicLists = await Promise.all([flagsReady, helpersReady]);
         const failedLogicFiles = logicFiles.filter((path, i) => logicLists[i] === null);
         const [locationFlags, logicHelpers] = logicLists.map(list => list || []);
+        const saveLayout = await saveLayoutReady;
+        const offline = await offlineReady;
 
         return {
             config,
@@ -415,9 +442,24 @@ window.TrackerData = {
             failedRegions,
             failedLogicFiles,
             locationFlags,
-            logicHelpers
+            logicHelpers,
+            saveLayout,
+            offline
         };
     })();
+
+    // The layout an older save was written with, kept under data/saveLayouts/ once
+    // the format moves on. Fetched only when such a save is loaded; null if there is
+    // none. See ARCHITECTURE.md, *Saving*.
+    window.TrackerData.saveLayoutFor = format => {
+        const current = window.TrackerData.saveLayout;
+        if (current && current.format === format) return Promise.resolve(current);
+        if (!Number.isInteger(format) || format < 1) return Promise.resolve(null);
+        return fetchJson(`data/saveLayouts/format${format}.json`).catch(error => {
+            console.error(`dataLoader: no layout for save format ${format}`, error);
+            return null;
+        });
+    };
 
     // Kept apart from dataReady: a report that the core files failed to load is
     // exactly the one that needs the version, so it can't depend on them.
@@ -505,9 +547,24 @@ window.TrackerData = {
         main.insertBefore(note, main.firstChild);
     }
 
+    // Nothing else on the page would say why saving and loading don't work.
+    function showSaveLayoutFailure() {
+        const main = document.querySelector("main");
+        if (!main) return;
+
+        const note = document.createElement("div");
+        note.id = "tracker-save-warning";
+        note.appendChild(block("span", null,
+            "The save layout could not be loaded, so saving and loading are off. Everything else " +
+            "still works. "));
+        note.appendChild(block("span", "tracker-error-detail", "saveLayout.json"));
+
+        main.insertBefore(note, main.firstChild);
+    }
+
     // ---------- Init ----------
 
-    // <main> starts hidden (style.css, *Loading*). Every consumer draws inside its
+    // <main> starts hidden (common.css, *Loading*). Every consumer draws inside its
     // trackerDataReady listener, so once the event has been dispatched there is
     // something to show.
     function revealMain() {
@@ -526,6 +583,7 @@ window.TrackerData = {
             Object.assign(window.TrackerData, data, { ready: true });
             if (data.failedRegions.length) showRegionFailures(data.failedRegions);
             if (data.failedLogicFiles.length) showLogicFailures(data.failedLogicFiles);
+            if (!data.saveLayout) showSaveLayoutFailure();
             window.dispatchEvent(new CustomEvent("trackerDataReady", { detail: window.TrackerData }));
             revealMain();
         })

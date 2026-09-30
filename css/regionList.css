@@ -85,7 +85,7 @@
 .region-header .region-arrow::after { content: "\25BC"; }
 .region-header.expanded .region-arrow::after { content: "\25B2"; }
 
-/* Color and shape both come from the status pairing in style.css. A region with
+/* Color and shape both come from the status pairing in common.css. A region with
    no status yet has neither variable, so it keeps the default color and its
    glyph stays transparent. */
 .region-header {
@@ -227,7 +227,7 @@
 }
 
 /* Desktop shows the map instead; the list stays in the DOM as the holding area.
-   Asked as "not the phone layout" — see the breakpoint note in style.css. */
+   Asked as "not the phone layout" — see the breakpoint note in common.css. */
 @media not all and (max-width: 1499px) {
     #region-sidebar {
         display: none;

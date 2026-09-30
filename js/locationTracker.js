@@ -1,15 +1,26 @@
 (function () {
-    // Every rendered region and its check nodes, so one sweep can re-evaluate them all
+    // Every rendered region and its checks, so one sweep can re-evaluate them all
     const activeRegionTrackers = [];
 
     function evaluateAllRegions(inventory, tokens) {
+        // Check id -> { accessible, vanilla } for ItemCheckState. A check shown in two
+        // places is accessible if either one is.
+        const statuses = new Map();
+
         activeRegionTrackers.forEach(region => {
-            region.itemChecks.forEach(checkObj => {
+            region.checks.forEach(checkObj => {
                 const el = checkObj.element;
 
                 // Combine regional route requirements with individual item checks
                 const finalLogic = combinedLogic(region.entryLogic, checkObj);
                 const isAvailable = canAccess(finalLogic, inventory, tokens);
+                checkObj.accessible = isAvailable;
+
+                const seen = statuses.get(checkObj.id);
+                statuses.set(checkObj.id, {
+                    accessible: isAvailable || Boolean(seen && seen.accessible),
+                    vanilla: checkObj.vanilla || Boolean(seen && seen.vanilla)
+                });
 
                 // Both rules here exist to stop the check text flickering on every
                 // state update: toggle(name, bool) is a no-op when the class already
@@ -27,6 +38,8 @@
             determineRegionLocationAccessibility(region);
         });
 
+        if (window.ItemCheckState) window.ItemCheckState.setStatuses(statuses);
+
         // One announcement per sweep rather than per region: locationStatsTracker.js
         // recounts from scratch, so it only needs telling that something moved.
         window.dispatchEvent(new CustomEvent("trackerChecksUpdated"));
@@ -35,6 +48,25 @@
     window.addEventListener("trackerStateUpdated", (event) => {
         evaluateAllRegions(event.detail.items, event.detail.tokens);
     });
+
+    // The one place rows get `completed`, whether a tap or a loaded save moved it.
+    // Queried globally because a region's rows may be sitting in the map overlay.
+    // The linked rows can sit in other regions, so every region's counts are redone.
+    window.addEventListener("checkCompletionChanged", (event) => {
+        event.detail.ids.forEach(id => {
+            const isCompleted = window.ItemCheckState.isCompleted(id);
+            rowsFor(id).forEach(el => el.classList.toggle("completed", isCompleted));
+        });
+        if (window.GameState) {
+            evaluateAllRegions(window.GameState.items, window.GameState.tokens);
+        } else {
+            window.dispatchEvent(new CustomEvent("trackerChecksUpdated"));
+        }
+    });
+
+    function rowsFor(id) {
+        return document.querySelectorAll(`div.region-check-item[data-check-id="${CSS.escape(id)}"]`);
+    }
 
     // Hiding non-randomized checks moves every count and some region colors, so the
     // sweep runs again, and everything downstream hears about it the usual way.
@@ -821,32 +853,17 @@
     // for, and it is indistinguishable from a typo, which instead makes a check tick
     // itself off somewhere else and quietly shrinks the total.
     //
-    // Ids carry a per-region prefix by convention, so this should stay quiet.
+    // Ids carry a per-region prefix by convention, so this should stay quiet. A check
+    // with no id never gets here: it costs its region at render.
     function validateCheckIds(regions) {
         const usedBy = new Map(); // id -> region names using it
-        const blank = [];
 
         regions.forEach(region => {
-            (region.item_checks || []).forEach((check, index) => {
-                const id = check && check.id;
-                if (typeof id !== "string" || id === "") {
-                    const path = (check && check.group_path) || [];
-                    blank.push(`${[region.region_name, ...path].join(" -> ")} -> item_checks[${index}]`);
-                    return;
-                }
-                if (!usedBy.has(id)) usedBy.set(id, []);
-                usedBy.get(id).push(region.region_name);
+            region.item_checks.forEach(check => {
+                if (!usedBy.has(check.id)) usedBy.set(check.id, []);
+                usedBy.get(check.id).push(region.region_name);
             });
         });
-
-        if (blank.length) {
-            console.warn(
-                `locationTracker: ${blank.length} check(s) have no id. An id is what check_groups links ` +
-                `on, so these cannot be grouped — and they all share one blank key, which counts every ` +
-                `one of them as the same location in the progress box.`
-            );
-            blank.forEach(where => console.warn(`  ${where}`));
-        }
 
         const duplicated = [...usedBy].filter(([, where]) => where.length > 1);
         if (!duplicated.length) return;
@@ -860,8 +877,8 @@
 
     // dataLoader.js has already dropped groups that aren't lists of ids. What's left
     // to ask needs the rendered checks: an id that matches none leaves its location
-    // unlinked, and an id in two groups joins only the later one in the progress
-    // count while a click ticks both.
+    // unlinked, and an id in two groups makes ItemCheckState merge them into one
+    // location, which is rarely what was meant.
     function validateCheckGroups(regions, checkGroups) {
         const ids = new Set();
         regions.forEach(region => (region.item_checks || []).forEach(check => {
@@ -966,7 +983,7 @@
     // none, or it counts as half purple, and hold the same vanilla_item, or the
     // tooltip names two different things for one spot. Compared as written rather
     // than by what matches now, so a disagreement shows under any settings.
-    function validateVanillaAgreement(regions, checkGroups) {
+    function validateVanillaAgreement(regions) {
         const canonical = clause => {
             if (clause === undefined) return "(randomized)";
             const part = p => (p && typeof p === "object" && !Array.isArray(p))
@@ -975,12 +992,13 @@
             return JSON.stringify([].concat(clause).map(part).sort());
         };
 
-        const byId = new Map(); // id -> [{ where, clause, item }]
+        const byLocation = new Map(); // location key -> [{ where, clause, item }]
         regions.forEach(region => {
             (region.item_checks || []).forEach(check => {
                 if (!check || typeof check.id !== "string" || check.id === "") return;
-                if (!byId.has(check.id)) byId.set(check.id, []);
-                byId.get(check.id).push({
+                const key = window.ItemCheckState.locationKey(check.id);
+                if (!byLocation.has(key)) byLocation.set(key, []);
+                byLocation.get(key).push({
                     where: `${region.region_name} -> ${check.id}`,
                     clause: canonical(check.vanilla_when),
                     item: check.vanilla_item === undefined ? "(none)" : JSON.stringify(check.vanilla_item)
@@ -988,11 +1006,7 @@
             });
         });
 
-        const sets = [...byId.values()].filter(entries => entries.length > 1);
-        checkGroups.forEach(group => {
-            const entries = group.flatMap(id => byId.get(id) || []);
-            if (entries.length > 1) sets.push(entries);
-        });
+        const sets = [...byLocation.values()].filter(entries => entries.length > 1);
 
         const disagreeing = sets.filter(entries => new Set(entries.map(e => e.clause)).size > 1);
         if (disagreeing.length) {
@@ -1062,6 +1076,14 @@
                     rejected.push(`"${name}" in ${file} has no item_checks list`);
                     return;
                 }
+                // A check's id is where a save keeps it, so one without an id can't be
+                // saved, and every such check would tick together.
+                const idless = regionData.item_checks.filter(check => !check || typeof check.id !== "string" || check.id.trim() === "");
+                if (idless.length) {
+                    const named = idless.map(check => JSON.stringify((check && check.name) || "(no name)")).join(", ");
+                    rejected.push(`"${name}" in ${file} has ${idless.length} check(s) with no id: ${named}`);
+                    return;
+                }
 
                 seen.set(name, file);
 
@@ -1069,7 +1091,7 @@
                 // cost that region and nothing else; the outer catch stays for whatever
                 // goes wrong outside the loop.
                 try {
-                    renderRegionDropdown(regionData, regionContainer, CHECK_GROUPS);
+                    renderRegionDropdown(regionData, regionContainer);
                     rendered.push(regionData);
                 } catch (error) {
                     rejected.push(`"${name}" in ${file} could not be rendered (${error.message})`);
@@ -1103,6 +1125,16 @@
             // Before the validators and the first sweep, which both read it, and after
             // GameState.init (itemTracker.js runs first), so there is item state to
             // check the tokens against.
+            // Before the validators, which read its locations, and before the first
+            // sweep and any click.
+            try {
+                const save = window.TrackerLaunch ? window.TrackerLaunch.readSave() : null;
+                window.ItemCheckState.init(rendered, CHECK_GROUPS, save && Array.isArray(save.checks) ? save.checks : []);
+                window.ItemCheckState.completedIds().forEach(id => rowsFor(id).forEach(el => el.classList.add("completed")));
+            } catch (error) {
+                console.error("locationTracker: could not set up the check state", error);
+            }
+
             try {
                 indexNamedTokens(rendered);
             } catch (error) {
@@ -1155,7 +1187,7 @@
             }
 
             try {
-                validateVanillaAgreement(rendered, CHECK_GROUPS);
+                validateVanillaAgreement(rendered);
             } catch (error) {
                 console.error("locationTracker: could not compare vanilla_when across grouped checks", error);
             }
@@ -1176,7 +1208,7 @@
     // Deduping is the caller's job: it has the whole list, so it can report what it
     // rejected. Doing it here would mean matching on the rendered header text, which
     // is the thing dataset.regionName exists to avoid.
-    function renderRegionDropdown(regionData, container, CHECK_GROUPS) {
+    function renderRegionDropdown(regionData, container) {
         const groupDiv = document.createElement("div");
         groupDiv.classList.add("region-group");
         // The region's identity as data rather than as the text inside its header.
@@ -1218,8 +1250,7 @@
         const contentDiv = document.createElement("div");
         contentDiv.classList.add("region-content");
 
-        const itemDivs = [];
-        const itemChecksRegistry = [];
+        const checks = [];
 
         regionData.item_checks.forEach(check => {
             const itemDiv = document.createElement("div");
@@ -1228,8 +1259,9 @@
             // Decided once: a tracker's settings don't change while it is open. A
             // clause that can't be read never matches, and validateVanillaClauses()
             // names it.
-            if (check.vanilla_when !== undefined && window.SettingsState &&
-                window.SettingsState.matches(check.vanilla_when)) {
+            const vanilla = check.vanilla_when !== undefined && Boolean(window.SettingsState) &&
+                window.SettingsState.matches(check.vanilla_when);
+            if (vanilla) {
                 itemDiv.classList.add("vanilla");
                 if (typeof check.vanilla_item === "string" && check.vanilla_item.trim() !== "") {
                     checkVanillaItems.set(itemDiv, vanillaItemName(check.vanilla_item));
@@ -1258,47 +1290,28 @@
             });
             itemDiv.appendChild(infoBtn);
 
-            itemChecksRegistry.push({
+            // The id as the row carries it, so a check with no id matches its row.
+            checks.push({
+                id: itemDiv.dataset.checkId,
                 element: itemDiv,
                 logic: check.logic,
-                group_logic: check.group_logic
+                group_logic: check.group_logic,
+                vanilla: vanilla,
+                accessible: false
             });
 
             // The same expression the sweep evaluates, so the tooltip can never
             // explain a check by different rules than the ones that colored it.
             checkRequirements.set(itemDiv, combinedLogic(regionData.logic, check));
 
+            // The checkCompletionChanged listener redraws every row of the location.
             itemDiv.addEventListener("click", () => {
-                const isCompleted = itemDiv.classList.toggle("completed");
-                const currentId = itemDiv.dataset.checkId;
-
-                // One location, however many rows show it: every row sharing this id,
-                // and every id in a check_group with it. Queried globally because a
-                // region's rows may be sitting in the map overlay.
-                const linkedIds = new Set([currentId]);
-                CHECK_GROUPS.forEach(group => {
-                    if (group.includes(currentId)) group.forEach(id => linkedIds.add(id));
-                });
-                const linkedRows = [];
-                linkedIds.forEach(linkedId => {
-                    document.querySelectorAll(`div.region-check-item[data-check-id="${CSS.escape(linkedId)}"]`)
-                        .forEach(el => {
-                            el.classList.toggle("completed", isCompleted);
-                            linkedRows.push(el);
-                        });
-                });
-                if (isCompleted) linkedRows.forEach(keepRowShown);
-
-                // The linked rows can sit in other regions, so every region's counts are redone.
-                if (window.GameState) {
-                    evaluateAllRegions(window.GameState.items, window.GameState.tokens);
-                } else {
-                    window.dispatchEvent(new CustomEvent("trackerChecksUpdated"));
-                }
+                const id = itemDiv.dataset.checkId;
+                if (!window.ItemCheckState.toggle(id)) return;
+                window.ItemCheckState.linkedIds(id).forEach(linkedId => rowsFor(linkedId).forEach(keepRowShown));
             });
 
             contentDiv.appendChild(itemDiv);
-            itemDivs.push(itemDiv);
         });
 
         // Opening as well as closing lets kept rows go, so a region always opens
@@ -1320,8 +1333,7 @@
             headerBtn: headerBtn,
             countEl: countSpan,
             groupEl: groupDiv,
-            itemDivs: itemDivs,
-            itemChecks: itemChecksRegistry
+            checks: checks
         });
     }
 
@@ -1331,25 +1343,20 @@
         let hasGreen = false;
         let hasPurple = false;
 
-        // "How many can I go and do, out of how many are left here." A non-randomized
-        // check that is shown is still somewhere to go, so it counts on both sides like
-        // any other — the same call locationStatsTracker.js makes. Hidden, it leaves
-        // the counts and the color as if the region did not have it.
-        let accessibleCount = 0;
-        let remainingCount = 0;
-        const skipVanilla = Boolean(window.TrackerView && window.TrackerView.hidesNonRandomized());
+        // "How many can I go and do, out of how many are left here", counted by the
+        // same rule as the progress numbers, over this region's own rows: two ids of
+        // one check_group here count once, and each region showing the location still
+        // counts it. Hidden non-randomized checks leave the color too.
+        const tally = window.ItemCheckState.count(region.checks,
+            Boolean(window.TrackerView && window.TrackerView.hidesNonRandomized()));
+        const accessibleCount = tally.accessible;
+        const remainingCount = tally.remaining;
 
-        region.itemDivs.forEach(check => {
-            if (skipVanilla && check.classList.contains("vanilla")) return;
-            if (check.classList.contains("completed")) return;
-            remainingCount++;
-            if (check.classList.contains("inaccessible")) {
-                hasRed = true;
-            } else if (check.classList.contains("accessible")) {
-                accessibleCount++;
-                if (check.classList.contains("vanilla")) hasPurple = true;
-                else hasGreen = true;
-            }
+        tally.locations.forEach(location => {
+            if (location.completed) return;
+            if (!location.accessible) hasRed = true;
+            else if (location.vanilla) hasPurple = true;
+            else hasGreen = true;
         });
 
         // Red plus anything reachable is partial. Green outranks purple, so a region

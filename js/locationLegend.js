@@ -9,7 +9,7 @@
 (function () {
     let legendBoxEl = null;
 
-    // Asked of CSS rather than checked against a list, so style.css stays the one
+    // Asked of CSS rather than checked against a list, so common.css stays the one
     // place status names live. An unpaired status would otherwise draw a blank
     // swatch beside a label that looks real. Stylesheets load before any script
     // runs, so the answer is already there.
@@ -78,7 +78,7 @@
             if (!entry || !entry.status || !entry.label) {
                 rejected.push(`legend[${index}] needs both a "status" and a "label"`);
             } else if (!isKnownStatus(entry.status)) {
-                rejected.push(`legend[${index}] "${entry.status}" is not a status css/style.css pairs a color with`);
+                rejected.push(`legend[${index}] "${entry.status}" is not a status css/common.css pairs a color with`);
             } else {
                 usable.push(entry);
             }

@@ -1,31 +1,22 @@
 // locationPanelLayout.js
-// Positions the summary row (stats box + legend) and the map container, keeps the
+// Positions the summary row (progress numbers + legend) and the map container, keeps the
 // desktop map sized to the item grid's height, and scales the desktop grids up on
 // windows that have room. Every piece arrives here via events — the tracking
 // logic, the stats numbers, the legend and the map itself belong to other files.
 
 (function () {
-    // Read from css/style.css so JS and CSS can't disagree about where mobile
-    // starts. The literal is a fallback for a stylesheet that failed to load.
-    const MOBILE_BREAKPOINT = `(max-width: ${
-        getComputedStyle(document.documentElement)
-            .getPropertyValue("--mobile-breakpoint").trim() || "1499px"
-    })`;
-
     let statsBoxEl = null;
     let legendBoxEl = null;
     let mapContainerEl = null;
     let summaryRowEl = null;
-    let resizeObserver = null;
 
-    // The stats box and the legend sit side by side, in the header on desktop and
-    // above the tabs on a phone. Owning the row here keeps both of those files free
-    // of any knowledge of the other.
+    // The progress numbers and the legend share one row in the header on desktop. On
+    // a phone the row is hidden and the legend moves into the header's menu. Owning
+    // the row here keeps both of those files free of any knowledge of the other.
     function ensureSummaryRow() {
         if (summaryRowEl) return summaryRowEl;
         summaryRowEl = document.createElement("div");
         summaryRowEl.id = "location-summary-row";
-        if (resizeObserver) resizeObserver.observe(summaryRowEl);
         return summaryRowEl;
     }
 
@@ -37,22 +28,6 @@
         if (legendBoxEl && legendBoxEl.parentElement !== row) row.appendChild(legendBoxEl);
     }
 
-    // Stacks the two boxes when they do not fit side by side even shrunk, which
-    // only large text causes. Side by side is tried first every time, so a row
-    // that stacked goes back once there is room again.
-    function fitSummaryRow() {
-        const row = summaryRowEl;
-        if (!row) return;
-        row.classList.remove("stacked");
-        const rowRect = row.getBoundingClientRect();
-        const overflows = [statsBoxEl, legendBoxEl].some(box => {
-            if (!box || box.parentElement !== row) return false;
-            const rect = box.getBoundingClientRect();
-            return rect.left < rowRect.left - 0.5 || rect.right > rowRect.right + 0.5;
-        });
-        row.classList.toggle("stacked", overflows);
-    }
-
     // ---------- Positioning ----------
 
     function placeSummaryRow() {
@@ -60,29 +35,24 @@
         fillSummaryRow();
         const row = summaryRowEl;
 
-        const isMobile = window.matchMedia(MOBILE_BREAKPOINT).matches;
+        const isMobile = window.PhoneLayout.active;
 
         if (isMobile) {
-            // Above the tab buttons, so it shows on both tabs.
+            // The frozen bar shows the progress numbers as a line, so the row itself is
+            // hidden here (CSS), and the legend goes to the end of the header's menu.
             const main = document.querySelector("main");
-            const mobileTabs = document.querySelector(".mobile-tabs");
-            if (main && mobileTabs && row.nextSibling !== mobileTabs) {
-                main.insertBefore(row, mobileTabs);
-            } else if (main && !mobileTabs && row.parentElement !== main) {
-                main.insertBefore(row, main.firstChild);
-            }
-        } else {
-            // Between the logo and the toolbar, which leaves the map the whole
-            // location column.
-            const header = document.querySelector("header");
+            if (main && row.parentElement !== main) main.insertBefore(row, main.firstChild);
             const toolbar = document.getElementById("tracker-toolbar");
-            if (header && toolbar && row.parentElement !== header) {
-                header.insertBefore(row, toolbar);
-            }
+            if (toolbar && legendBoxEl && legendBoxEl.parentElement !== toolbar) toolbar.appendChild(legendBoxEl);
+        } else {
+            // In the header, under the toolbar and over the map (locationPanelLayout.css),
+            // which leaves the map the whole location column.
+            const header = document.querySelector("header");
+            if (header && row.parentElement !== header) header.appendChild(row);
         }
     }
 
-    // Needs nothing from the summary row: a progress box that failed to build must
+    // Needs nothing from the summary row: progress numbers that failed to build must
     // not cost the map as well.
     function placeMapContainer() {
         if (!mapContainerEl) return;
@@ -90,7 +60,7 @@
         const locationSection = document.getElementById("location-section");
         if (!locationSection) return;
 
-        const isMobile = window.matchMedia(MOBILE_BREAKPOINT).matches;
+        const isMobile = window.PhoneLayout.active;
 
         if (isMobile) {
             // Hidden by CSS here; just keep it somewhere valid. Don't assume the
@@ -124,7 +94,7 @@
     // ---------- Scale (desktop only) ----------
 
     // The grids are drawn this many times their base size (--ui-scale in
-    // css/style.css), and the map, sized against the grids' height, follows.
+    // css/common.css), and the map, sized against the grids' height, follows.
     let appliedScale = 1;
 
     function writeScale(scale, layoutWidth) {
@@ -210,7 +180,7 @@
     }
 
     function fitPanels() {
-        const isMobile = window.matchMedia(MOBILE_BREAKPOINT).matches;
+        const isMobile = window.PhoneLayout.active;
 
         if (isMobile) {
             writeScale(1, 0);
@@ -218,7 +188,6 @@
                 mapContainerEl.style.height = "";
                 mapContainerEl.style.width = "";
             }
-            fitSummaryRow();
             lastMapWidth = lastMapHeight = null;
             return;
         }
@@ -227,11 +196,7 @@
         const locationSection = document.getElementById("location-section");
         if (!gridContainer || !locationSection) return;
 
-        // No map to size against, but the row still has to fit its text.
-        if (!mapContainerEl || !mapAspectRatio) {
-            fitSummaryRow();
-            return;
-        }
+        if (!mapContainerEl || !mapAspectRatio) return;
 
         if (!applyScale(gridContainer)) return;
 
@@ -256,24 +221,37 @@
             mapHeight = maxWidth / mapAspectRatio;
         }
 
-        // Ahead of the guard below, because the row re-fits its text even when the
-        // map has not moved.
-        fitSummaryRow();
-
         // Skip redundant writes so the ResizeObserver can't feed back into itself.
-        if (mapWidth === lastMapWidth && mapHeight === lastMapHeight) return;
-        lastMapWidth = mapWidth;
-        lastMapHeight = mapHeight;
+        if (mapWidth !== lastMapWidth || mapHeight !== lastMapHeight) {
+            lastMapWidth = mapWidth;
+            lastMapHeight = mapHeight;
 
-        mapContainerEl.style.width = `${mapWidth}px`;
-        mapContainerEl.style.height = `${mapHeight}px`;
+            mapContainerEl.style.width = `${mapWidth}px`;
+            mapContainerEl.style.height = `${mapHeight}px`;
 
-        // Tell anything laid out against the map, rather than letting it race us
-        // on its own resize listener — and the map can resize with no window
-        // resize at all, via the ResizeObserver below.
-        window.dispatchEvent(new CustomEvent("locationMapResized", {
-            detail: { mapContainer: mapContainerEl, width: mapWidth, height: mapHeight }
-        }));
+            // Tell anything laid out against the map, rather than letting it race us
+            // on its own resize listener — and the map can resize with no window
+            // resize at all, via the ResizeObserver below.
+            window.dispatchEvent(new CustomEvent("locationMapResized", {
+                detail: { mapContainer: mapContainerEl, width: mapWidth, height: mapHeight }
+            }));
+        }
+
+        alignSummaryRow();
+    }
+
+    // Starts the header's summary row where the map starts. Measured rather than
+    // worked out, because the map is centered in its column and its width is floored.
+    // Only the row's left edge moves, never the header's height, so this cannot feed
+    // back into the sizing above.
+    let lastInset = null;
+    function alignSummaryRow() {
+        const header = document.querySelector("header");
+        if (!header || !mapContainerEl) return;
+        const inset = Math.round(mapContainerEl.getBoundingClientRect().left - header.getBoundingClientRect().left);
+        if (inset === lastInset) return;
+        lastInset = inset;
+        header.style.setProperty("--summary-inset", `${inset}px`);
     }
 
     let syncScheduled = false;
@@ -294,16 +272,13 @@
     }
 
     // The "ready" events are one-shot and can fire while layout is still
-    // settling. These are the signals that something the layout depends on
-    // actually changed: the item grid's height, which the map is sized against,
-    // and the summary row's size, which follows the browser's text size and
-    // decides whether the row has to stack.
+    // settling. This is the signal that something the layout depends on actually
+    // changed: the item grid's height, which the map is sized against.
     function observeLayout() {
         if (typeof ResizeObserver === "undefined") return;
-        resizeObserver = new ResizeObserver(scheduleHeightSync);
+        const resizeObserver = new ResizeObserver(scheduleHeightSync);
         const gridContainer = document.querySelector(".grid-container");
         if (gridContainer) resizeObserver.observe(gridContainer);
-        if (summaryRowEl) resizeObserver.observe(summaryRowEl);
     }
 
     // ---------- Init ----------
@@ -316,7 +291,7 @@
     });
 
     // Optional: a config with no legend entries never fires this, and the row is
-    // then just the stats box.
+    // then just the progress numbers.
     window.addEventListener("locationLegendReady", (event) => {
         legendBoxEl = event.detail.box;
         placeSummaryRow();
@@ -349,7 +324,7 @@
             placeMapContainer();
             syncPanelHeight();
         };
-        window.matchMedia(MOBILE_BREAKPOINT).addEventListener("change", onBreakpointChange);
+        window.PhoneLayout.onChange(onBreakpointChange);
 
         window.addEventListener("resize", scheduleHeightSync);
         observeLayout();

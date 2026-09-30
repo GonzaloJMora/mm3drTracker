@@ -13,11 +13,11 @@
       "kamaro_mask", "gibdo_mask", "garo_mask", "captains_hat", "giants_mask", "fierce_deity_mask"
     ],
     "dungeon": [
-      "swamp_skulltula_token", "ocean_skulltula_token", "clock_town_stray_fairy", "deku_princess", "seahorse", "zora_egg",
-      "map_woodfall_temple", "compass_woodfall_temple", "woodfall_small_key", "woodfall_big_key", "woodfall_stray_fairy", "odolwa_remains",
-      "map_snowhead_temple", "compass_snowhead_temple", "snowhead_small_key", "snowhead_big_key", "snowhead_stray_fairy", "goht_remains",
-      "map_great_bay_temple", "compass_great_bay_temple", "great_bay_small_key", "great_bay_big_key", "great_bay_stray_fairy", "gyorg_remains",
-      "map_stone_tower_temple", "compass_stone_tower_temple", "stone_tower_small_key", "stone_tower_big_key", "stone_tower_stray_fairy", "twinmold_remains"
+      "clock_town_stray_fairy", "swamp_skulltula_token", "ocean_skulltula_token", "deku_princess", "seahorse", "zora_egg",
+      "woodfall_stray_fairy", "map_woodfall_temple", "compass_woodfall_temple", "woodfall_small_key", "woodfall_big_key", "odolwa_remains",
+      "snowhead_stray_fairy", "map_snowhead_temple", "compass_snowhead_temple", "snowhead_small_key", "snowhead_big_key", "goht_remains",
+      "great_bay_stray_fairy", "map_great_bay_temple", "compass_great_bay_temple", "great_bay_small_key", "great_bay_big_key", "gyorg_remains",
+      "stone_tower_stray_fairy", "map_stone_tower_temple", "compass_stone_tower_temple", "stone_tower_small_key", "stone_tower_big_key", "twinmold_remains"
     ],
     "gear": [
       "", "moons_tear", "clock_town_title_deed", "swamp_title_deed", "mountain_title_deed", "ocean_title_deed",

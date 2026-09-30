@@ -7,6 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#121212">
     <title>MM3D Randomizer Tracker</title>
+    <!-- This tracker's name in the browser's storage (storageKeys.js). The same on both
+         pages, and the same as "app" in data/saveLayout.json. -->
+    <meta name="tracker-id" content="mm3drTracker">
 
     <link rel="icon" type="image/png" href="images/icons/icon.png">
     <link rel="icon" sizes="32x32" href="images/icons/favicon.ico">
@@ -23,37 +26,47 @@
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary">
 
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/itemContainers.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/pageLayout.css">
+    <link rel="stylesheet" href="css/itemGrids.css">
     <link rel="stylesheet" href="css/tooltip.css">
     <link rel="stylesheet" href="css/trackerToolbar.css">
+    <link rel="stylesheet" href="css/saveDialog.css">
     <link rel="stylesheet" href="css/settingsPage.css">
 
-    <script src="js/launch.js"></script>
+    <script src="js/storageKeys.js"></script>
+    <script src="js/phoneLayout.js"></script>
+    <script src="js/trackerLaunch.js"></script>
 </head>
 
 <body>
 
+    <!-- In the phone layout the header is a bar frozen at the top: the logo, the switch
+         between the two halves, and the menu button, which opens the toolbar as a menu
+         (headerMenu.js). On desktop the switch and the menu button are hidden. -->
     <header>
         <img src="images/logo.png" alt="Majora's Mask 3D Randomizer Tracker">
+        <div class="mobile-tabs">
+            <button type="button" class="tab-btn active" data-tab="settings" data-section="settings-section">Settings</button>
+            <button type="button" class="tab-btn" data-tab="starting" data-section="starting-section">Starting<span class="tab-label-more"> Items</span></button>
+        </div>
+        <button type="button" id="header-menu-button" class="toolbar-btn" aria-label="Menu" aria-expanded="false" aria-controls="tracker-toolbar"></button>
         <!-- settingsPage.js enables Reset to Defaults and Launch New Tracker once the
-             settings have loaded. The two load buttons stay disabled until there is saving. -->
+             settings have loaded, and loadSave.js enables the two load buttons (Load From
+             Autosave when there is one) and shows Resume Tracker while a save is loaded.
+             data-menu-keep-out: shown under the bar, outside the menu, in the phone layout. -->
         <div id="tracker-toolbar">
             <button type="button" id="reset-settings" class="toolbar-btn" disabled>Reset to Defaults</button>
             <button type="button" id="load-autosave" class="toolbar-btn" disabled>Load From Autosave</button>
             <button type="button" id="load-file" class="toolbar-btn" disabled>Load From File</button>
+            <button type="button" id="resume-tracker" class="toolbar-btn" data-menu-keep-out hidden>Resume Tracker</button>
             <button type="button" id="launch-new-tracker" class="toolbar-btn" disabled>Launch New Tracker</button>
         </div>
+        <div id="header-keep-out"></div>
     </header>
 
     <!-- awaiting-data: hidden until dataLoader.js has the data and every file has drawn from it. -->
     <main class="awaiting-data">
-        <!-- Mobile Tab Navigation (Hidden on Desktop) -->
-        <div class="mobile-tabs">
-            <button class="tab-btn active" data-tab="settings" data-section="settings-section">Settings</button>
-            <button class="tab-btn" data-tab="starting" data-section="starting-section">Starting Items</button>
-        </div>
-
         <div class="tracker-layout-wrapper">
             <div id="settings-section" class="tracker-section active-section">
                 <section class="settings-panel" aria-labelledby="settings-panel-title">
@@ -97,6 +110,10 @@
         </div>
     </main>
 
+    <!-- Loading animation (common.css, *Loading*). Has to come after main: CSS shows it
+         only while main still has awaiting-data. -->
+    <div class="page-loading" aria-hidden="true"></div>
+
     <!-- Filled from data/version.json by dataLoader.js. -->
     <footer id="app-version"></footer>
 
@@ -109,7 +126,12 @@
     <script src="js/settingsState.js"></script>
     <script src="js/settingControls.js"></script>
     <script src="js/itemGrids.js"></script>
+    <script src="js/saveCodec.js"></script>
+    <script src="js/saveStore.js"></script>
     <script src="js/settingsPage.js"></script>
+    <script src="js/loadSave.js"></script>
+    <script src="js/offline.js"></script>
     <script src="js/mobileTabManager.js"></script>
+    <script src="js/headerMenu.js"></script>
 </body>
 </html>

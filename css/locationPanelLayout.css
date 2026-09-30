@@ -1,39 +1,23 @@
-/* Where the summary row (stats box + legend) and map container sit: the row in the
-   header on desktop, the map alone in the location column. The map's own visuals
-   (image, markers, overlay) are locationMap.css; the two boxes style themselves. */
+/* Where the summary row (progress numbers + legend) and map container sit: the row
+   in the header on desktop, the map alone in the location column. The map's own
+   visuals (image, markers, overlay) are locationMap.css; the two pieces style
+   themselves. */
 
-/* The legend sits to the right of the stats box. Both boxes are as wide as their
-   own content and the pair is centered. */
+/* Numbers left, legend right; the legend wraps under the numbers when the row is
+   too narrow for both. */
 #location-summary-row {
     display: flex;
-    align-items: stretch;
-    justify-content: center;
-    gap: 15px;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px 28px;
     box-sizing: border-box;
+    min-width: 0;
 }
 
-/* Shrinkable, so a label wraps before the legend has to move under the stats
-   box. */
-#location-summary-row #location-stats-box,
-#location-summary-row #location-legend-box {
-    flex: 0 1 auto;
-}
-
-/* Set by locationPanelLayout.js when the two boxes do not fit side by side even
-   shrunk, which only large text causes. */
-#location-summary-row.stacked {
-    flex-direction: column;
-    align-items: center;
-}
-
-#location-summary-row.stacked #location-stats-box,
-#location-summary-row.stacked #location-legend-box {
-    max-width: 100%;
-}
-
-/* Desktop. Asked as "not the phone layout" — see the breakpoint note in style.css. */
+/* Desktop. Asked as "not the phone layout" — see the breakpoint note in common.css. */
 @media not all and (max-width: 1499px) {
-    /* Overrides the display:contents .tracker-section gets in itemContainers.css,
+    /* Overrides the display:contents .tracker-section gets in pageLayout.css,
        which would make #region-sidebar the flex item in the row instead of this.
        Desktop only, so mobile's tab show/hide is untouched. */
     #location-section {
@@ -49,17 +33,35 @@
         justify-content: center;
     }
 
-    /* In the header (locationPanelLayout.js, placeSummaryRow), between the logo
-       and the toolbar. It is as wide as its two boxes and gives way before the logo
-       or the toolbar do. */
-    #location-summary-row {
-        margin: 0;
-        flex: 0 1 auto;
-        min-width: 0;
+    /* The header holding the row: the logo, then a column over the map with the
+       row along its bottom and the toolbar just above it. --summary-inset is the map's
+       left edge, set by locationPanelLayout.js, so the row lines up with the map it
+       describes. The rows still fit inside the logo's height at the default text
+       size, which the map sizing counts on (ARCHITECTURE.md, *Scale*). */
+    header:has(> #location-summary-row) {
+        display: grid;
+        grid-template-columns: var(--summary-inset, max-content) minmax(0, 1fr);
+        grid-template-rows: 1fr auto;
+        align-items: start;
+        gap: 10px 0;
     }
 
-    #location-stats-box {
-        margin: 0;
+    header:has(> #location-summary-row) > img {
+        grid-row: 1 / span 2;
+        margin-right: 20px;
+    }
+
+    header:has(> #location-summary-row) > #tracker-toolbar {
+        grid-column: 2;
+        grid-row: 1;
+        align-self: end;
+    }
+
+    header > #location-summary-row {
+        grid-column: 2;
+        grid-row: 2;
+        border-top: 1px solid #2c2c2c;
+        padding-top: 12px;
     }
 
     #location-map-container {
@@ -71,16 +73,10 @@
     }
 }
 
+/* On a phone the frozen bar shows the progress numbers as a line and the header's
+   menu holds the legend, so the row itself goes. */
 @media screen and (max-width: 1499px) {
     #location-summary-row {
-        width: fit-content;
-        max-width: 100%;
-        margin: 10px auto;
-        gap: 10px;
-    }
-
-    #location-stats-box {
-        width: auto;
-        margin: 0;
+        display: none;
     }
 }

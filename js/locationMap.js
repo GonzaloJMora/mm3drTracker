@@ -12,13 +12,6 @@
 // for that point — it is how the numbers in the region files were found.
 
 (function () {
-    // Read from css/style.css so JS and CSS can't disagree about where mobile
-    // starts. The literal is a fallback for a stylesheet that failed to load.
-    const MOBILE_BREAKPOINT = `(max-width: ${
-        getComputedStyle(document.documentElement)
-            .getPropertyValue("--mobile-breakpoint").trim() || "1499px"
-    })`;
-
     // Percent of the map, so anything outside 0 to 100 lands off it. A marker
     // without both would be drawn at the map's top-left corner, looking placed.
     function hasUsableCoordinates(data) {
@@ -607,7 +600,7 @@
     // Losing the map is the whole desktop location panel gone, with the region
     // list still hidden behind it — so this goes on the page rather than the
     // console, like dataLoader.js's failures. Styled by the same rule in
-    // css/style.css.
+    // css/common.css.
     function showMapFailure(detail) {
         const main = document.querySelector("main");
         if (!main || document.getElementById("tracker-map-warning")) return;
@@ -726,11 +719,9 @@
         window.addEventListener("locationMapResized", scheduleRefit);
         window.addEventListener("trackerViewChanged", scheduleRefit);
 
-        const mql = window.matchMedia(MOBILE_BREAKPOINT);
-        const onBreakpointChange = () => {
-            if (mql.matches) closeOverlay(); // hand the region back to the mobile list
-        };
-        mql.addEventListener("change", onBreakpointChange);
+        window.PhoneLayout.onChange(() => {
+            if (window.PhoneLayout.active) closeOverlay(); // hand the region back to the mobile list
+        });
       } catch (error) {
         // No locationMapReady on this path, on purpose — a half-built container is
         // worse than none, and locationPanelLayout.js already handles none.

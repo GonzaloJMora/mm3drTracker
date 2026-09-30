@@ -25,12 +25,14 @@
                 console.error("itemTracker: could not read the starting items, so every slot starts empty", error);
             }
 
+            const save = window.TrackerLaunch ? window.TrackerLaunch.readSave() : null;
+
             // Not awaited: init() does no I/O. It must not swallow its own errors
             // either, or the catch below can never see one.
-            window.GameState.init(items, config, startingState);
+            window.GameState.init(items, config, startingState, save && save.slots);
 
             window.ItemGrids.render(gridContainer, config, itemMap).forEach((view, slotId) => {
-                const { kind, bottom, top } = window.GameState.slotRange(slotId);
+                const { bottom, top } = window.GameState.slotRange(slotId);
 
                 // Nothing to cycle through, so no click handler. Right-click is still
                 // swallowed, or it would open the browser's menu over the grid.
@@ -40,11 +42,12 @@
                     return;
                 }
 
+                // Drawn from what GameState holds after the change, so the slot can
+                // never show a value the logic isn't using.
                 const step = (direction) => {
-                    const value = window.ItemGrids.nextValue(window.GameState.slotValue(slotId), direction, bottom, top);
-                    window.ItemGrids.draw(view, value);
-                    const counted = kind === "counter" || kind === "digit";
-                    window.GameState.updateItemState(slotId, counted ? null : value, counted ? value : null);
+                    const state = window.GameState;
+                    state.setSlot(slotId, window.ItemGrids.nextValue(state.slotValue(slotId), direction, bottom, top));
+                    window.ItemGrids.draw(view, state.slotValue(slotId));
                 };
 
                 view.slot.addEventListener("click", (e) => {
@@ -75,7 +78,7 @@
     // Until the slot images load, the grids are a fraction of their real height, and
     // nothing else reliably says when they stop growing — so say it again once the
     // images settle. Here because these are this file's images; the listener is
-    // idempotent. See ARCHITECTURE.md, *Map sizing*.
+    // idempotent. See ARCHITECTURE.md, *Map sizing and scale*.
     function announceWhenImagesSettle() {
         const pending = Array.from(document.querySelectorAll(".item-image"))
             .filter(img => !img.complete);

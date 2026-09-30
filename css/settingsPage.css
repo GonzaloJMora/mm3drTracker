@@ -1,5 +1,5 @@
 /* The settings page (settingsPage.js): the randomizer settings in one panel, and
-   the starting items as the tracker's grids, which itemContainers.css draws. On
+   the starting items as the tracker's grids, which itemGrids.css draws. On
    desktop the two sit side by side; below the breakpoint they are tabs. */
 
 .settings-panel,
@@ -111,10 +111,15 @@
     margin-top: 2px;
 }
 
+/* Indented to the setting names, past the room their changed-setting dot takes. */
 .settings-block h4 {
     margin: 10px 0 2px;
+    padding-left: 13px;
     font-size: 0.8rem;
     color: #bbbbbb;
+    text-decoration: underline;
+    text-decoration-color: #666;
+    text-underline-offset: 3px;
     break-after: avoid;
 }
 
@@ -202,6 +207,16 @@
 
 .setting-row select:disabled {
     cursor: default;
+}
+
+/* A dropdown is as wide as its longest option, so without a floor their left
+   edges zigzag down a column. Never wider than the row, or large text pushes it
+   under the next column (a min-width beats the max-width above). Desktop only: in
+   a phone's one column the floor would wrap setting names beside short dropdowns. */
+@media not all and (max-width: 1499px) {
+    .setting-row select {
+        min-width: min(9em, 100%);
+    }
 }
 
 .setting-row :disabled {
@@ -337,7 +352,7 @@
     }
 }
 
-/* ---------- Slots (the grids themselves are itemContainers.css) ---------- */
+/* ---------- Slots (the grids themselves are itemGrids.css) ---------- */
 
 /* Drawn so the grids match the tracker, but not clickable: a slot another setting
    fills in, and one no setting starts you with. */
@@ -367,7 +382,7 @@
     background: linear-gradient(to bottom left, currentColor 50%, transparent 50%);
     pointer-events: none;
     /* A gradient can't ease, but its color can: the same timing as the slot's own
-       border (itemContainers.css), so the fold and the dots turn gray together. */
+       border (itemGrids.css), so the fold and the dots turn gray together. */
     transition: color 0.2s;
 }
 
@@ -411,9 +426,54 @@
         width: 100%;
     }
 
-    /* Centered with the grids above them, which itemContainers.css caps. */
+    /* Centered with the grids above them, which itemGrids.css caps. */
     .starting-items {
         max-width: 1015px;
         margin: 0 auto;
+    }
+}
+
+/* A setting a loaded save didn't hold: it took its default and stays changeable,
+   so it has to catch the eye. An inset shadow rather than a border or padding, so
+   the row keeps its size. */
+.setting-row.not-in-save {
+    background-color: #2a2418;
+    box-shadow: inset 3px 0 #d4a72c;
+}
+
+.setting-row.not-in-save label,
+.setting-row.not-in-save .setting-lock-note {
+    padding-left: 8px;
+}
+
+.setting-row.not-in-save .setting-lock-note {
+    color: #e8d9a0;
+}
+
+/* The same for a starting item: an outline, like locked-on, so the slot keeps its
+   size. */
+.item-slot.not-in-save {
+    outline: 2px solid #d4a72c;
+    outline-offset: -2px;
+}
+
+/* A slot whose setting a loaded save holds: drawn as it is, but not clickable. */
+.item-slot.held {
+    cursor: default;
+}
+
+/* The next step once a save has loaded, so it stands out from the toolbar around it:
+   a green outline and glow, the green the tracker uses for on and active. The fill
+   stays dark so the text reads like every other button's. A shadow, not a thicker
+   border, so the button keeps its size. */
+#resume-tracker {
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 1px #4CAF50, 0 0 12px rgba(76, 175, 80, 0.6);
+}
+
+@media (hover: hover) {
+    #resume-tracker:hover {
+        border-color: #7ed283;
+        box-shadow: 0 0 0 1px #7ed283, 0 0 14px rgba(126, 210, 131, 0.7);
     }
 }

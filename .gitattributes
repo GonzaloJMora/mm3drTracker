@@ -1,0 +1,2 @@
+# The save fixtures are exact exports, compared byte for byte: no line-ending conversion.
+tests/fixtures/** -text
