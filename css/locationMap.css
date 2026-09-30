@@ -29,7 +29,7 @@
     /* A share of the map's width, so markers grow with the map. 3.2% is as far as
        it can go: the closest pair of markers is about 3.4% of the map's width
        apart, center to center. Only round shapes clear at that, so the square and
-       triangle are drawn smaller than the box (style.css). */
+       triangle are drawn smaller than the box (common.css). */
 
     /* Unrounded so a browser without round() still draws markers: inside a custom
        property round() cannot fall back, and width goes invalid instead. The
@@ -83,7 +83,7 @@
 
 .location-map-marker::before {
     z-index: -1;
-    /* The outline is whatever this inset leaves uncovered; style.css widens it
+    /* The outline is whatever this inset leaves uncovered; common.css widens it
        for the slanted shapes. A share of the marker with a floor, so it grows
        with the marker. */
     inset: max(var(--status-outline, 2px), var(--status-outline-pct, 8%));
@@ -127,7 +127,7 @@
 /* A shape that tapers gives a two-digit count much less room than its width
    suggests — the diamond is the tight one, since the space either side of the
    center line falls away. How much smaller the count gets belongs to the status
-   pairing in style.css; a shape without a ratio keeps the full count size. */
+   pairing in common.css; a shape without a ratio keeps the full count size. */
 .location-map-marker.wide-count {
     font-size: calc(var(--count-size) * var(--status-wide-ratio, 1));
 }
@@ -275,7 +275,7 @@
 }
 
 /* ---------- Desktop only ---------- */
-/* Asked as "not the phone layout" — see the breakpoint note in style.css. */
+/* Asked as "not the phone layout" — see the breakpoint note in common.css. */
 @media not all and (max-width: 1499px) {
     #location-map-container {
         display: block;

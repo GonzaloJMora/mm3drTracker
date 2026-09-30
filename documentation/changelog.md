@@ -4,6 +4,26 @@
      The release workflow finds each one by its "## Version: vx.y.z" line, so leave
      those lines exactly as written. -->
 
+## Version: v0.15.0
+
+**Released:** 09/30/2026
+
+**Changes:**
+- Minor GUI cleanup, grid reordering, and updating item images
+- Added loading animation that plays while data loads.
+- Fixed bug where settings page could scroll sideways while loading data.
+- Added autosave: the tracker saves your settings, items, checked locations and view toggles as you play, and Load From Autosave on the settings page brings a run back, including the run before it.
+- Added Export and Load From File: download a run as a file or copy its code, then load it on another device or after the autosave is lost.
+- Updated mobile layout to reduce header size
+- Updated desktop layout header
+- Added offline play: once the tracker has been opened with a connection, it keeps working without one, and on iPhone a one-time tip suggests adding it to the Home Screen.
+- The tracker's Launch New Tracker button is now Back to Settings: leaving or reloading the tracker no longer loses your run.
+
+**Notes:**
+- The Home Screen tip shows only on iPhone and iPad. Safari there clears a site's saved data after about a week without a visit, and a tracker added to the Home Screen keeps it; the tip shows in every browser on those devices, since they all run on Safari's engine. Other phones keep saves without it.
+
+---
+
 ## Version: v0.14.0
 
 **Released:** 09/26/2026

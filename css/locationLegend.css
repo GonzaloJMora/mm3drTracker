@@ -1,49 +1,31 @@
-/* Styling for the legend box content. The element itself is created by
-   locationLegend.js; where it sits is locationPanelLayout.css. */
+/* Styling for the legend. The element itself is created by locationLegend.js; where
+   it sits is locationPanelLayout.css. */
 
-#location-legend-box {
-    background-color: #1a1a1a;
-    border: 2px solid #333;
-    border-radius: 8px;
-    padding: 12px 15px;
-    box-sizing: border-box;
-}
-
+/* On desktop one wrapping row in the header's strip, beside the progress numbers. */
 #location-legend-box h3 {
-    margin: 0 0 8px 0;
+    margin: 0;
     font-size: 1rem;
-    border-bottom: 1px solid #333;
-    padding-bottom: 6px;
     overflow-wrap: break-word;
 }
 
-/* Three columns so five entries take two rows, which keeps the box no taller
-   than the stats box beside it, and the header no taller than its logo. */
 #location-legend-content {
-    display: grid;
-    grid-template-columns: repeat(3, auto);
-    gap: 4px 24px;
-    justify-content: start;
-}
-
-/* Under the stats box, one column. locationPanelLayout.js stacks the row when
-   large text will not fit side by side, and three columns would not fit either. */
-#location-summary-row.stacked #location-legend-content {
-    grid-template-columns: minmax(0, auto);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
 }
 
 .location-legend-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .location-legend-swatch {
     flex: 0 0 auto;
     width: 12px;
     height: 12px;
-    /* Color and shape both come from the status pairing in style.css, so the
+    /* Color and shape both come from the status pairing in common.css, so the
        swatch is drawn by the same two variables the markers use. */
     background-color: var(--status-color, transparent);
     clip-path: var(--status-shape, circle(50%));
@@ -55,20 +37,42 @@
     overflow-wrap: break-word;
 }
 
-@media screen and (max-width: 1499px) {
-    /* One column: the box is sized by its content here, so a wider grid would
-       only widen the box rather than being given room to fill. */
-    #location-legend-content {
-        grid-template-columns: auto;
-        gap: 3px;
+/* The heading is left to screen readers on desktop, where the swatches explain
+   themselves. Same pattern as .visually-hidden in common.css. */
+@media not all and (max-width: 1499px) {
+    #location-legend-box h3 {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
     }
+}
 
+/* In the header's menu on a phone: a box of its own, two columns. */
+@media screen and (max-width: 1499px) {
     #location-legend-box {
+        background-color: #1a1a1a;
+        border: 2px solid #333;
+        border-radius: 8px;
         padding: 10px 12px;
+        box-sizing: border-box;
     }
 
     #location-legend-box h3 {
+        margin: 0 0 8px 0;
         font-size: 0.95rem;
+        border-bottom: 1px solid #333;
+        padding-bottom: 6px;
+    }
+
+    #location-legend-content {
+        display: grid;
+        grid-template-columns: repeat(2, auto);
+        justify-content: start;
+        gap: 3px 16px;
     }
 
     .location-legend-row {
