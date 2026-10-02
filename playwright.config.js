@@ -3,7 +3,11 @@
 const { defineConfig } = require("@playwright/test");
 
 const CI = Boolean(process.env.CI);
-const PORT = Number(process.env.TEST_PORT) || 8731;
+// TEST_SITE_ROOT points the server at a built site (scripts/buildSite.py) and runs
+// only the "built" pass over it, on a port of its own so it never reuses a server
+// running the repo.
+const SITE_ROOT = process.env.TEST_SITE_ROOT;
+const PORT = Number(process.env.TEST_PORT) || (SITE_ROOT ? 8732 : 8731);
 
 // Tests tagged @smoke run in every browser; WebKit, the engine of every browser
 // on an iPhone, also runs the ones tagged @webkit.
@@ -39,10 +43,12 @@ module.exports = defineConfig({
         stdout: "ignore",
         stderr: "ignore"
     },
-    projects: [
-        { name: "node", testDir: "tests/node" },
-        browser("chromium"),
-        browser("firefox", /@smoke/),
-        browser("webkit", /@smoke|@webkit/)
-    ]
+    projects: SITE_ROOT
+        ? [Object.assign(browser("chromium", /@smoke|@built/), { name: "built", dependencies: [] })]
+        : [
+            { name: "node", testDir: "tests/node" },
+            browser("chromium"),
+            browser("firefox", /@smoke/),
+            browser("webkit", /@smoke|@webkit/)
+        ]
 });

@@ -39,9 +39,14 @@ def current_branch():
         raise ReleaseError("Could not read the current branch from git.")
     if branch == "HEAD":
         raise ReleaseError("No branch is checked out. Check out the branch the changes are on.")
-    if branch == "main":
-        raise ReleaseError("This is main. Changes are logged on the branch that makes them, "
-                           "so branch off main first (README.md, Workflow).")
+    if branch in ("main", "develop"):
+        raise ReleaseError(f"This is {branch}. Changes are logged on the branch that makes them, "
+                           "so branch off develop first (README.md, Workflow).")
+    # A release branch only runs release.py: a file logged here would be left for
+    # the next release's notes.
+    if branch.startswith("release/"):
+        raise ReleaseError("This is a release branch. Changes are logged on the feature or bugfix "
+                           "branch that makes them (README.md, Workflow).")
     return branch
 
 

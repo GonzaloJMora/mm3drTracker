@@ -1,0 +1,53 @@
+# Publishes the site to GitHub Pages on every push to main, which only happens at a
+# release: the full test suite first (tests.yml), then the built site
+# (scripts/buildSite.py), replacing the whole published copy so nothing deleted
+# lingers. The manual run is for republishing a release, as when the Pages source
+# is first switched to GitHub Actions. See README.md, Releasing.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer one waits rather than cancelling one halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  deploy:
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Build the site
+        run: python scripts/buildSite.py
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v5

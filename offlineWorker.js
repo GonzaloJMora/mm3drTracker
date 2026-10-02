@@ -29,8 +29,12 @@ async function storable(response) {
     return new Response(await response.blob(), { status: response.status, statusText: response.statusText, headers: response.headers });
 }
 
-async function store(cache, request, response) {
-    if (response && response.ok && response.type === "basic") await cache.put(request, await storable(response.clone()));
+// Stored under the address without its query, so a script stamped with a new
+// version (js/foo.js?v=…) replaces its copy rather than adding one per release.
+async function store(cache, address, response) {
+    const key = new URL(address);
+    key.search = "";
+    if (response && response.ok && response.type === "basic") await cache.put(key.href, await storable(response.clone()));
 }
 
 // Stores every listed file. "no-cache" has the browser ask the site whether each
@@ -86,7 +90,7 @@ self.addEventListener("fetch", event => {
         // a file for minutes after a release and hand a page old scripts beside new
         // data. A copy that can't be stored, with storage full, still answers the page.
         const fromNetwork = fetch(new Request(request, { cache: "no-cache" })).then(async response => {
-            if (!switchedOff) await store(cache, request, response).catch(() => {});
+            if (!switchedOff) await store(cache, request.url, response).catch(() => {});
             return response;
         });
         // A late answer still updates the stored copy after the stored one was used.
@@ -98,7 +102,8 @@ self.addEventListener("fetch", event => {
         // beats it. A 404 still goes through: that file is gone from the site.
         if (answer && answer.status < 500) return answer;
 
-        // ignoreSearch, so tracker.html?defaults finds tracker.html.
+        // ignoreSearch, so tracker.html?defaults and a stamped js/foo.js?v=… find
+        // their stored copies.
         const stored = await cache.match(request, { ignoreSearch: true });
         if (stored) return stored;
         return fromNetwork;

@@ -1,6 +1,7 @@
 # The test suite on every pull request into develop: the checks that need no
-# browser, then the tracker in Chromium, Firefox and WebKit. Other workflows call
-# it too (workflow_call), so a deploy runs the same tests rather than a copy.
+# browser, then the tracker in Chromium, Firefox and WebKit, then the built site
+# (scripts/buildSite.py) the deploy would publish. Other workflows call it too
+# (workflow_call), so a deploy runs the same tests rather than a copy.
 # See README.md, Testing.
 name: Tests
 
@@ -22,14 +23,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -39,7 +40,7 @@ jobs:
       # Keyed on the lockfile, which pins Playwright and so its browsers.
       - name: Cache browsers
         id: browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -56,9 +57,18 @@ jobs:
       - name: Run tests
         run: npx playwright test
 
+      # The deploy publishes the built copy, not the repo, so it gets a pass of its own.
+      - name: Build the site
+        run: python scripts/buildSite.py
+
+      - name: Test the built site
+        run: npx playwright test
+        env:
+          TEST_SITE_ROOT: _site
+
       - name: Keep the report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/

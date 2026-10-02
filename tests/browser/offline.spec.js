@@ -18,7 +18,7 @@ async function stored(page) {
 test.describe("Offline", () => {
     test.skip(({ browserName }) => browserName !== "chromium", "offline is emulated in Chromium only");
 
-    test("with the network gone, both pages load and a run carries on", async ({ page, context }) => {
+    test("with the network gone, both pages load and a run carries on", { tag: "@built" }, async ({ page, context }) => {
         await openSettings(page);
         await stored(page);
         await launchTracker(page);
@@ -43,6 +43,21 @@ test.describe("Offline", () => {
         await waitForPage(page);
         await expect(page.locator("#settings-list .setting-row").first()).toBeVisible();
         await context.setOffline(false);
+    });
+
+    // Script addresses are stamped with the version on the live site, and each
+    // release must replace a file's stored copy, not add one beside it.
+    test("a file asked for under a version stamp is stored once, without the stamp", { tag: "@built" }, async ({ page }) => {
+        await openSettings(page);
+        await stored(page);
+        const keys = () => page.evaluate(async () => {
+            const cache = await caches.open(`offline:${(await navigator.serviceWorker.ready).scope}`);
+            return (await cache.keys()).map(request => request.url);
+        });
+        const before = (await keys()).length;
+        await page.evaluate(() => Promise.all(["one", "two"].map(stampValue => fetch(`js/storageKeys.js?v=${stampValue}`))));
+        await expect.poll(async () => (await keys()).filter(url => url.includes("?"))).toEqual([]);
+        expect((await keys()).length).toBe(before);
     });
 
     test("the off switch in data/offline.json removes the worker and the stored copy", async ({ page, context }) => {
