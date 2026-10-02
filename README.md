@@ -76,8 +76,9 @@ cd mm3drTracker
 python -m http.server 8000
 ```
 
-Then open <http://localhost:8000>. Any static file server will do — there is no
-build step, no bundler, no package manager and no dependencies.
+Then open <http://localhost:8000>. Any static file server will do — the tracker
+has no build step, no bundler and no dependencies. (The tests have a few of their
+own; see [Testing](#testing).)
 
 To try it on an external device like a phone, serve it to your network instead and open the address the
 script prints, on the same Wi-Fi:
@@ -110,6 +111,62 @@ edit — nothing in `js/` needs touching. Data that does not make sense is repor
 in the browser console as the page loads, naming the file and the entry, rather
 than failing quietly.
 
+### Testing
+
+The tests run on every pull request into `develop`, and a pull request can't
+merge while they fail. Run them yourself before opening one:
+
+- **Windows:** double-click `scripts/runTests.bat`, or run `python scripts/runTests.py`
+- **macOS / Linux:** `python3 scripts/runTests.py`
+
+You need [Node.js](https://nodejs.org/) 24 or later and Python 3. The script
+installs everything else into this folder the first time: the test packages
+(pinned in `package-lock.json`, so you get the same versions CI does) and the
+browsers they drive. A full run takes a minute or two.
+
+To run one group, name it: `python scripts/runTests.py saving`. To watch the
+browsers, add `--headed`. Anything after the script's name goes to
+[`playwright test`](https://playwright.dev/docs/test-cli) unchanged.
+
+The tests are grouped by what they cover, one file each, so a failure points at
+the part that broke:
+
+| Group | Covers |
+|---|---|
+| `tests/node/` | No browser, so first and fastest: saves (every released format still loads), the logic grammar, and `saveLayout.json` and `offline.json` being up to date |
+| `loading` | Both pages load clean, every region and check in the data is drawn, and a missing file fails the way it should |
+| `settings` | Every kind of setting control, locks, the Starting Items slots, Reset to Defaults and Launch New Tracker |
+| `items` | Clicking and right-clicking slots, starting items as a floor, and a stress run of everything owned and every check ticked |
+| `logic` | Every check's color and every count against the data's own logic, settings that change logic, and implied layers |
+| `locations` | Ticking checks off, linked checks, and the two view toggles |
+| `map` | Markers and the region overlay |
+| `tooltips` | The requirements and item tooltips, on hover and pinned on a phone |
+| `header` | The phone layout's header bar and menu |
+| `saving` | Autosave, Export, Load From File, the previous run, two tabs, and refused saves |
+| `offline` | The offline copy, and its off switch |
+| `layout` | Both pages measured at every window size from a small phone to a wide monitor, and at the largest text size |
+
+Every browser test also fails if the page prints a warning or an error. The full
+set runs in Chromium; Firefox and WebKit (Safari's engine, and every browser on an
+iPhone) run a shorter pass.
+
+When a test fails, the output names the file and the step, and
+`npx playwright show-report` opens a report with a trace of each failure you can
+step through.
+
+The tests never say what a check should need. They hold the page to what the
+data's own logic says, so changing a check's logic won't break them. The few
+facts about the game they can't work out from the data live in
+`tests/fixtures/majorasMask.json`. One of those is the list of **implied
+layers** kept on purpose: a requirement on a room that, for some check inside it,
+the check's own requirement already covers, so it can never change anything for
+that check. That usually means the check sits in the wrong room, so a new one
+fails the `logic` group. If it's deliberate, add the line the failure prints to
+that file.
+
+`tests/fixtures/saves/` holds one save from every released save format, with what
+each must load as. Never edit them: they are what proves old saves still load.
+
 ### Workflow
 
 Nothing is pushed straight to `main`. Every change lands through a pull request:
@@ -135,6 +192,12 @@ never edit the same one. The next release gathers them all into the changelog.
 The file records the branch that started it, and the script won't add to a file
 another branch started: two branch names can make the same file name, like
 `feature/foo` and `feature-foo`.
+
+File names are case-sensitive on the live site, though not on Windows or macOS:
+`bow.png` and `Bow.png` are the same file on your machine and different ones once
+deployed. To change only the case of a file's name, rename it with
+`git mv old-name New-Name`; a rename in the file browser isn't seen by git. The
+tests run on Linux in CI, so a reference with the wrong case fails there.
 
 ### Versioning
 

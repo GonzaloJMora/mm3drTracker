@@ -8,7 +8,7 @@
 // threshold test, `item >= count`, where the count is a number or a setting that
 // carries one. `|` binds loosest, then `&`, then the comparison. See
 // ARCHITECTURE.md, "Logic strings".
-(function () {
+(function (root) {
     "use strict";
 
     // Every token keeps its character offset, so an error can point into the
@@ -228,7 +228,7 @@
         return annotated;
     }
 
-    window.LogicParser = {
+    const api = {
         parse,
         isSatisfied,
         annotate,
@@ -241,4 +241,6 @@
             return isSatisfied(tree, resolve);
         }
     };
-})();
+    root.LogicParser = api;
+    if (typeof module !== "undefined" && module.exports) module.exports = api;
+})(typeof window !== "undefined" ? window : globalThis);

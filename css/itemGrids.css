@@ -5,31 +5,31 @@
 /* Container housing each individual item-grid. */
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(2, max-content); 
+    grid-template-columns: repeat(2, max-content);
     gap: calc(15px * var(--ui-scale));
-    flex-shrink: 0; 
+    flex-shrink: 0;
 }
 
 /* Container housing a group of item-slot instances. */
 .item-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr); 
+    grid-template-columns: repeat(6, 1fr);
     gap: calc(10px * var(--ui-scale));
     width: 100%;
-    max-width: calc(360px * var(--ui-scale)); 
+    max-width: calc(360px * var(--ui-scale));
     margin: 0;
     background-color: #1a1a1a;
     border: calc(2px * var(--ui-scale)) solid #333;
     border-radius: calc(8px * var(--ui-scale));
     padding: calc(15px * var(--ui-scale));
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    justify-items: center; 
-    justify-content: center; 
+    justify-items: center;
+    justify-content: center;
 }
 
 /* Individual item slot */
 .item-slot {
-    position: relative; 
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;

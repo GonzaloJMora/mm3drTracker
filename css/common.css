@@ -511,8 +511,10 @@ main.awaiting-data ~ .page-loading {
     margin-bottom: 0;
 }
 
+/* On its own line: inline, a button stretches the last line of text it sits on. */
 #save-load-message .toolbar-btn,
 #autosave-warning .toolbar-btn,
 #home-screen-tip .toolbar-btn {
+    display: block;
     margin-top: 8px;
 }

@@ -1,0 +1,133 @@
+{
+  "about": "Facts about the Majora's Mask data that the tests can't work out from the data itself. A tracker for another game swaps this file and keeps the tests.",
+  "implied_layers": {
+    "about": "Every implied layer that was reviewed and kept on purpose. A layer is implied when the rest of a check's requirement already covers it, so for that check it can never change anything (TrackerDebug.impliedLayers() lists them). That is usually a check in the wrong room, but a room entered more loosely than some checks inside it need is deliberate, and those are listed here. A new implied layer fails tests/browser/logic.spec.js: move the check, or add the line the failure prints if it is deliberate. A listed one that is no longer implied fails too, and its line goes.",
+    "allowed": [
+      {
+        "region": "Deku Palace",
+        "check": "dp_butler_race",
+        "implied": "odolwa_defeated|(deku_mask&(bottle|bow|zora_mask|hookshot))"
+      },
+      {
+        "region": "Woodfall Temple",
+        "check": "wft_dark_room_stray_fairy",
+        "implied": "bow|deku_stick"
+      },
+      {
+        "region": "Woodfall Temple",
+        "check": "wft_boss_key_chest",
+        "implied": "bow|(woodfall_small_key>=1&deku_stick)"
+      },
+      {
+        "region": "Woodfall Temple",
+        "check": "wft_pre_boss_room_lower_right_bubble_stray_fairy",
+        "implied": "bow|(woodfall_small_key>=1&deku_stick)"
+      },
+      {
+        "region": "Woodfall Temple",
+        "check": "wft_pre_boss_room_upper_left_bubble_stray_fairy",
+        "implied": "bow|(woodfall_small_key>=1&deku_stick)"
+      },
+      {
+        "region": "Woodfall Temple",
+        "check": "wft_pre_boss_room_upper_right_bubble_stray_fairy",
+        "implied": "bow|(woodfall_small_key>=1&deku_stick)"
+      },
+      {
+        "region": "Woodfall Temple",
+        "check": "wft_pre_boss_room_pillar_bubble_stray_fairy",
+        "implied": "bow|(woodfall_small_key>=1&deku_stick)"
+      },
+      {
+        "region": "Woodfall Temple",
+        "check": "wft_odolwa_heart_container",
+        "implied": "bow|(woodfall_small_key>=1&deku_stick)"
+      },
+      {
+        "region": "Woodfall Temple",
+        "check": "wft_odolwa_remains",
+        "implied": "bow|(woodfall_small_key>=1&deku_stick)"
+      },
+      {
+        "region": "Snowhead Temple",
+        "check": "sht_compass_room_ice_puzzle_stray_fairy",
+        "implied": "snowhead_small_key>=1|fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)"
+      },
+      {
+        "region": "Snowhead Temple",
+        "check": "sht_main_room_2f_wall_stray_fairy",
+        "implied": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|blast_mask))"
+      },
+      {
+        "region": "Snowhead Temple",
+        "check": "sht_snow_room_bubble_stray_fairy",
+        "implied": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|blast_mask))"
+      },
+      {
+        "region": "Snowhead Temple",
+        "check": "sht_dinolfos_room_stray_fairy_1",
+        "implied": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|blast_mask))"
+      },
+      {
+        "region": "Snowhead Temple",
+        "check": "sht_dinolfos_room_stray_fairy_2",
+        "implied": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|blast_mask))"
+      },
+      {
+        "region": "Snowhead Temple",
+        "check": "sht_boss_key_chest",
+        "implied": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|blast_mask))"
+      },
+      {
+        "region": "Snowhead Temple",
+        "check": "sht_goht_heart_container",
+        "implied": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|blast_mask))"
+      },
+      {
+        "region": "Snowhead Temple",
+        "check": "sht_goht_remains",
+        "implied": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|blast_mask))"
+      },
+      {
+        "region": "Pirates' Fortress",
+        "check": "pf_interior_lower_chest",
+        "implied": "(magic_meter&goron_mask)|hookshot"
+      },
+      {
+        "region": "Pirates' Fortress",
+        "check": "pf_interior_upper_chest",
+        "implied": "(magic_meter&goron_mask)|hookshot"
+      },
+      {
+        "region": "Pirates' Fortress",
+        "check": "pf_hookshot_room_zora_egg",
+        "implied": "(magic_meter&goron_mask)|hookshot"
+      },
+      {
+        "region": "Pirates' Fortress",
+        "check": "pf_barrel_maze_zora_egg",
+        "implied": "(magic_meter&goron_mask)|hookshot"
+      },
+      {
+        "region": "Pirates' Fortress",
+        "check": "pf_lava_room_tank_chest",
+        "implied": "(magic_meter&goron_mask)|hookshot"
+      },
+      {
+        "region": "Pirates' Fortress",
+        "check": "pf_lava_room_zora_egg",
+        "implied": "(magic_meter&goron_mask)|hookshot"
+      },
+      {
+        "region": "Pirates' Fortress",
+        "check": "pf_guard_room_chest",
+        "implied": "(magic_meter&goron_mask)|hookshot"
+      },
+      {
+        "region": "Pirates' Fortress",
+        "check": "pf_guard_room_zora_egg",
+        "implied": "(magic_meter&goron_mask)|hookshot"
+      }
+    ]
+  }
+}

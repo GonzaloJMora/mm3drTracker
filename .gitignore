@@ -10,3 +10,8 @@ Thumbs.db
 *.njsproj
 *.sln
 *.swp
+
+# Test tooling (package.json is for tests only)
+node_modules/
+test-results/
+playwright-report/

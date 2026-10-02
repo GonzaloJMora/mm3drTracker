@@ -22,11 +22,18 @@ FOLDERS = ["css", "js", "data", "images"]
 ROOT_FILES = ["index.html", "tracker.html", "site.webmanifest"]
 
 
+def sort_key(path):
+    parts = path.relative_to(ROOT).parts
+    return [part.lower() for part in parts], list(parts)
+
+
 def current_files():
     # "./" is the site's own address, which serves index.html.
     files = ["./"] + [name for name in ROOT_FILES if (ROOT / name).exists()]
     for folder in FOLDERS:
-        for path in sorted((ROOT / folder).rglob("*")):
+        # Sorted the same on every machine: Python orders paths ignoring case on
+        # Windows and not on Linux, and CI would then see the list as changed.
+        for path in sorted((ROOT / folder).rglob("*"), key=sort_key):
             if path.is_file() and not path.name.startswith("."):
                 files.append(path.relative_to(ROOT).as_posix())
     return files
@@ -65,7 +72,7 @@ def main():
     lines = ["{", f'  "enabled": {json.dumps(enabled)},', '  "files": [']
     lines += [f"    {json.dumps(name)}{',' if i < len(files) - 1 else ''}" for i, name in enumerate(files)]
     lines += ["  ]", "}", ""]
-    OUTPUT.write_text("\r\n".join(lines), encoding="utf-8", newline="")
+    OUTPUT.write_text("\n".join(lines), encoding="utf-8", newline="")
     print(f"Wrote {OUTPUT.relative_to(ROOT)}: {len(files)} files.")
     return 0
 

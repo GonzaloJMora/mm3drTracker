@@ -171,7 +171,7 @@ def dump(layout):
         comma = "," if index < len(fields) - 1 else ""
         lines.append("    " + json.dumps(field, ensure_ascii=False) + comma)
     lines += ["  ]", "}", ""]
-    return "\r\n".join(lines)
+    return "\n".join(lines)
 
 
 def update(layout, widen=False):
