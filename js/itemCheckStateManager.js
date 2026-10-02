@@ -44,7 +44,7 @@
             }));
 
             // An id in two groups joins them into one location, so a click and the
-            // count can't disagree; validateCheckGroups() names it.
+            // count can't disagree; the data checks name it ("check-groups").
             (checkGroups || []).forEach(group => {
                 const ids = group.filter(id => locationOf.has(id));
                 if (ids.length < 2) return;

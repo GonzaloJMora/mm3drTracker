@@ -8,6 +8,11 @@ name: Tests
 on:
   pull_request:
     branches: [develop]
+  # Also after each merge: it re-checks develop itself, and saves the browser
+  # cache where every pull request can reuse it (a pull request's own cache is
+  # visible only to that pull request).
+  push:
+    branches: [develop]
   workflow_call:
   workflow_dispatch:
 

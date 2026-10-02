@@ -67,6 +67,29 @@ test.describe("Loading", () => {
         });
     });
 
+    // The rules themselves are tests/node/dataChecks.test.js; this is the page
+    // printing them, on both pages.
+    test("a data mistake is named on the page by its rule, and the page still works", async ({ page, allowConsole }) => {
+        // The save layout check notices the made-up slot too, as it should.
+        allowConsole.push(/Data check "grid-slots"/, /"not_an_item" — grids\./, /TrackerSave: .*saveLayout/, /slot "not_an_item" is not in it/);
+        const warnings = [];
+        page.on("console", message => { if (message.type() === "warning") warnings.push(message.text()); });
+        await page.route("**/data/config/grids.json", async route => {
+            const response = await route.fetch();
+            const grids = await response.json();
+            const first = Object.keys(grids.grids)[0];
+            grids.grids[first] = grids.grids[first].concat(["not_an_item", "", "", "", "", ""]);
+            await route.fulfill({ response, json: grids });
+        });
+        for (const address of ["index.html", "tracker.html?defaults"]) {
+            warnings.length = 0;
+            await page.goto(address);
+            await waitForPage(page);
+            expect(warnings.filter(text => text.startsWith('Data check "grid-slots"')), address).toHaveLength(1);
+            await expect(page.locator('.item-slot[data-id="not_an_item"]')).toHaveClass(/empty-slot/);
+        }
+    });
+
     test("a core file that won't load shows the copyable error, not a blank page", async ({ page, allowConsole }) => {
         allowConsole.push(/./);
         await page.route("**/data/Items.json", route => route.fulfill({ status: 404, body: "" }));
