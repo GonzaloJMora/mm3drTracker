@@ -1,0 +1,79 @@
+name: Report a bug
+description: Something in the tracker doesn't work, or looks wrong.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. A few tips that make a report easy to fix:
+
+        - **One problem per report.** Two problems in one report tend to get one fix.
+        - **Say what you did, step by step,** from opening the page to the problem.
+        - **Say what you expected,** if it isn't obvious.
+        - **A screenshot helps** with anything that looks wrong. Drag it into the box below.
+
+        If you came here from the tracker's **Report a bug** link, the boxes further
+        down are already filled in. You can change or delete anything in them before
+        you submit.
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+      placeholder: |
+        1. Opened the tracker with Shuffle Songs set to Anywhere
+        2. Clicked the Bow
+        3. Expected the Swamp Shooting Gallery to turn green, but it stayed red
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: At the bottom left of the page.
+      placeholder: v0.16.0
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: The settings page, or the tracker.
+      placeholder: Tracker
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      description: The app you use the tracker in, and the device.
+      placeholder: Safari on an iPhone 15, or Chrome on Windows
+  - type: input
+    id: screen
+    attributes:
+      label: Window size
+      description: Roughly how big the window was. A lot of the layout depends on it.
+      placeholder: Full screen on a 1920x1080 monitor
+  - type: input
+    id: text_size
+    attributes:
+      label: Text size
+      description: Whether your browser or phone is set to larger text than normal.
+      placeholder: Normal
+  - type: input
+    id: installed
+    attributes:
+      label: Installed or in a tab
+      description: Whether you added the tracker to your Home Screen, or use it in a browser tab.
+      placeholder: In a browser tab
+  - type: textarea
+    id: save_code
+    attributes:
+      label: Save code
+      description: |
+        Lets us open the tracker exactly as you had it. In the tracker, ≡ (or the
+        toolbar on a computer) → Export → Copy Code, then paste it here. It holds your
+        settings and progress, and nothing personal.
+      render: text
+  - type: textarea
+    id: messages
+    attributes:
+      label: Recent warnings and errors
+      description: What the page reported just before the link was used. Filled in by the tracker; leave it empty otherwise.
+      render: text

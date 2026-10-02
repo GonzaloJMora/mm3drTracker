@@ -119,6 +119,12 @@ test.describe("Loading", () => {
         await expect(error).toBeVisible();
         await expect(error).toContainText("Items.json");
         await expect(error).toContainText(version);
+        // The bug link still works, and carries what went wrong.
+        const link = page.locator('#app-footer a[data-feedback="bug"]');
+        await expect(link).toBeVisible();
+        await link.focus();
+        const address = new URL(await link.getAttribute("href"));
+        expect(address.searchParams.get("messages")).toContain("Items.json");
     });
 
     test("a region file that won't load costs only that region, with a banner", async ({ page, allowConsole }) => {
