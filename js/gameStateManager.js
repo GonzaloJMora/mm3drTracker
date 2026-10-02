@@ -8,25 +8,16 @@ window.GameState = {
     // The tokens that read cleanly, each with the item ids it looks at.
     tokenSources: [],
     config: null,
-    // The settings page runs init() again on every change to preview the starting
-    // items, so the data is checked on the first run only.
-    dataChecked: false,
 
-    // What kind of slot an id is. Read from config alone rather than this.config,
-    // so it works before init() — the settings grants need it that early.
+    // The slot model is DataModel's, so the data checks and the tests read slots
+    // exactly as the page does. Config alone, so it works before init(): the
+    // settings grants need it that early.
     slotKind(config, slotId) {
-        if (Object.prototype.hasOwnProperty.call(config.progressions, slotId)) return "progression";
-        const rule = Object.prototype.hasOwnProperty.call(config.item_counts, slotId)
-            ? config.item_counts[slotId]
-            : undefined;
-        if (Number.isInteger(rule)) return "counter";
-        if (this.digitIds(config).includes(slotId)) return "digit";
-        return "toggle";
+        return window.DataModel.slotKind(config, slotId);
     },
 
-    // The slots that each hold a digit. Read from config alone, like slotKind().
     digitIds(config) {
-        return (config.digit_slots && Array.isArray(config.digit_slots.ids)) ? config.digit_slots.ids : [];
+        return window.DataModel.digitIds(config);
     },
 
     // A slot's current value, read back out of items: a stage from -1 (not owned)
@@ -43,33 +34,14 @@ window.GameState = {
         return stage;
     },
 
-    // Every value a slot can hold, whatever the settings: a stage from -1 (not
-    // owned) or a count from 0, up to the last stage, the counter's cap or the
-    // highest digit. Read from config alone, like slotKind(), so the settings and the
-    // save layout check can ask before init().
+    // Every value a slot can hold, whatever the settings, and what a settings grant
+    // means for its slot: DataModel's, like slotKind().
     slotBounds(config, slotId) {
-        const kind = this.slotKind(config, slotId);
-        const counted = kind === "counter" || kind === "digit";
-        let high = 0;
-        if (kind === "progression") high = config.progressions[slotId].length - 1;
-        else if (kind === "counter") high = config.item_counts[slotId];
-        else if (kind === "digit") high = config.digit_slots.max_value;
-        return { kind, low: counted ? 0 : -1, high };
+        return window.DataModel.slotBounds(config, slotId);
     },
 
-    // What a grant from settings.json means for its slot: the stage a progression's
-    // item id stands for, a count or digit as it is, true as a plain item's 0. Null
-    // when the grant doesn't fit that kind of slot. Config alone, like slotBounds().
     grantedValue(config, slotId, granted) {
-        const kind = this.slotKind(config, slotId);
-        if (kind === "progression") {
-            const stage = config.progressions[slotId].indexOf(granted);
-            return stage >= 0 ? stage : null;
-        }
-        if (kind === "counter" || kind === "digit") {
-            return Number.isInteger(granted) && granted > 0 ? granted : null;
-        }
-        return granted === true ? 0 : null;
+        return window.DataModel.grantedValue(config, slotId, granted);
     },
 
     // The values clicking can move a slot through. A starting item raises the
@@ -95,16 +67,9 @@ window.GameState = {
         return this.grantedValue(this.config, slotId, granted);
     },
 
-    // Every slot the grids draw, once each, in grid order. Config alone, so the
-    // settings can ask before init(); a grid that isn't a list is skipped, and
-    // itemGrids.js names it.
+    // Every slot the grids draw, once each, in grid order.
     gridSlots(config = this.config) {
-        const ids = new Set();
-        Object.values((config && config.grids) || {}).forEach(grid => {
-            if (!Array.isArray(grid)) return;
-            grid.forEach(id => { if (typeof id === "string" && id !== "") ids.add(id); });
-        });
-        return [...ids];
+        return window.DataModel.gridSlots(config);
     },
 
     // Slot id -> its value, for a save. Values rather than items, which hold one
@@ -120,43 +85,10 @@ window.GameState = {
     // slot values, applied on top and kept between each slot's floor and its top.
     init(itemsList, configData, startingState = {}, saved = null) {
         this.config = configData;
-        const firstRun = !this.dataChecked;
-
-        if (firstRun) {
-            this.dataChecked = true;
-
-            // A slot in both would be treated as a progression but handed the counter
-            // rule as its chain, so the click silently does nothing — quiet enough to
-            // be worth naming.
-            Object.keys(this.config.progressions).forEach(slotId => {
-                if (Object.prototype.hasOwnProperty.call(this.config.item_counts, slotId)) {
-                    console.warn(
-                        `GameState: "${slotId}" is in both progressions and item_counts in config/inventory.json. ` +
-                        `Those are alternatives, not a combination, and clicking that slot will not work.`
-                    );
-                }
-            });
-        }
-
-        itemsList.forEach(item => {
-            this.items[item.id] = false;
-        });
-
-        Object.keys(this.config.progressions).forEach(slotId => {
-            this.config.progressions[slotId].forEach(itemId => {
-                this.items[itemId] = false;
-            });
-        });
-
-        Object.keys(this.config.item_counts).forEach(slotId => {
-            this.items[slotId] = 0;
-        });
-
-        this.digitIds(this.config).forEach(slotId => {
-            this.items[slotId] = 0;
-        });
-
-        this.buildTokens(itemsList, firstRun);
+        // A slot in both progressions and item_counts, or a malformed token, is named
+        // by the data checks at load ("progressions-or-counts", "logic-tokens-defined").
+        Object.assign(this.items, window.DataModel.emptyItemState(this.config, itemsList));
+        this.buildTokens(itemsList);
 
         this.floors = {};
         Object.keys(startingState).forEach(slotId => {
@@ -229,92 +161,12 @@ window.GameState = {
     },
 
     // Reads config/logicTokens.json into tokenSources: each token that can be worked
-    // out, with the item ids it looks at. A token with a fault warns once and still
-    // exists, reading 0 or false, so logic that names it stays parseable; one that
-    // has no usable id or kind is left out.
-    buildTokens(itemsList, report) {
-        const warn = (id, problem) => {
-            if (report) console.warn(`GameState: token "${id}" in config/logicTokens.json ${problem}`);
-        };
-        const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
-        const defs = this.config.tokens;
-        // Groups and tags say what an item means, where the grids only say where a
-        // slot is drawn: moving an item to another panel must not change a count.
-        const groups = this.config.item_groups || {};
+    // out, with the item ids it looks at (DataModel.readTokens; what's wrong with
+    // one is the data checks' to say).
+    buildTokens(itemsList) {
         const settings = window.SettingsState;
-
-        this.tokenSources = [];
-        if (!Array.isArray(defs)) {
-            if (report) console.warn('GameState: config/logicTokens.json has no "tokens" list, so no token has a value.');
-            this.computeTokens();
-            return;
-        }
-
-        const seen = new Set();
-        defs.forEach((def, index) => {
-            try {
-                if (!def || typeof def !== "object" || typeof def.id !== "string" || def.id === "" || typeof def.name !== "string") {
-                    if (report) console.warn(`GameState: tokens[${index}] in config/logicTokens.json needs a string "id" and "name", and is skipped.`);
-                    return;
-                }
-                if (seen.has(def.id)) return warn(def.id, "is listed twice, and the second is skipped.");
-                if (has(this.items, def.id)) return warn(def.id, "has the id of an item, which would replace it in every check, and is skipped.");
-                seen.add(def.id);
-
-                let ids = [];
-                if (def.kind === "count" || def.kind === "any") {
-                    if (has(def, "group") === has(def, "tag")) {
-                        warn(def.id, 'needs exactly one of "group" or "tag", so it reads as empty.');
-                    } else if (has(def, "group")) {
-                        const group = has(groups, def.group) ? groups[def.group] : undefined;
-                        if (group === undefined) {
-                            warn(def.id, `names the group "${def.group}", which is not in item_groups, so it reads as empty.`);
-                        } else if (!Array.isArray(group)) {
-                            warn(def.id, `names the group "${def.group}", which is not a list of item ids in item_groups, so it reads as empty.`);
-                        } else {
-                            ids = group;
-                            const unknown = group.filter(id => typeof id !== "string" || !has(this.items, id));
-                            if (unknown.length) {
-                                warn(def.id, `reads the group "${def.group}", whose ${unknown.map(id => JSON.stringify(id)).join(", ")} ` +
-                                    `${unknown.length === 1 ? "is not an item" : "are not items"}, so ${unknown.length === 1 ? "it counts" : "they count"} as never owned.`);
-                            }
-                        }
-                    } else {
-                        ids = itemsList.filter(item => item[def.tag]).map(item => item.id);
-                        if (!ids.length) warn(def.id, `names the tag "${def.tag}", which no item in Items.json has, so it reads as empty.`);
-                    }
-                } else if (def.kind === "sum") {
-                    const terms = Array.isArray(def.terms) ? def.terms : [];
-                    if (!terms.length) warn(def.id, 'needs a non-empty "terms" list, so it reads as 0.');
-                    def = Object.assign({}, def, { terms: terms.filter(term => {
-                        if (term && typeof term.setting === "string") {
-                            if (!settings || typeof settings.get(term.setting) !== "number") {
-                                warn(def.id, `has a term naming "${term.setting}", which is not a number setting, so that term counts as 0.`);
-                            }
-                            return true;
-                        }
-                        if (term && typeof term.item === "string" && has(this.items, term.item)
-                            && (term.per === undefined || (Number.isInteger(term.per) && term.per >= 1))) {
-                            return true;
-                        }
-                        warn(def.id, `has a term that is neither a setting nor a known item with a "per" of 1 or more (${JSON.stringify(term)}), and it is skipped.`);
-                        return false;
-                    }) });
-                } else if (def.kind === "distinct") {
-                    const source = this.config[def.slots];
-                    if (source && Array.isArray(source.ids) && source.ids.length) ids = source.ids;
-                    else if (source && Array.isArray(source.ids)) warn(def.id, `names "${def.slots}" as its slots, whose "ids" list is empty, so it reads as false.`);
-                    else warn(def.id, `names "${def.slots}" as its slots, which has no "ids" list, so it reads as false.`);
-                } else {
-                    return warn(def.id, `has the kind ${JSON.stringify(def.kind)}, which is not count, any, sum or distinct, and is skipped.`);
-                }
-
-                this.tokenSources.push({ def, ids });
-            } catch (error) {
-                console.error(`GameState: could not read token ${JSON.stringify(def && def.id)}`, error);
-            }
-        });
-
+        const isNumberSetting = id => Boolean(settings) && typeof settings.get(id) === "number";
+        this.tokenSources = window.DataModel.readTokens(this.config, itemsList, this.items, isNumberSetting).sources;
         this.computeTokens();
     },
 

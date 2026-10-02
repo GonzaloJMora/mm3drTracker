@@ -133,7 +133,7 @@ the part that broke:
 
 | Group | Covers |
 |---|---|
-| `tests/node/` | No browser, so first and fastest: saves (every released format still loads), the logic grammar, and `saveLayout.json` and `offline.json` being up to date |
+| `tests/node/` | No browser, so first and fastest: every data rule (one test each, named after the rule, plus a made-up mistake each rule has to catch), saves (every released format still loads), the logic grammar, the site build, and `saveLayout.json` and `offline.json` being up to date |
 | `loading` | Both pages load clean, every region and check in the data is drawn, and a missing file fails the way it should |
 | `settings` | Every kind of setting control, locks, the Starting Items slots, Reset to Defaults and Launch New Tracker |
 | `items` | Clicking and right-clicking slots, starting items as a floor, and a stress run of everything owned and every check ticked |

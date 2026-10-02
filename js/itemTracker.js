@@ -7,15 +7,6 @@
         try {
             const itemMap = window.ItemGrids.itemMap(items);
 
-            // Before anything is drawn, so the diagnosis lands ahead of its symptom.
-            // Guarded because it runs before GameState.init — a throw here would leave
-            // the item state empty and make every logic token look unknown.
-            try {
-                window.ItemGrids.validate(config, itemMap);
-            } catch (error) {
-                console.error("itemTracker: could not validate the grid slots", error);
-            }
-
             // A settings failure costs the starting items, not the grids: the tracker
             // still draws, just from empty.
             let startingState = {};

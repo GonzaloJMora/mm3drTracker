@@ -711,44 +711,56 @@ Every one of these is a data-authoring mistake that would otherwise fail
 silently, or loudly in the wrong place. The rule they share: **say what is wrong,
 once, at load, and keep the rest of the app up.**
 
+**Most of them are named rules.** Every check about the files themselves lives in
+`js/dataChecks.js`, under the id in the table's "Where" column (`grid-slots`,
+`check-ids-unique`, and so on). `dataLoader.js` runs them once the data is read and
+prints each problem as `Data check "<id>": …`; the file that draws the data only
+recovers (an empty slot, a skipped region) and says nothing. The data is read by
+`js/dataModel.js` (the config merged, the sub-region trees flattened, the regions
+that can render, the slot model, the logic tokens, the flags and helpers by name),
+which the tests use too, so `tests/node/dataChecks.test.js` holds the real data to
+every rule without a browser, and proves each rule catches a made-up mistake. A new
+rule goes in `dataChecks.js` with an example in that test. Rows naming another file
+are about the running page rather than the files, and stay where they happen.
+
 | Check | Where | On failure |
 |---|---|---|
 | A core file (`config.json` or a file it lists, `Items.json`, `manifest.json`, `settings.json`) cannot be fetched, is not valid JSON, or holds the wrong shape: a config file that is not an object, an `Items.json` or `manifest.json` that is not a list, or a `settings.json` with no `sections` list | `dataLoader.js` | Nothing can render, so `<main>`'s contents are replaced with `#tracker-load-error` — the cause, naming the file, the version and the page URL, in a selectable block meant to be pasted into a bug report. |
-| An `Items.json` entry is not an object with an `id` | `dataLoader.js` | One warning naming the entries by position, which are dropped. Every file that reads the items would otherwise throw on it; a grid slot naming a dropped item draws empty, as any unknown item does. |
+| An `Items.json` entry is not an object with an `id` | `item-ids` | One warning naming the entries by position, which are dropped. Every file that reads the items would otherwise throw on it; a grid slot naming a dropped item draws empty, as any unknown item does. |
 | `version.json` cannot be read, or has no `x.y.z` version | `dataLoader.js` | One warning. The footer stays empty and a load-error report says `version: unknown`; nothing else reads it. |
 | A region file cannot be read, or holds something other than a region object (such as `null`) | `dataLoader.js` | That region is dropped and the rest load. Names of the dropped files land on `TrackerData.failedRegions` and in a `#tracker-region-warning` banner above the tracker. |
-| A grid slot names an item that is not in `Items.json` | `itemGrids.js` → `validate()` | One warning naming grid, index, and for a progression the stage number. The slot draws as an `.empty-slot` so the six-column alignment holds and the other grids still render. |
-| A logic string can't be parsed | `logicParser.js`, then `locationTracker.js` → `validateLogicTokens()` | The parser names the string and what is wrong with it; the validator names every region, sub-region, check, flag or helper using it. Anything it gates reads unreachable. |
-| A logic string uses a token that matches nothing in the item state, or a name after `>=` that is not a dropdown setting carrying values | `locationTracker.js` → `validateLogicTokens()` | One warning per kind, naming each name and every check using it, plus the right stage id for a progression slot, or a note that a setting only goes after `>=`. The check resolves to `false`. |
-| `region_name` is missing, blank, not text, or duplicated | `locationTracker.js` | The region is not rendered and is named in a warning by its file, since the name can't identify it; a duplicate also names the file that kept the name. Spaces around a name are trimmed by `dataLoader.js` first, with a warning, so `"Name "` counts as a duplicate of `"Name"`. The region gets no marker from `locationMap.js`. A duplicate is the nastier case: both copies resolve to the one accordion that rendered, so the second marker would sit at its own coordinates and open the other region's checks. |
-| `item_checks` is missing, or is not a list | `locationTracker.js` | The region is skipped and named in the same warning as a bad `region_name`. An empty list is *not* an error — a region whose checks are not written yet renders as an empty accordion. A region that lists only `subregions` is fine: resolving the tree gives it an `item_checks` before this runs. |
-| A region's or sub-region's `item_checks` or `subregions` is not a list | `dataLoader.js` | That list is dropped and named by its path; the node's other checks, and the rest of the region, still load. A region left with no `item_checks` list at all is then rejected by `locationTracker.js`, as above. |
-| An entry in an `item_checks` list is not a check | `dataLoader.js` | That entry is dropped and named by its position; the rest of the list still loads. |
-| A sub-region's `logic` is not text (a number, a list, an object) | `dataLoader.js` | Named by its path. It stays in the chain, so LogicParser rejects it and every check under it reads unreachable, as a bad region or check `logic` does; dropping it would let those checks turn green early. `null` and `""` mean no requirement. |
-| A sub-region has no `name` | `dataLoader.js` | Named by position (`subregions[3]`) and still resolved. The name is never rendered — it exists so a warning can point at the one node that put a wrong value on thirty checks. |
-| A sub-region holds no checks and no sub-regions | `dataLoader.js` | Named, and does nothing. Usually a group whose checks were moved out from under it. |
-| A check sets `vanilla_when: false` and also names a `vanilla_item` | `dataLoader.js` | The item is dropped and the contradiction named. `false` means randomized, so the item could never show. |
-| One item is demanded twice down a check's chain | `locationTracker.js` | Named once per pair of layers, not once per check under them. A bare token is a truthiness test, so a second demand for it changes nothing and the check turns green a key early — it fails open, which is why it warns. A counted item asks for the running total instead (`key>=2`). A token inside an `|` is an alternative rather than a demand and is not counted. |
+| A grid slot names an item that is not in `Items.json` | `grid-slots` | One warning naming grid, index, and for a progression the stage number. The slot draws as an `.empty-slot` so the six-column alignment holds and the other grids still render. |
+| A logic string can't be parsed | `logicParser.js`, then `logic-parses` | The parser names the string and what is wrong with it; the validator names every region, sub-region, check, flag or helper using it. Anything it gates reads unreachable. |
+| A logic string uses a token that matches nothing in the item state, or a name after `>=` that is not a dropdown setting carrying values | `logic-tokens-known`, `logic-counts` | One warning per kind, naming each name and every check using it, plus the right stage id for a progression slot, or a note that a setting only goes after `>=`. The check resolves to `false`. |
+| `region_name` is missing, blank, not text, or duplicated | `region-accepted` (and `region-names` for the trimming) | The region is not rendered and is named in a warning by its file, since the name can't identify it; a duplicate also names the file that kept the name. Spaces around a name are trimmed by `dataLoader.js` first, with a warning, so `"Name "` counts as a duplicate of `"Name"`. The region gets no marker from `locationMap.js`. A duplicate is the nastier case: both copies resolve to the one accordion that rendered, so the second marker would sit at its own coordinates and open the other region's checks. |
+| `item_checks` is missing, or is not a list | `region-accepted` | The region is skipped and named in the same warning as a bad `region_name`. An empty list is *not* an error — a region whose checks are not written yet renders as an empty accordion. A region that lists only `subregions` is fine: resolving the tree gives it an `item_checks` before this runs. |
+| A region's or sub-region's `item_checks` or `subregions` is not a list | `region-trees` | That list is dropped and named by its path; the node's other checks, and the rest of the region, still load. A region left with no `item_checks` list at all is then rejected by `locationTracker.js`, as above. |
+| An entry in an `item_checks` list is not a check | `region-trees` | That entry is dropped and named by its position; the rest of the list still loads. |
+| A sub-region's `logic` is not text (a number, a list, an object) | `region-trees` | Named by its path. It stays in the chain, so LogicParser rejects it and every check under it reads unreachable, as a bad region or check `logic` does; dropping it would let those checks turn green early. `null` and `""` mean no requirement. |
+| A sub-region has no `name` | `region-trees` | Named by position (`subregions[3]`) and still resolved. The name is never rendered — it exists so a warning can point at the one node that put a wrong value on thirty checks. |
+| A sub-region holds no checks and no sub-regions | `region-trees` | Named, and does nothing. Usually a group whose checks were moved out from under it. |
+| A check sets `vanilla_when: false` and also names a `vanilla_item` | `region-trees` | The item is dropped and the contradiction named. `false` means randomized, so the item could never show. |
+| One item is demanded twice down a check's chain | `logic-demanded-once` | Named once per pair of layers, not once per check under them. A bare token is a truthiness test, so a second demand for it changes nothing and the check turns green a key early — it fails open, which is why it warns. A counted item asks for the running total instead (`key>=2`). A token inside an `|` is an alternative rather than a demand and is not counted. |
 | `locationFlags.json` can't be read, or has no `flags` list; the same for `logicHelpers.json` and `helpers` | `dataLoader.js` | One error, and a `#tracker-logic-warning` banner above the tracker naming the file. Every flag or helper in that file reads false and the tracker still loads, the way a missing region file doesn't stop it. The unknown-token warning then lists those names as matching nothing, and says which file failed to load, since it is the likelier cause. |
-| A flag's `at` names a check or region that isn't rendered, or names both or neither | `locationTracker.js` | Named, and the flag reads false. Every check using it stays red, which is why it warns rather than failing quietly. |
-| A helper has no `logic` | `locationTracker.js` | Named, and the helper reads false. |
-| A flag's or helper's id is already an item or derived token | `locationTracker.js` | Named, and the entry is ignored. Logic reads the item, since a name checked first would replace every requirement for it. |
-| A flag or helper is declared twice (in one file or across both), has no `name`, or has an id not written like a token | `locationTracker.js` | Named. The first declaration counts, flags before helpers; a missing name shows the id, and a malformed id is never registered. |
-| Flags and helpers need each other in a loop | `locationTracker.js` | Named with the path around the loop. That path reads false; an alternative outside the loop can still meet the token. |
-| A region's sub-region tree throws while being walked | `dataLoader.js` | Only that region is affected: it keeps whatever `item_checks` it listed, and the error names it. |
+| A flag's `at` names a check or region that isn't rendered, or names both or neither | `flags-and-helpers` | Named, and the flag reads false. Every check using it stays red, which is why it warns rather than failing quietly. |
+| A helper has no `logic` | `flags-and-helpers` | Named, and the helper reads false. |
+| A flag's or helper's id is already an item or derived token | `flags-and-helpers` | Named, and the entry is ignored. Logic reads the item, since a name checked first would replace every requirement for it. |
+| A flag or helper is declared twice (in one file or across both), has no `name`, or has an id not written like a token | `flags-and-helpers` | Named. The first declaration counts, flags before helpers; a missing name shows the id, and a malformed id is never registered. |
+| Flags and helpers need each other in a loop | `flags-and-helpers` | Named with the path around the loop. That path reads false; an alternative outside the loop can still meet the token. |
+| A region's sub-region tree throws while being walked | `dataModel.js`, reported by `dataLoader.js` | Only that region is affected: it keeps whatever `item_checks` it listed, and the error names it. |
 | A region file is readable, but something inside it throws while rendering | `locationTracker.js` | That one region is skipped and named, with the thrown message; every other region still renders. The render call sits in its own try/catch inside the loop for exactly this. |
-| A check has no `id` | `locationTracker.js` | The region is not rendered, and is named with the checks missing one. A save keeps a check by its id, so an id-less check couldn't be saved, and every one of them would tick together. |
-| Two checks share an `id` | `locationTracker.js` → `validateCheckIds()` | One warning naming the id and the regions using it. Nothing is skipped — a repeat is *legal*, it is how `check_groups` works, so the tracker cannot tell a typo from a group. The symptom is a check ticking itself off somewhere else and the progress total quietly shrinking. |
-| A check has no `name` | `locationTracker.js` → `validateCheckNames()` | One warning naming the check. It draws as a blank row that can still be ticked. |
-| A `check_groups` entry is not a list of at least two check ids, or `check_groups` itself is not a list | `dataLoader.js` | One warning naming the group, which is dropped: its checks tick off and count on their own. Checked before anything reads the groups, because a group that throws takes the check click and the progress box down with it. |
-| A `check_groups` id matches no check on the page, or is in two groups | `locationTracker.js` → `validateCheckGroups()` | One warning per id. An unmatched id leaves its location unlinked; an id in two groups merges both groups into one location, so every id in either ticks off and counts together. |
-| A region has no `map_coordinates`, or its `xPercent` and `yPercent` aren't numbers from 0 to 100 | `locationMap.js` → `validateMarkerCoordinates()` | One warning naming the region. It still renders its accordion and still counts, but it gets no marker — and on desktop the accordion list is `display: none`, so its checks are unreachable from anywhere. |
+| A check has no `id` | `region-accepted` | The region is not rendered, and is named with the checks missing one. A save keeps a check by its id, so an id-less check couldn't be saved, and every one of them would tick together. |
+| Two checks share an `id` | `check-ids-unique` | One warning naming the id and the regions using it. Nothing is skipped — a repeat is *legal*, it is how `check_groups` works, so the tracker cannot tell a typo from a group. The symptom is a check ticking itself off somewhere else and the progress total quietly shrinking. |
+| A check has no `name` | `check-names` | One warning naming the check. It draws as a blank row that can still be ticked. |
+| A `check_groups` entry is not a list of at least two check ids, or `check_groups` itself is not a list | `check-group-shape` | One warning naming the group, which is dropped: its checks tick off and count on their own. Checked before anything reads the groups, because a group that throws takes the check click and the progress box down with it. |
+| A `check_groups` id matches no check on the page, or is in two groups | `check-groups` | One warning per id. An unmatched id leaves its location unlinked; an id in two groups merges both groups into one location, so every id in either ticks off and counts together. |
+| A region has no `map_coordinates`, or its `xPercent` and `yPercent` aren't numbers from 0 to 100 | `map-coordinates` | One warning naming the region. It still renders its accordion and still counts, but it gets no marker — and on desktop the accordion list is `display: none`, so its checks are unreachable from anywhere. |
 | A `map_overlay.text_sizes` rung has no `font_size` or `padding`, or one that isn't valid CSS once multiplied by the overlay's scale (`0` and `small` are valid alone but not there), or the list is missing, isn't a list, or is empty | `locationMap.js` | One warning naming the rungs, which are skipped, and one more when none is left. The overlay is then fitted once at the stylesheet's text size, which still grows with the map, so a region too big for the box scrolls rather than being cut off. |
 | `config.map` is missing or unusable, or building the map throws | `locationMap.js` | One error, and a `#tracker-map-warning` banner above the tracker saying the desktop location view is missing. No map is built; the item tracker and the phone layout's region list still work. |
 | The map image's real size differs from `config.map`'s | `locationMap.js` | One warning once the image loads. The map still draws, but every marker drifts off its spot until `config/map.json` is corrected. |
-| A token in `logicTokens.json` is malformed: no id or name, a repeated id, the id of an item, an unknown kind, a group or tag or slot list that names nothing, an `item_groups` group that is not a list, a `sum` term that is neither a number setting nor a known item | `gameStateManager.js` | One warning per problem, naming the token. An unusable token is left out; one whose source is missing still exists and reads 0 or false. A tag no item carries is one of these: its token reads 0 until it is fixed. A token that still throws while being worked out reads 0 or false and is named once, so the state change is still announced. |
-| An `item_groups` group names an id that is not an item | `gameStateManager.js` | One warning per token reading the group. That id counts as never owned. |
-| A slot appears in both `progressions` and `item_counts` | `gameStateManager.js` | Warns; the click handler would silently do nothing. |
+| A token in `logicTokens.json` is malformed: no id or name, a repeated id, the id of an item, an unknown kind, a group or tag or slot list that names nothing, an `item_groups` group that is not a list, a `sum` term that is neither a number setting nor a known item | `logic-tokens-defined` | One warning per problem, naming the token. An unusable token is left out; one whose source is missing still exists and reads 0 or false. A tag no item carries is one of these: its token reads 0 until it is fixed. A token that still throws while being worked out reads 0 or false and is named once, so the state change is still announced. |
+| An `item_groups` group names an id that is not an item | `logic-tokens-defined` | One warning per token reading the group. That id counts as never owned. |
+| A slot appears in both `progressions` and `item_counts` | `progressions-or-counts` | Warns; the click handler would silently do nothing. |
 | The starting items give a slot a value it can't start at | `gameStateManager.js` → `init` | One warning naming the slot. It starts empty. |
 | An entry in `settings.json` is malformed: a missing or repeated id, an unknown `class`, a default that is not one of its values, a grant on something that is not a grid slot or with a value that slot cannot take, a lock whose `when` is malformed or names another locked setting, a `starting_max` on anything but a counter, a dropdown that gives some options a `value` but not others | `settingsState.js` | One warning per problem, naming the entry and what is ignored because of it. A bad setting is left out, a bad option, grant or lock is ignored, and every other setting still loads. |
 | A section's `view` is neither `list` nor `item_grids`, or a second section is `item_grids` | `settingsState.js` | One warning. That section is listed in the settings panel. |
@@ -761,25 +773,24 @@ once, at load, and keep the rest of the app up.**
 | A handed-over save names a slot the grids don't have, has no number for one, or marks a check this tracker doesn't show | `gameStateManager.js`, `itemCheckStateManager.js` | One warning each, naming them. They're left out; a slot value past its floor or top is kept inside them without a warning. |
 | A handed-over pick names no setting, or a value its setting can't take — the data changed since it was picked, or the storage was edited | `settingsState.js` | One warning per pick, in the same report as the problems in `settings.json`. That setting keeps its default and the rest still apply. |
 | A check's `vanilla_when` is malformed or names an unknown setting or value | `locationTracker.js` → `validateVanillaClauses()` | One warning per check. The clause never matches, so the check shows as randomized. |
-| A check's `vanilla_item` is not text, is written like an id (lowercase and underscores) but matches no item, or sits on a check with no `vanilla_when` | `locationTracker.js` → `validateVanillaItems()` | One warning per check. The tooltip leaves the "Vanilla:" line out; plain text is always accepted, since most vanilla contents are not tracked items. |
+| A check's `vanilla_item` is not text, is written like an id (lowercase and underscores) but matches no item, or sits on a check with no `vanilla_when` | `vanilla-items` | One warning per check. The tooltip leaves the "Vanilla:" line out; plain text is always accepted, since most vanilla contents are not tracked items. |
 | Checks that are one location — a `check_group`, or a repeated id — have different `vanilla_when` or different `vanilla_item` | `locationTracker.js` → `validateVanillaAgreement()` | One warning per set, for each field that disagrees. Both are compared as written, not by what they match right now, so the disagreement shows under any settings. |
 | A `legend` entry is missing its `status` or `label`, or names a status `common.css` pairs no color with | `locationLegend.js` | One warning naming the entry, which is not drawn. The check asks CSS rather than a list, so status names still live only in `common.css`. |
 
 Three rules worth keeping if you add more:
 
-- **A diagnostic must never be the thing that breaks the page.** `ItemGrids.validate()`
-  runs before `GameState.init()`, so anything it throws also leaves the item state
-  empty — which then makes `validateLogicTokens()` report every token in every
-  region as unknown. It is called inside its own try/catch for that reason, and so
-  is every validator after it.
-- **Show a validator only what rendered.** Every validator in `locationTracker.js`
-  is handed the regions that made it onto the page, not
-  `TrackerData.regions`. Both directions matter. A rejected region is not on screen,
-  so nothing said about it can come true, and it has already been named once — a
-  region dropped for a duplicate `region_name` is a near-copy of one that rendered,
-  so the full list would report every check inside it as a duplicate id. And it is
-  precisely the malformed regions that make a validator throw, so handing one the
-  full list means a single bad file costs you the diagnosis of every other file too.
+- **A diagnostic must never be the thing that breaks the page.** Each rule in
+  `dataChecks.js` runs in its own try/catch, and a rule that throws becomes a
+  finding of its own; the checks still left on the page are each in their own
+  try/catch too. They run ahead of `GameState.init()` and the first sweep, so a
+  throw would otherwise cost those as well.
+- **Judge only what can render.** The region rules look at the regions that pass
+  `DataModel.acceptRegions()`, the same ones `locationTracker.js` draws, not every
+  file. A rejected region is not on screen, so nothing said about it can come true,
+  and it has already been named once: a region dropped for a duplicate
+  `region_name` is a near-copy of one that rendered, so the full list would report
+  every check inside it as a duplicate id. And it is the malformed regions that
+  make a check throw, so one bad file would cost the diagnosis of every other.
 - **Degrade to a hole, not to a halt.** A bad slot draws empty, a bad region is
   skipped, a bad region file is dropped, a region that throws costs only itself.
   `regionsRendered`, every validator and the first `evaluateAllRegions()` sweep are
@@ -887,18 +898,19 @@ A counter slot (`item_counts`) is the other way round: its slot id is the item,
 holding a number. Used bare it is truthy once it is above zero, so `key` means "at
 least one" and `token>=30` is the explicit form.
 
-**`validateLogicTokens()` runs once at load** and warns to the console about any
-token that matches nothing in `GameState.items`, naming the checks that use it.
-Without it a typo, or a slot id used where a stage id was meant, resolves to
-`false` forever with nothing said — the check just never turns green and it
-reads like bad region logic. For a progression slot it also suggests the right
-stage id. It sees only the regions that rendered, for the reasons in §8.
+**The `logic-tokens-known` rule** names any token that matches nothing in the item
+state, with the checks that use it. Without it a typo, or a slot id used where a
+stage id was meant, resolves to `false` forever with nothing said — the check just
+never turns green and it reads like bad region logic. For a progression slot it
+also suggests the right stage id. It sees only the regions that can render, for the
+reasons in §8.
 
 It walks the parsed tree rather than the text, because only the tree knows which
 side of `>=` a name is on. A setting used as an item is named with a note that
 settings only go after `>=`, and a name after `>=` that is not a dropdown carrying
-values is named too. A string that fails to parse is named once more, with every
-place that uses it, since the parser names only the string.
+values is named by `logic-counts`. A string that fails to parse is named once more
+by `logic-parses`, with every place that uses it, since the parser names only the
+string.
 
 ## 9b. Saving
 

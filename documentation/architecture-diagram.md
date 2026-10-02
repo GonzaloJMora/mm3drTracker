@@ -83,7 +83,8 @@ flowchart LR
 ### Who reads what
 
 Nothing reads `data/` but `dataLoader.js`, and every consumer waits for it through
-`TrackerData.onReady()`.
+`TrackerData.onReady()`. It reads the files through `dataModel.js` and holds them to
+every rule in `dataChecks.js` before announcing them.
 
 ```mermaid
 %%{init: {"flowchart": {"rankSpacing": 30}}}%%
@@ -101,7 +102,7 @@ flowchart LR
         VER["version.json"]
     end
 
-    DL["<b>dataLoader.js</b><br/>window.TrackerData"]
+    DL["<b>dataLoader.js</b><br/>window.TrackerData<br/>read by dataModel.js,<br/>checked by dataChecks.js"]
 
     subgraph CONS["consumers"]
         SS["settingsState.js"]
@@ -446,12 +447,12 @@ sequenceDiagram
     participant IT as itemTracker.js
 
     DL->>DL: fetch every file<br/>in data/
+    DL->>DL: read it (dataModel.js),<br/>run the data checks
     Note over DL: waits for the fetches<br/>and DOMContentLoaded
     DL-->>SS: trackerDataReady
     SS->>SS: read settings.json,<br/>apply the picks
     Note over IT: itemGrids.js registers<br/>the item tooltip
     DL-->>IT: trackerDataReady
-    IT->>IT: validate the grid slots
     IT->>SS: startingItems()
     IT->>GSM: init(items, config,<br/>starting items)
     GSM->>SS: the settings a token reads
@@ -475,7 +476,7 @@ sequenceDiagram
     LT->>LT: render the regions in manifest<br/>order, skipping any that break
     LT-->>LM: regionsRendered
     Note over LT: ItemCheckState.init<br/>with what rendered
-    LT->>LT: run every validator,<br/>then the first sweep
+    LT->>LT: the checks left on the<br/>page, then the first sweep
     LT-->>LST: trackerChecksUpdated
 ```
 
@@ -501,8 +502,9 @@ sequenceDiagram
     Note over LPL: also re-runs on load,<br/>resize and ResizeObserver
 ```
 
-The validators and the region-dropping step all warn to the console and let
-everything else carry on — see `ARCHITECTURE.md`, *When the data is wrong*. The
+The data checks, and the page's own checks of what only it can see, warn to the
+console and let everything else carry on — see `ARCHITECTURE.md`, *When the data
+is wrong*. The
 handoff and the first sweep sit in a `finally`, so a region file that breaks
 mid-render costs that one region rather than everything after it.
 
