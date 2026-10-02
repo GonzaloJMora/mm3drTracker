@@ -1,50 +1,30 @@
 // settingsState.js
 // window.SettingsState: the randomizer settings this tracker runs with, read out
 // of data/settings.json. It owns them the way GameState owns the inventory, so
-// anything that needs a setting asks here. How that file is written:
-// ARCHITECTURE.md, *Settings*.
+// anything that needs a setting asks here. Reading the file is settingsModel.js's;
+// how it is written: ARCHITECTURE.md, *Settings*.
 
 (function () {
+    const Model = window.SettingsModel;
     // Validated definitions, in settings.json order.
-    const settings = new Map();
+    let settings = new Map();
     // What was picked for each setting. A lock can override the pick without
     // replacing it, so the pick comes back once the lock lifts.
     const chosen = new Map();
-    const startingMax = new Map();
+    let startingMax = new Map();
     // settings.json's sections and groups, holding only the settings that read
     // cleanly, for the settings page to lay out.
-    const sectionList = [];
+    let sectionList = [];
     // Grid slot -> { controller, setters } from the grants, and each controlling
     // setting -> its slot. See slotSettings().
-    const slotRoles = new Map();
-    const controlledSlot = new Map();
+    let slotRoles = new Map();
+    let controlledSlot = new Map();
     let alwaysGrants = [];
     let config = null;
     // A loaded save's settings can't be changed until the save is let go, apart
     // from the ones it didn't hold. Separate from forced locks, which still apply.
     const held = new Set();
     const notInSave = new Set();
-
-    // What each class accepts as a value, and which grants a value switches on.
-    // A new class is an entry here plus its control on the settings page.
-    const CLASSES = {
-        toggle: {
-            isValue: (setting, value) => typeof value === "boolean",
-            grantsFor: (setting, value) => (value === true ? setting.grants : [])
-        },
-        dropdown: {
-            isValue: (setting, value) => typeof value === "string" && setting.options.has(value),
-            grantsFor: (setting, value) => (setting.options.has(value) ? setting.options.get(value).grants : [])
-        },
-        number: {
-            isValue: (setting, value) => Number.isInteger(value) && value >= setting.min && value <= setting.max,
-            // A grant of "value" hands on the number picked.
-            grantsFor: (setting, value) => setting.grants.map(grant =>
-                (grant.value === "value" ? { slot: grant.slot, value } : grant))
-        }
-    };
-
-    const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
     // ---------- Values ----------
 
@@ -69,7 +49,7 @@
     function set(id, value) {
         const setting = settings.get(id);
         if (held.has(id)) return false;
-        if (!setting || !CLASSES[setting.class].isValue(setting, value)) {
+        if (!setting || !Model.isValue(setting, value)) {
             console.warn(`SettingsState: ${JSON.stringify(value)} is not a value of "${id}".`);
             return false;
         }
@@ -95,7 +75,7 @@
         const defaulted = [];
         settings.forEach(setting => {
             const value = values[setting.id];
-            const usable = !editable.includes(setting.id) && CLASSES[setting.class].isValue(setting, value);
+            const usable = !editable.includes(setting.id) && Model.isValue(setting, value);
             chosen.set(setting.id, usable ? value : setting.default);
             if (usable) {
                 held.add(setting.id);
@@ -182,10 +162,8 @@
 
     // ---------- Grid slots ----------
 
-    // A setting that grants one slot and nothing else controls that slot, so the
-    // settings page steps through its choices when the slot is clicked. Every other
-    // setting granting it only fills it in. Worked out from the grants, so no list
-    // says which setting belongs to which slot.
+    // Which setting steps through a slot on the settings page, and which others
+    // only fill it in (settingsModel.js works it out from the grants).
     function slotSettings(slot) {
         const role = slotRoles.get(slot);
         if (!role) return { controller: null, setters: [] };
@@ -242,53 +220,13 @@
     }
 
     function isNumeric(id) {
-        const setting = settings.get(id);
-        return Boolean(setting && setting.class === "dropdown" &&
-            [...setting.options.values()].some(option => option.value !== undefined));
+        return Model.isNumeric(settings.get(id));
     }
 
     // ---------- Clauses ----------
 
-    // One shape serves vanilla_when and a lock's "when": true always matches, an
-    // object matches when every setting it names has one of the values given, and
-    // a list matches when any of its objects does. Anything malformed never
-    // matches; clauseProblem() is what names it.
     function matchesWith(clause, valueOf) {
-        if (clause === true) return true;
-        return [].concat(clause).some(part => {
-            if (!part || typeof part !== "object" || Array.isArray(part)) return false;
-            const ids = Object.keys(part);
-            return ids.length > 0 && ids.every(id =>
-                settings.has(id) && [].concat(part[id]).includes(valueOf(id)));
-        });
-    }
-
-    function clauseProblem(clause) {
-        if (clause === true) return null;
-        const parts = [].concat(clause);
-        if (!parts.length) return "is an empty list, which never matches";
-
-        for (const part of parts) {
-            if (!part || typeof part !== "object" || Array.isArray(part)) {
-                return "has to be true, an object, or a list of objects";
-            }
-            const ids = Object.keys(part);
-            if (!ids.length) return "has an empty object, which never matches";
-
-            for (const id of ids) {
-                const setting = settings.get(id);
-                if (!setting) return `names "${id}", which is not a setting`;
-                const wanted = [].concat(part[id]);
-                if (!wanted.length) return `gives "${id}" an empty list, which never matches`;
-                const bad = wanted.findIndex(value => !CLASSES[setting.class].isValue(setting, value));
-                if (bad !== -1) return `gives "${id}" ${JSON.stringify(wanted[bad])}, which is not one of its values`;
-            }
-        }
-        return null;
-    }
-
-    function namedIn(clause) {
-        return clause === true ? [] : [].concat(clause).flatMap(part => Object.keys(part));
+        return Model.matches(settings, clause, valueOf);
     }
 
     // ---------- Starting items ----------
@@ -318,7 +256,7 @@
 
         alwaysGrants.forEach(give);
         settings.forEach(setting => {
-            CLASSES[setting.class].grantsFor(setting, get(setting.id)).forEach(give);
+            Model.grantsFor(setting, get(setting.id)).forEach(give);
         });
         startingMax.forEach((cap, slot) => {
             if (state[slot] > cap) state[slot] = cap;
@@ -326,117 +264,7 @@
         return state;
     }
 
-    // ---------- Reading settings.json ----------
-
-    // Each entry is [where, problem]; the problem says what gets ignored.
-    // dataLoader.js has already stopped the load on a settings.json with no
-    // "sections" list.
-    function readSettings(data, problems) {
-        data.sections.forEach((section, s) => {
-            if (!section || typeof section.name !== "string" || !Array.isArray(section.groups)) {
-                problems.push([`sections[${s}]`, 'needs a "name" and a "groups" list, and is skipped']);
-                return;
-            }
-            // One section at most is drawn as the item grids; anything else is a list.
-            let view = "list";
-            if (section.view === "item_grids" && !sectionList.some(entry => entry.view === "item_grids")) {
-                view = "item_grids";
-            } else if (section.view === "item_grids") {
-                problems.push([`"${section.name}"`, 'is a second "item_grids" section; only the first is drawn as the item grids, so this one is a list']);
-            } else if (section.view !== undefined && section.view !== "list") {
-                problems.push([`"${section.name}"`, `has view ${JSON.stringify(section.view)}, which is not "list" or "item_grids", so it is a list`]);
-            }
-            const sectionEntry = { name: section.name, view, groups: [] };
-            sectionList.push(sectionEntry);
-
-            section.groups.forEach((group, g) => {
-                const where = `"${section.name}" groups[${g}]`;
-                if (!group || !Array.isArray(group.settings)) {
-                    problems.push([where, 'has no "settings" list, and is skipped']);
-                    return;
-                }
-                const groupEntry = { name: typeof group.name === "string" ? group.name : "", ids: [] };
-                sectionEntry.groups.push(groupEntry);
-                group.settings.forEach((raw, i) => {
-                    if (readSetting(raw, `${where} settings[${i}]`, problems)) groupEntry.ids.push(raw.id);
-                });
-            });
-        });
-    }
-
-    function readSetting(raw, position, problems) {
-        const id = raw && raw.id;
-        if (typeof id !== "string" || id === "") {
-            problems.push([position, 'has no "id", and is skipped']);
-            return;
-        }
-
-        const where = `"${id}"`;
-        if (settings.has(id)) {
-            problems.push([where, "is defined twice; the second one is skipped"]);
-            return;
-        }
-        if (!own(CLASSES, raw.class)) {
-            problems.push([where, `has class ${JSON.stringify(raw.class)}, which is not one of ${Object.keys(CLASSES).join(", ")}, and is skipped`]);
-            return;
-        }
-
-        const setting = { id, name: raw.name, class: raw.class, raw, grants: [], forced: [], options: new Map() };
-        if (typeof raw.name !== "string" || raw.name === "") {
-            problems.push([where, 'has no "name"; its id is shown instead']);
-            setting.name = id;
-        }
-
-        if (raw.class === "dropdown") {
-            (Array.isArray(raw.options) ? raw.options : []).forEach((option, index) => {
-                const optionId = option && option.id;
-                if (typeof optionId !== "string" || optionId === "" || setting.options.has(optionId)) {
-                    problems.push([`${where} options[${index}]`, 'has a missing or repeated "id", and is skipped']);
-                    return;
-                }
-                if (option.value !== undefined && typeof option.value !== "number") {
-                    problems.push([`${where} option "${optionId}"`, 'has a "value" that is not a number, and it is ignored']);
-                }
-                setting.options.set(optionId, {
-                    id: optionId,
-                    name: typeof option.name === "string" ? option.name : optionId,
-                    value: typeof option.value === "number" ? option.value : undefined,
-                    rawGrants: option.grants,
-                    grants: []
-                });
-            });
-            if (!setting.options.size) {
-                problems.push([where, "is a dropdown with no usable options, and is skipped"]);
-                return;
-            }
-            // A logic string counting to this setting needs a number whichever option
-            // is picked, or the comparison is unmet on the options without one.
-            const unvalued = [...setting.options.values()].filter(option => option.value === undefined);
-            if (unvalued.length && unvalued.length < setting.options.size) {
-                const ids = unvalued.map(option => `"${option.id}"`).join(", ");
-                problems.push([where, `gives some options a "value" but not ${ids}, so a logic string counting to it is unmet while one of those is picked`]);
-            }
-        }
-
-        if (raw.class === "number") {
-            if (!Number.isInteger(raw.min) || !Number.isInteger(raw.max) || raw.min > raw.max) {
-                problems.push([where, 'needs whole numbers for "min" and "max", with min no higher than max, and is skipped']);
-                return;
-            }
-            setting.min = raw.min;
-            setting.max = raw.max;
-        }
-
-        if (!CLASSES[setting.class].isValue(setting, raw.default)) {
-            problems.push([where, `has default ${JSON.stringify(raw.default)}, which is not one of its values, and is skipped`]);
-            return;
-        }
-
-        setting.default = raw.default;
-        settings.set(id, setting);
-        chosen.set(id, raw.default);
-        return true;
-    }
+    // ---------- Starting up ----------
 
     // The picks handed over from the settings page (trackerLaunch.js). One that no longer
     // fits the data keeps its default rather than stopping the rest.
@@ -451,7 +279,7 @@
                 problems.push([where, "is not a setting, and is ignored"]);
                 return;
             }
-            if (!CLASSES[setting.class].isValue(setting, handed[id])) {
+            if (!Model.isValue(setting, handed[id])) {
                 problems.push([where, `is ${JSON.stringify(handed[id])}, which is not one of its values, so it keeps its default`]);
                 return;
             }
@@ -459,179 +287,32 @@
         });
     }
 
-    // Only a grid slot can be granted, because a grant is what that slot starts at.
-    function grantProblem(gridSlots, slot, value, setting) {
-        if (!gridSlots.has(slot)) return "is not a slot in any grid in config/grids.json";
-        const { kind, high } = window.GameState.slotBounds(config, slot);
-
-        if (value === "value") {
-            if (!setting || setting.class !== "number") return 'uses "value", which only a number setting has';
-            return kind === "counter" ? null : `uses "value" on a ${kind} slot, which needs a counter`;
-        }
-        // A grant of 0 would start nothing, so a count or digit starts from 1.
-        const fits = window.GameState.grantedValue(config, slot, value);
-        if (fits !== null && fits <= high) return null;
-        if (kind === "toggle") return "can only be granted true";
-        if (kind === "counter") return `needs a count from 1 to ${high}`;
-        if (kind === "progression") return `needs one of its stages (${config.progressions[slot].join(", ")})`;
-        return `needs a digit from 1 to ${high}`;
-    }
-
-    function readAllGrants(data, problems) {
-        const gridSlots = new Set(window.GameState.gridSlots(config));
-
-        const read = (raw, where, setting) => {
-            if (raw === undefined) return [];
-            if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-                problems.push([where, '"grants" has to be an object of slot ids, and is ignored']);
-                return [];
-            }
-            return Object.keys(raw).flatMap(slot => {
-                const problem = grantProblem(gridSlots, slot, raw[slot], setting);
-                if (problem) {
-                    problems.push([`${where} grant "${slot}"`, `${problem}, and is ignored`]);
-                    return [];
-                }
-                return [{ slot, value: raw[slot] }];
-            });
-        };
-
-        alwaysGrants = read(data && data.always_grants, "always_grants", null);
-
-        settings.forEach(setting => {
-            const where = `"${setting.id}"`;
-            if (setting.class !== "dropdown") {
-                setting.grants = read(setting.raw.grants, where, setting);
-                return;
-            }
-            if (setting.raw.grants !== undefined) {
-                problems.push([where, 'has "grants" on the dropdown itself, which belong on its options, and they are ignored']);
-            }
-            setting.options.forEach(option => {
-                option.grants = read(option.rawGrants, `${where} option "${option.id}"`, setting);
-            });
-        });
-    }
-
-    function readSlotRoles(problems) {
-        settings.forEach(setting => {
-            const grants = setting.class === "dropdown"
-                ? [...setting.options.values()].flatMap(option => option.grants)
-                : setting.grants;
-            const slots = [...new Set(grants.map(grant => grant.slot))];
-
-            slots.forEach(slot => {
-                if (!slotRoles.has(slot)) slotRoles.set(slot, { controller: null, setters: [] });
-                slotRoles.get(slot).setters.push(setting.id);
-            });
-
-            // A number is typed, not stepped, so it only ever fills a slot in.
-            if (setting.class === "number" || slots.length !== 1) return;
-            const role = slotRoles.get(slots[0]);
-            if (role.controller) {
-                problems.push([`"${setting.id}"`, `grants only slot "${slots[0]}", as "${role.controller}" does; only "${role.controller}" steps through that slot on the settings page`]);
-                return;
-            }
-            role.controller = setting.id;
-            controlledSlot.set(setting.id, slots[0]);
-        });
-    }
-
-    // Two passes, so "has a lock of its own" means a lock that survived its own
-    // checks: an empty or wholly broken "forced" doesn't block another setting's.
-    function readAllForced(problems) {
-        const candidates = [];
-        settings.forEach(setting => {
-            const raw = setting.raw.forced;
-            if (raw === undefined) return;
-            if (!Array.isArray(raw)) {
-                problems.push([`"${setting.id}"`, '"forced" has to be a list, and is ignored']);
-                return;
-            }
-
-            raw.forEach((entry, index) => {
-                const where = `"${setting.id}" forced[${index}]`;
-                if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-                    problems.push([where, "has to be { when, value }, and is ignored"]);
-                    return;
-                }
-                const whenProblem = clauseProblem(entry.when);
-                if (whenProblem) {
-                    problems.push([where, `"when" ${whenProblem}; the lock is ignored`]);
-                    return;
-                }
-                if (!CLASSES[setting.class].isValue(setting, entry.value)) {
-                    problems.push([where, `locks to ${JSON.stringify(entry.value)}, which is not one of its values; the lock is ignored`]);
-                    return;
-                }
-                candidates.push({ setting, where, entry });
-            });
-        });
-
-        const locked = new Set(candidates.map(candidate => candidate.setting.id));
-        candidates.forEach(({ setting, where, entry }) => {
-            const chained = namedIn(entry.when).filter(id => locked.has(id));
-            if (chained.length) {
-                problems.push([where, `"when" names ${chained.map(id => `"${id}"`).join(", ")}, which has a lock of its own; locks can't depend on locks, so this one is ignored`]);
-                return;
-            }
-            setting.forced.push({ when: entry.when, value: entry.value });
-        });
-    }
-
-    function readStartingMax(data, problems) {
-        const raw = data && data.starting_max;
-        if (raw === undefined) return;
-        if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-            problems.push(["starting_max", "has to be an object of slot ids, and is ignored"]);
-            return;
-        }
-
-        Object.keys(raw).forEach(slot => {
-            const where = `starting_max "${slot}"`;
-            if (!own(config.item_counts, slot) || window.GameState.slotKind(config, slot) !== "counter") {
-                problems.push([where, "is not a counter slot, and is ignored"]);
-                return;
-            }
-            if (!Number.isInteger(raw[slot]) || raw[slot] < 1) {
-                problems.push([where, "needs a whole number of 1 or more, and is ignored"]);
-                return;
-            }
-            startingMax.set(slot, raw[slot]);
-        });
-    }
-
+    // Picks that no longer fit the data are about this tab, not the files, so they
+    // are named here rather than by the data checks.
     function report(problems) {
         if (!problems.length) return;
-        console.warn(
-            `SettingsState: ${problems.length} problem(s) reading the settings. ` +
-            `Each line below says what is ignored because of it.`
-        );
+        console.warn(`SettingsState: ${problems.length} handed-over pick(s) don't fit the settings.`);
         problems.forEach(([where, problem]) => console.warn(`  ${where} ${problem}`));
     }
 
-    // Each step in its own try/catch, so one that throws costs only what it reads:
-    // the later steps still run, the handed-over picks still apply, and every
-    // problem found is still reported.
+    // The data checks have already named whatever settings.json gets wrong
+    // (dataChecks.js, the "settings-" rules), so the findings aren't printed again.
     window.TrackerData.onReady(data => {
         config = data.config;
         const problems = [];
-
-        [
-            () => readSettings(data.settings, problems),
-            () => readAllGrants(data.settings, problems),
-            () => readSlotRoles(problems),
-            () => readAllForced(problems),
-            () => readStartingMax(data.settings, problems),
-            () => applyHandoff(problems)
-        ].forEach(step => {
-            try {
-                step();
-            } catch (error) {
-                console.error("SettingsState: could not read the settings data", error);
-            }
-        });
-
+        try {
+            const read = Model.read(data.settings, config);
+            settings = read.settings;
+            sectionList = read.sections;
+            alwaysGrants = read.alwaysGrants;
+            startingMax = read.startingMax;
+            slotRoles = read.slotRoles;
+            controlledSlot = read.controlledSlot;
+            settings.forEach(setting => chosen.set(setting.id, setting.default));
+            applyHandoff(problems);
+        } catch (error) {
+            console.error("SettingsState: could not read the settings data", error);
+        }
         report(problems);
     });
 
@@ -654,7 +335,6 @@
         step,
         list,
         matches: clause => matchesWith(clause, get),
-        clauseProblem,
         numberOf,
         isNumeric,
         startingItems

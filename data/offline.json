@@ -41,6 +41,7 @@
     "js/saveManager.js",
     "js/saveStore.js",
     "js/settingControls.js",
+    "js/settingsModel.js",
     "js/settingsPage.js",
     "js/settingsState.js",
     "js/storageKeys.js",

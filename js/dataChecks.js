@@ -13,6 +13,7 @@
 
     const model = () => root.DataModel || require("./dataModel.js");
     const parser = () => root.LogicParser || require("./logicParser.js");
+    const settingsModel = () => root.SettingsModel || require("./settingsModel.js");
     const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
     // Where a check sits, sub-regions included, for a line that has to be findable in
@@ -23,13 +24,14 @@
     // ---------- What every rule reads ----------
 
     // data is TrackerData's shape: config, items, regions (flattened), locationFlags,
-    // logicHelpers, settings (as written). options.regions is false on a page that
+    // logicHelpers, settings (settings.json as written; ctx.settings is it read). options.regions is false on a page that
     // didn't load the region files, which skips every rule about them;
     // options.failedLogicFiles names a flags or helpers file that couldn't be read.
     function context(data, options = {}) {
         const m = model();
         const fileOf = options.fileOf || (() => null);
-        const settings = m.settingsById(data.settings);
+        const settingsRead = settingsModel().read(data.settings, data.config);
+        const settings = settingsRead.settings;
         const isNumberSetting = id => settings.has(id) && settings.get(id).class === "number";
         const itemState = m.emptyItemState(data.config, data.items);
         const tokens = m.readTokens(data.config, data.items, itemState, isNumberSetting);
@@ -42,6 +44,7 @@
             config: data.config,
             items: data.items,
             settings,
+            settingsRead,
             itemState,
             tokens,
             regionsLoaded,
@@ -177,6 +180,36 @@
                 return lines;
             } },
 
+        { id: "settings-entries", title: "every section, group and setting in settings.json can be read",
+            header: n => `${n} problem(s) in settings.json's sections and settings. Each line says what is ignored because of it.`,
+            check: ctx => settingsFindings(ctx, "settings-entries") },
+
+        { id: "settings-grants", title: "every grant and starting_max names a grid slot and a value it can hold",
+            header: n => `${n} problem(s) in settings.json's grants and starting_max. Each line says what is ignored because of it.`,
+            check: ctx => settingsFindings(ctx, "settings-grants") },
+
+        { id: "settings-slots", title: "no two settings both control one grid slot",
+            header: n => `${n} setting(s) in settings.json would step through a slot another setting already steps through.`,
+            check: ctx => settingsFindings(ctx, "settings-slots") },
+
+        { id: "settings-locks", title: "every forced lock can be read, and none depends on another lock",
+            header: n => `${n} lock(s) in settings.json are ignored, so their settings can be changed freely.`,
+            check: ctx => settingsFindings(ctx, "settings-locks") },
+
+        { id: "vanilla-clauses", title: "every vanilla_when names settings and values that exist", regions: true,
+            header: n => `${n} vanilla_when clause(s) can't be read, so each of these checks shows as randomized.`,
+            check: ctx => ctx.regions.flatMap(region => region.item_checks
+                .map(check => {
+                    if (check.vanilla_when === undefined) return null;
+                    const problem = settingsModel().clauseProblem(ctx.settings, check.vanilla_when);
+                    return problem ? `${checkWhere(region, check)}: vanilla_when ${problem}${fromNote(check.vanilla_when_from)}` : null;
+                })
+                .filter(Boolean)) },
+
+        { id: "vanilla-agreement", title: "checks that are one location agree on vanilla_when and vanilla_item", regions: true,
+            header: n => `${n} location(s) are shown in several places that disagree. Give every check of a location the same vanilla_when and vanilla_item.`,
+            check: vanillaAgreement },
+
         { id: "map-coordinates", title: "every region has map_coordinates from 0 to 100", regions: true,
             header: n => `${n} region(s) have no map_coordinates with an xPercent and yPercent from 0 to 100, so they get no marker. ` +
                 "On desktop that leaves their checks unreachable — the accordion list is mobile-only.",
@@ -184,6 +217,48 @@
     ];
 
     // ---------- The longer checks ----------
+
+    // What reading settings.json found under one rule (settingsModel.js).
+    function settingsFindings(ctx, rule) {
+        return ctx.settingsRead.findings.filter(finding => finding.rule === rule).flatMap(finding => finding.lines);
+    }
+
+    // One location shown in several places must be randomized in all of them or in
+    // none, or it counts as half purple, and hold the same vanilla_item, or the
+    // tooltip names two different things for one spot. Compared as written rather
+    // than by what matches now, so a disagreement shows under any settings.
+    function vanillaAgreement(ctx) {
+        const canonical = clause => {
+            if (clause === undefined) return "(randomized)";
+            const part = p => (p && typeof p === "object" && !Array.isArray(p))
+                ? JSON.stringify(Object.keys(p).sort().map(id => [id, [].concat(p[id]).sort()]))
+                : JSON.stringify(p);
+            return JSON.stringify([].concat(clause).map(part).sort());
+        };
+        const ids = ctx.regions.flatMap(region => region.item_checks.map(check => check.id));
+        const locations = model().locationsOf(ids, ctx.config.check_groups);
+
+        const byLocation = new Map(); // location key -> [{ where, clause, item }]
+        ctx.regions.forEach(region => region.item_checks.forEach(check => {
+            const key = locations.get(check.id);
+            if (!byLocation.has(key)) byLocation.set(key, []);
+            byLocation.get(key).push({
+                where: `${region.region_name} -> ${check.id}`,
+                clause: canonical(check.vanilla_when),
+                item: check.vanilla_item === undefined ? "(none)" : JSON.stringify(check.vanilla_item)
+            });
+        }));
+
+        const lines = [];
+        byLocation.forEach(entries => {
+            if (entries.length < 2) return;
+            const differ = [];
+            if (new Set(entries.map(entry => entry.clause)).size > 1) differ.push("vanilla_when");
+            if (new Set(entries.map(entry => entry.item)).size > 1) differ.push("vanilla_item");
+            if (differ.length) lines.push(`${entries.map(entry => entry.where).join(", ")}: differ on ${differ.join(" and ")}`);
+        });
+        return lines;
+    }
 
     // A bad slot draws as an empty one rather than taking the grid down, but a hole
     // with no explanation is its own puzzle. Progression chains are walked in full:
@@ -233,11 +308,7 @@
         if (logicCache.has(ctx)) return logicCache.get(ctx);
         const LogicParser = parser();
         const known = new Set([...Object.keys(ctx.itemState), ...ctx.tokens.sources.map(source => source.def.id), ...ctx.named.keys()]);
-        const isNumeric = id => {
-            const setting = ctx.settings.get(id);
-            return Boolean(setting && setting.class === "dropdown" && Array.isArray(setting.options) &&
-                setting.options.some(option => option && option.value !== undefined));
-        };
+        const isNumeric = id => settingsModel().isNumeric(ctx.settings.get(id));
         const progressions = ctx.config.progressions || {};
         const unknown = new Map();
         const badCounts = new Map();

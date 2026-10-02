@@ -83,8 +83,9 @@ flowchart LR
 ### Who reads what
 
 Nothing reads `data/` but `dataLoader.js`, and every consumer waits for it through
-`TrackerData.onReady()`. It reads the files through `dataModel.js` and holds them to
-every rule in `dataChecks.js` before announcing them.
+`TrackerData.onReady()`. It reads the files through `dataModel.js` (and
+`settings.json` through `settingsModel.js`) and holds them to every rule in
+`dataChecks.js` before announcing them.
 
 ```mermaid
 %%{init: {"flowchart": {"rankSpacing": 30}}}%%
@@ -102,7 +103,7 @@ flowchart LR
         VER["version.json"]
     end
 
-    DL["<b>dataLoader.js</b><br/>window.TrackerData<br/>read by dataModel.js,<br/>checked by dataChecks.js"]
+    DL["<b>dataLoader.js</b><br/>window.TrackerData<br/>read by dataModel.js<br/>and settingsModel.js,<br/>checked by dataChecks.js"]
 
     subgraph CONS["consumers"]
         SS["settingsState.js"]
@@ -450,7 +451,7 @@ sequenceDiagram
     DL->>DL: read it (dataModel.js),<br/>run the data checks
     Note over DL: waits for the fetches<br/>and DOMContentLoaded
     DL-->>SS: trackerDataReady
-    SS->>SS: read settings.json,<br/>apply the picks
+    SS->>SS: read settings.json<br/>(settingsModel.js),<br/>apply the picks
     Note over IT: itemGrids.js registers<br/>the item tooltip
     DL-->>IT: trackerDataReady
     IT->>SS: startingItems()

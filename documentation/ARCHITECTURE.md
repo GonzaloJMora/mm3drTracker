@@ -216,7 +216,8 @@ the header's menu (§13).
 ## 3. JavaScript files
 
 Both pages load `storageKeys.js`, `phoneLayout.js` and `trackerLaunch.js` in
-`<head>`, in that order. The settings page then loads `dataLoader.js`, `tooltip.js`,
+`<head>`, in that order. The settings page then loads `dataModel.js`,
+`settingsModel.js`, `dataChecks.js`, `dataLoader.js`, `tooltip.js`,
 `gameStateManager.js`, `settingsState.js`, `itemGrids.js`, `saveCodec.js`,
 `saveStore.js`, `offline.js`, `mobileTabManager.js`, `headerMenu.js`, and three of its own: `settingControls.js`,
 `settingsPage.js` and `loadSave.js`. The tracker page loads everything else, and
@@ -228,12 +229,15 @@ in `js/`, and runs apart from both pages (*Offline*).
 | `storageKeys.js` | **In `<head>`, first, on both pages.** Names everything kept in browser storage: `key(name)` puts the tracker's id, from the page's `<meta name="tracker-id">`, in front of the name (*Storage keys*). | `window.StorageKeys` |
 | `phoneLayout.js` | **In `<head>`, on both pages.** Whether the page is in the phone layout (`active`) and a listener for crossing the breakpoint (`onChange`), from `--mobile-breakpoint` in `common.css` (§10). | `window.PhoneLayout` |
 | `trackerLaunch.js` | **In `<head>`, on both pages.** Opens the tracker (`open(picks, { runId, save, stamp })`, `openOnDefaults()`) and goes back to the settings page (`toSettings()`); the two pages' addresses live here only. Reads and writes the settings handed from the settings page to the tracker, in `sessionStorage`, with the run's id, a save and its stamp handed over with them (`readRunId()`, `readSave()`, `readStamp()`, and `updateSave(picks, { runId, save, stamp })` as the tracker autosaves), and says whether storage works at all, by trying a write: a browser can read storage and still refuse to write it. On a page marked `data-requires-launch` (the tracker), goes to the settings page before the body draws when nothing was handed over, unless the address has `?defaults` (§2, *Pages*). | `window.TrackerLaunch` |
-| `dataLoader.js` | **The first script in the body**, so only the three in `<head>` run before it. The only file that reads `data/`. Fetches `config.json` and the files it lists, `Items.json`, `manifest.json`, `settings.json`, every region file, `locationFlags.json` and `logicHelpers.json` exactly once, then announces them with `trackerDataReady`. Every file is asked of the site rather than taken from the browser's cache, so a page never gets data from before a release beside data from after it. Its script tag on the settings page carries `data-skip-regions`, which leaves out the region files, `locationFlags.json` and `logicHelpers.json`. Renders the three load-failure messages (§8). | `window.TrackerData`, `#tracker-load-error`, `#tracker-region-warning`, `#tracker-logic-warning` |
+| `dataModel.js` | Reads the files in `data/` into what the page uses: the config merged from its parts, the usable `Items.json` entries and `check_groups`, every region's sub-region tree flattened, the regions that can render (`acceptRegions`), the slot model (`slotKind`, `slotBounds`, `grantedValue`, `gridSlots`), the logic tokens, the flags and helpers by name, and which checks are one location (`locationsOf`). Reading never warns: what it finds wrong comes back as findings for `dataChecks.js` (§8). No DOM, and a Node module too, for the tests. | `window.DataModel` |
+| `settingsModel.js` | Reads `settings.json` (*Settings*): the settings that read cleanly, the sections, grants, locks, `starting_max` and which setting controls which grid slot, plus the clause shape (`matches`, `clauseProblem`) and each class's values. `settingsState.js` runs on what it reads; what it finds wrong comes back as findings, like `dataModel.js`. No DOM, and a Node module too. | `window.SettingsModel` |
+| `dataChecks.js` | Every rule the data has to keep, by id, and the one place the page prints what breaks them (§8). `dataLoader.js` runs them once the files are read; the tests run the same rules. No DOM, and a Node module too. | `window.DataChecks` |
+| `dataLoader.js` | **The first script in the body after the three that read and check the data**, so only those and the three in `<head>` run before it. The only file that reads `data/`. Fetches `config.json` and the files it lists, `Items.json`, `manifest.json`, `settings.json`, every region file, `locationFlags.json` and `logicHelpers.json` exactly once, then announces them with `trackerDataReady`. Every file is asked of the site rather than taken from the browser's cache, so a page never gets data from before a release beside data from after it. Its script tag on the settings page carries `data-skip-regions`, which leaves out the region files, `locationFlags.json` and `logicHelpers.json`. Renders the three load-failure messages (§8). | `window.TrackerData`, `#tracker-load-error`, `#tracker-region-warning`, `#tracker-logic-warning` |
 | `logicParser.js` | Parses a logic string into a tree, evaluates that tree against an inventory, and annotates each node as satisfied / blocking / optional. No DOM, no data of its own. `locationTracker.js` evaluates through it and the requirements tooltip reads the same tree, so the two cannot disagree (§9). | `window.LogicParser` |
 | `tooltip.js` | The tooltip: follows the pointer on hover, or docks to the bottom of the screen when pinned from a check's button on touch. Owns showing, hiding, positioning, the edge flip and pinning; owns nothing about what is in it. An owner calls `Tooltip.register(selector, build)` and gets called back with the hovered element (§14). | `window.Tooltip`, `.tracker-tooltip` |
 | `requirementsView.js` | Turns an annotated logic tree into the *Items Required* chips. Presentation only. | `window.RequirementsView` |
 | `gameStateManager.js` | `window.GameState` — the inventory source of truth. Works out the logic tokens (`tokens`: the values logic can name that are not items) from the definitions in `config/logicTokens.json`, on every state change. `slotKind(config, id)` names what kind of slot an id is — progression, counter, digit or toggle — from config alone, so it works before `init`. `slotBounds(config, id)` gives every value a slot can hold and `grantedValue(config, id, grant)` what a grant from `settings.json` means for it, also from config alone, so the settings and the save layout check use the same rules. `init` takes the starting items, sets those slots and records each one's floor, then any saved slot values, each kept between its floor and its top; `setSlot(id, value)` is the one way a slot changes after that; `slotValue(id)` reads a slot's stage or count back out of `items`, and `slotRange(id)` gives the values clicking can move it through. `snapshot()` is every grid slot's value, for a save. Also builds the **F1 debug panel**, which lists the changed settings and the starting items as well, and creates `window.TrackerDebug` for the other files' console helpers. | `window.GameState`, `window.TrackerDebug`, `#tracker-debug-panel` |
-| `settingsState.js` | `window.SettingsState` — the randomizer settings, read and validated out of `settings.json` (§7, *Settings*). Answers a setting's value with any lock applied (`get`, `isForced`), whether a clause matches (`matches`, `clauseProblem`), and what every grant adds up to (`startingItems`). `set` and `reset` change the picks and announce `settingsChanged`; `holdFromSave(values, editable)` fills in a loaded save's settings and holds all but the ones it didn't have, which `set` and `step` then refuse, until `releaseSave()` or `reset`; `sections`, `describe`, `lockedBy` and `picks` are what the settings page reads. `slotSettings(slot)` says which setting controls a grid slot and which only fill it in, worked out from the grants, and `step(id, direction)` moves a controlling setting to its next choice along its slot. `numberOf(id)` is the number a dropdown's chosen option carries, for the right of `>=`, and `isNumeric(id)` says whether a dropdown carries numbers at all (§9); `list()` is every setting with its value, default and lock state, for the F1 panel, and `snapshot()` every setting's pick, for a save. Applies the picks handed over through `trackerLaunch.js` once the file is read (§2, *Pages*). No DOM. | `window.SettingsState` |
+| `settingsState.js` | `window.SettingsState` — the randomizer settings, as `settingsModel.js` reads them out of `settings.json` (§7, *Settings*). Answers a setting's value with any lock applied (`get`, `isForced`), whether a clause matches (`matches`), and what every grant adds up to (`startingItems`). `set` and `reset` change the picks and announce `settingsChanged`; `holdFromSave(values, editable)` fills in a loaded save's settings and holds all but the ones it didn't have, which `set` and `step` then refuse, until `releaseSave()` or `reset`; `sections`, `describe`, `lockedBy` and `picks` are what the settings page reads. `slotSettings(slot)` says which setting controls a grid slot and which only fill it in, worked out from the grants, and `step(id, direction)` moves a controlling setting to its next choice along its slot. `numberOf(id)` is the number a dropdown's chosen option carries, for the right of `>=`, and `isNumeric(id)` says whether a dropdown carries numbers at all (§9); `list()` is every setting with its value, default and lock state, for the F1 panel, and `snapshot()` every setting's pick, for a save. Applies the picks handed over through `trackerLaunch.js` once the file is read (§2, *Pages*). No DOM. | `window.SettingsState` |
 | `trackerToolbar.js` | The toolbar in the header, its view toggles and Back to Settings: Hide Non-Randomized Checks, and Show Only Accessible Checks in the phone layout. Each button names the class it puts on `<body>` and its storage name (*Storage keys*) in data attributes; the choices read back through `TrackerView`, and a flip announces `trackerViewChanged` (§10b, *Hiding checks*). A handed-over save sets them, and `TrackerView.snapshot()` gives them to one. Loaded before the trackers, so their first sweep already knows the state. Back to Settings goes to the settings page, asking first only while the tab isn't autosaving (§2, *Pages*). Export is in its markup and belongs to `exportSave.js`. | `window.TrackerView`, `#tracker-toolbar` |
 | `itemGrids.js` | **On both pages.** Draws the item grids: one grid per key in `config/grids.json`'s `grids` — the count and order come from config, nothing here — with every slot drawn from `GameState`, so a slot starts wherever the starting items put it. Hands back a view per slot for the page to add its own clicks to and redraw through `draw`. Validates every grid slot at load (§8), and registers the item tooltip: name, the song's `notes_image` where there is one and the song is owned, and any line a page puts in the slot's `data-tooltip-note`. | `window.ItemGrids`, one `.item-grid[data-grid="<key>"]` per grid |
 | `itemTracker.js` | The tracker's grids: starts `GameState` from the starting items, has `itemGrids.js` draw the grids, and handles left-click (advance) / right-click (retreat) cycling between a slot's floor and its top, giving a locked slot no click handler. A click changes the slot through `GameState.setSlot` and redraws it from what `GameState` then holds. | `.grid-container` |
@@ -251,7 +255,7 @@ in `js/`, and runs apart from both pages (*Offline*).
 | `offline.js` | **On both pages.** Registers `offlineWorker.js`, or removes it and its stored copy when `data/offline.json`'s `enabled` is false (*Offline*). Asks for persistent storage only when the tracker runs as an installed app, and on an iPhone or iPad, in any browser, shows the Home Screen tip once. | `#home-screen-tip` |
 | `mobileTabManager.js` | **On both pages.** `switchMobileTab()` toggles `.active-section` between the sections the tab buttons name in `data-section`: `#item-section` and `#location-section` on the tracker, `#settings-section` and `#starting-section` on the settings page. It does so at any width; CSS is what confines the tabs to the phone layout (§10). Announces a switch with `mobileTabChanged`. Also shows the back-to-top button once the page is scrolled half a screen, and remembers each tab's scroll position. | `.mobile-tabs`, `.tab-btn`, `#back-to-top` |
 | `headerMenu.js` | **On both pages.** The phone layout's header (§13): opens and closes the toolbar as the bar's menu, moves the buttons marked `data-menu-keep-out` under the bar and back into the toolbar on desktop, and lets the bar scroll away (`bar-loose`) when it grows past a quarter of the window. The toolbar's buttons keep their own handlers; this file only shows and hides them. | `#header-menu-button`, `#header-keep-out` |
-| `settingControls.js` | **Settings page only.** One control per setting class: a slider for `toggle` (an invisible checkbox over a drawn track), a select for `dropdown`, a number field clamped to `min`–`max` for `number`. `create(description, onChange)` returns `{ element, update(value, locked) }`. A new class is one `register` call here, alongside its value rules in `settingsState.js`. | `window.SettingControls` |
+| `settingControls.js` | **Settings page only.** One control per setting class: a slider for `toggle` (an invisible checkbox over a drawn track), a select for `dropdown`, a number field clamped to `min`–`max` for `number`. `create(description, onChange)` returns `{ element, update(value, locked) }`. A new class is one `register` call here, alongside its value rules in `settingsModel.js`. | `window.SettingControls` |
 | `settingsPage.js` | **Settings page only.** Builds the settings panel from every list section in menu order, and the Starting Items half from the item grids section: the grids through `itemGrids.js`, each slot's clicks and tooltip line from `SettingsState.slotSettings`. The slot legend above the grids is markup in `index.html`. The section's other settings are one block, moved between the end of the settings panel on desktop and the space under the grids on a phone (§2, *The settings page*). On `settingsChanged` it redraws every control, count and lock note, and re-runs `GameState.init` to redraw the slots. Draws a setting a loaded save holds as locked, and one it didn't hold as highlighted. Owns Reset to Defaults, which asks with `confirm()` and lets go of a loaded save, and Launch New Tracker, which with a save loaded lets go of it and keeps its settings, and otherwise moves the autosave to the previous run (asking first), hands `SettingsState.picks()` and a new run id to `trackerLaunch.js` and opens `tracker.html`, or, when they can't be stored, asks with `confirm()` and opens `tracker.html?defaults`. Warns on the page when storage is blocked at load or a launch couldn't store the picks. | `#settings-list`, `#starting-extras`, `#settings-storage-warning` |
 
 ---
@@ -325,7 +329,10 @@ deterministic. Before any of it, the three scripts in `<head>` have run:
    `locationFlags.json` and `logicHelpers.json` load alongside all of these, and
    read as empty if they fail rather than stopping the load, and so does
    `saveLayout.json`, which only turns saving off if it fails. `version.json` is
-   fetched on its own, for the footer and the load-error report.
+   fetched on its own, for the footer and the load-error report. Once everything
+   is in, it reads the files through `dataModel.js` and runs every rule in
+   `dataChecks.js` (which read `settings.json` through `settingsModel.js`), so
+   every warning about the data is printed before any consumer runs (§8).
 2. `logicParser.js`, `tooltip.js`, `requirementsView.js` — define their globals
    (`tooltip.js` also binds its `document` listeners). None of them waits for
    data; the trackers call them.
@@ -338,7 +345,7 @@ deterministic. Before any of it, the three scripts in `<head>` have run:
    checks. It needs no data. `itemCheckStateManager.js`, loaded just before
    `locationTracker.js`, defines `window.ItemCheckState` at parse time too.
 6. *(`trackerDataReady` fires here)*
-7. `settingsState.js` — reads and validates `settings.json`, then applies the
+7. `settingsState.js` — reads `settings.json` through `settingsModel.js`, then applies the
    picks handed over from the settings page. It is first in line
    on purpose: nothing may ask for a setting before this, and `GameState.init`
    works out the tokens, some of which read a setting.
@@ -352,15 +359,9 @@ deterministic. Before any of it, the three scripts in `<head>` have run:
    its slots.
 9. `locationTracker.js` — registers the check tooltip, renders all accordions
    from `TrackerData.regions`, and dispatches `regionsRendered`. Then it hands the
-   regions that rendered to `ItemCheckState.init`, before the validators, which
-   read its locations, and before any click. Then it indexes
-   the location flags and logic helpers, which has to come first: the validators
-   count them as known tokens, and the sweep reads them. The validators follow,
-   each in its own try/catch: the flags and helpers themselves, the logic tokens
-   against the fully populated `GameState.items`, the check ids, the check names,
-   the `check_groups` ids, each check's `vanilla_when` and `vanilla_item`, their
-   agreement across one location, and items demanded twice. Last, one
-   `evaluateAllRegions()` sweep against the real inventory. Everything from
+   regions that rendered to `ItemCheckState.init`, before any click, and indexes
+   the location flags and logic helpers, which the sweep reads. Each is in its own
+   try/catch. Last, one `evaluateAllRegions()` sweep against the real inventory. Everything from
    `regionsRendered` down is in a `finally`, so a region file that breaks still
    leaves the rest of the page told about the ones that rendered (§8).
 10. `locationStatsTracker.js` — builds its box, counts (the first sweep has
@@ -404,7 +405,8 @@ of those because the item grid's *rendered height* settles independently of when
 the data arrives — see §11.
 
 The settings page runs a shorter version of the same: the same three in `<head>`, then
-`dataLoader.js` with no region files, `tooltip.js`, `gameStateManager.js` (for
+`dataModel.js`, `settingsModel.js`, `dataChecks.js`, `dataLoader.js` with no region
+files (and so none of the rules about them), `tooltip.js`, `gameStateManager.js` (for
 `slotKind`, which reading the grants needs, and to show the starting state),
 `settingsState.js`, `settingControls.js`, `itemGrids.js`, `saveCodec.js`,
 `saveStore.js`, `settingsPage.js`, which builds the page in its `onReady` once the
@@ -439,8 +441,8 @@ changed it.
 
 "These ids are one location" lives only there too. A check id maps to a location:
 its `check_group`, or itself. The region roll-up, the progress numbers and the
-vanilla-agreement validator all ask `ItemCheckState` rather than reading the
-groups themselves. Counting is its too: `ItemCheckState.count()` is the one rule
+`vanilla-agreement` data check all go through `DataModel.locationsOf()` rather
+than reading the groups themselves; `ItemCheckState` asks it once at load. Counting is its too: `ItemCheckState.count()` is the one rule
 every count uses, whether over every check (the progress numbers and a save's
 summary) or over one region's rows (the roll-up). A region counts a location once,
 so each region showing a shared location counts it, and two ids of one group in
@@ -623,7 +625,7 @@ Mask: *Melee Damage or Projectile Damage*.)
 
 `settings.json` describes the randomizer's settings: what each one can be set
 to, what each choice starts you with on the tracker, and what other data can ask
-about them. `settingsState.js` reads it and answers for it.
+about them. `settingsModel.js` reads it, and `settingsState.js` answers for it.
 
 **A setting** is `{ id, name, class, default }`, listed in the order the
 randomizer's own menu shows it. `class` decides what a value can be:
@@ -677,8 +679,8 @@ check with no `vanilla_when` is always randomized.
   `{ "shuffle_songs": ["song_locations", "anywhere"], "shuffle_song_of_time": false }`.)
 - A list of objects matches when any one of them does.
 
-Anything malformed never matches. `SettingsState.clauseProblem()` says what is
-wrong with one, and the validators use it.
+Anything malformed never matches. `SettingsModel.clauseProblem()` says what is
+wrong with one, and the data checks use it.
 
 ### What is not data
 
@@ -696,7 +698,7 @@ try:
 - **The map shape.** `locationMap.js` assumes a single image with markers placed
   on it by percentage.
 - **The setting classes.** `toggle`, `dropdown` and `number` are defined in
-  `settingsState.js`, with their controls in `settingControls.js`, so a new kind
+  `settingsModel.js`, with their controls in `settingControls.js`, so a new kind
   of setting means code in both, not just JSON.
 
 Everything else — the grids, the items, the regions, the checks, the logic
@@ -717,8 +719,8 @@ once, at load, and keep the rest of the app up.**
 prints each problem as `Data check "<id>": …`; the file that draws the data only
 recovers (an empty slot, a skipped region) and says nothing. The data is read by
 `js/dataModel.js` (the config merged, the sub-region trees flattened, the regions
-that can render, the slot model, the logic tokens, the flags and helpers by name),
-which the tests use too, so `tests/node/dataChecks.test.js` holds the real data to
+that can render, the slot model, the logic tokens, the flags and helpers by name)
+and `js/settingsModel.js` (`settings.json`), which the tests use too, so `tests/node/dataChecks.test.js` holds the real data to
 every rule without a browser, and proves each rule catches a made-up mistake. A new
 rule goes in `dataChecks.js` with an example in that test. Rows naming another file
 are about the running page rather than the files, and stay where they happen.
@@ -762,19 +764,19 @@ are about the running page rather than the files, and stay where they happen.
 | An `item_groups` group names an id that is not an item | `logic-tokens-defined` | One warning per token reading the group. That id counts as never owned. |
 | A slot appears in both `progressions` and `item_counts` | `progressions-or-counts` | Warns; the click handler would silently do nothing. |
 | The starting items give a slot a value it can't start at | `gameStateManager.js` → `init` | One warning naming the slot. It starts empty. |
-| An entry in `settings.json` is malformed: a missing or repeated id, an unknown `class`, a default that is not one of its values, a grant on something that is not a grid slot or with a value that slot cannot take, a lock whose `when` is malformed or names another locked setting, a `starting_max` on anything but a counter, a dropdown that gives some options a `value` but not others | `settingsState.js` | One warning per problem, naming the entry and what is ignored because of it. A bad setting is left out, a bad option, grant or lock is ignored, and every other setting still loads. |
-| A section's `view` is neither `list` nor `item_grids`, or a second section is `item_grids` | `settingsState.js` | One warning. That section is listed in the settings panel. |
+| An entry in `settings.json` is malformed: a missing or repeated id, an unknown `class`, a default that is not one of its values, a grant on something that is not a grid slot or with a value that slot cannot take, a lock whose `when` is malformed or names another locked setting, a `starting_max` on anything but a counter, a dropdown that gives some options a `value` but not others | `settings-entries`, `settings-grants` (grants and `starting_max`), `settings-locks` | One warning per problem, naming the entry and what is ignored because of it. A bad setting is left out, a bad option, grant or lock is ignored, and every other setting still loads. |
+| A section's `view` is neither `list` nor `item_grids`, or a second section is `item_grids` | `settings-entries` | One warning. That section is listed in the settings panel. |
 | A setting's `class` has no control in `settingControls.js` | `settingsPage.js` | One warning naming the setting. Its row is left out of the settings page; the setting still has its default. |
-| Two settings each grant only the same grid slot | `settingsState.js` | One warning. The first in `settings.json` steps through that slot on the settings page; the other still works from its row. |
+| Two settings each grant only the same grid slot | `settings-slots` | One warning. The first in `settings.json` steps through that slot on the settings page; the other still works from its row. |
 | The settings handed over from the settings page can't be read | `trackerLaunch.js` | One warning. Every setting keeps its default. |
 | `saveLayout.json` can't be read, or has no `fields` list | `dataLoader.js` | One error, and a `#tracker-save-warning` banner saying saving and loading are off. Everything else works. |
 | `saveLayout.json` reads but can't be used: no `app` or `format`, a field with an unknown kind, no id, a width outside 1–16, more options than its bits hold, or a field listed twice | `saveManager.js` | Named, and saving is off. |
 | Something to save is missing from `saveLayout.json`, or its field can't hold its values | `saveManager.js` | One warning per problem, pointing at `scripts/updateSaveLayout.py`. That setting, slot, check or toggle is left out of saves; the rest still save. |
 | A handed-over save names a slot the grids don't have, has no number for one, or marks a check this tracker doesn't show | `gameStateManager.js`, `itemCheckStateManager.js` | One warning each, naming them. They're left out; a slot value past its floor or top is kept inside them without a warning. |
-| A handed-over pick names no setting, or a value its setting can't take — the data changed since it was picked, or the storage was edited | `settingsState.js` | One warning per pick, in the same report as the problems in `settings.json`. That setting keeps its default and the rest still apply. |
-| A check's `vanilla_when` is malformed or names an unknown setting or value | `locationTracker.js` → `validateVanillaClauses()` | One warning per check. The clause never matches, so the check shows as randomized. |
+| A handed-over pick names no setting, or a value its setting can't take — the data changed since it was picked, or the storage was edited | `settingsState.js` | One warning per pick. That setting keeps its default and the rest still apply. |
+| A check's `vanilla_when` is malformed or names an unknown setting or value | `vanilla-clauses` | One warning per check. The clause never matches, so the check shows as randomized. |
 | A check's `vanilla_item` is not text, is written like an id (lowercase and underscores) but matches no item, or sits on a check with no `vanilla_when` | `vanilla-items` | One warning per check. The tooltip leaves the "Vanilla:" line out; plain text is always accepted, since most vanilla contents are not tracked items. |
-| Checks that are one location — a `check_group`, or a repeated id — have different `vanilla_when` or different `vanilla_item` | `locationTracker.js` → `validateVanillaAgreement()` | One warning per set, for each field that disagrees. Both are compared as written, not by what they match right now, so the disagreement shows under any settings. |
+| Checks that are one location — a `check_group`, or a repeated id — have different `vanilla_when` or different `vanilla_item` | `vanilla-agreement` | One warning per set, naming each field that disagrees. Both are compared as written, not by what they match right now, so the disagreement shows under any settings. |
 | A `legend` entry is missing its `status` or `label`, or names a status `common.css` pairs no color with | `locationLegend.js` | One warning naming the entry, which is not drawn. The check asks CSS rather than a list, so status names still live only in `common.css`. |
 
 Three rules worth keeping if you add more:
@@ -793,7 +795,7 @@ Three rules worth keeping if you add more:
   make a check throw, so one bad file would cost the diagnosis of every other.
 - **Degrade to a hole, not to a halt.** A bad slot draws empty, a bad region is
   skipped, a bad region file is dropped, a region that throws costs only itself.
-  `regionsRendered`, every validator and the first `evaluateAllRegions()` sweep are
+  `regionsRendered`, the check state and the first `evaluateAllRegions()` sweep are
   in a `finally`, so the rest of the page is told about the regions that *did*
   render however badly the loop went — skip that and no marker gets a color and no
   check gets tagged, which reads as "nothing is reachable anywhere" and sends you
