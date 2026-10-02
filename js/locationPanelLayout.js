@@ -146,7 +146,7 @@
         const px = (style, name) => parseFloat(style[name]) || 0;
         const body = getComputedStyle(document.body);
         const header = document.querySelector("header");
-        const footer = document.getElementById("app-version");
+        const footer = document.getElementById("app-footer");
         const wrapper = document.querySelector(".tracker-layout-wrapper");
         const gap = wrapper ? px(getComputedStyle(wrapper), "columnGap") : 0;
 

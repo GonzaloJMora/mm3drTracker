@@ -34,6 +34,8 @@
     <link rel="stylesheet" href="css/saveDialog.css">
     <link rel="stylesheet" href="css/settingsPage.css">
 
+    <!-- First, so it keeps every warning and error for a bug report. -->
+    <script src="js/feedbackLinks.js"></script>
     <script src="js/storageKeys.js"></script>
     <script src="js/phoneLayout.js"></script>
     <script src="js/trackerLaunch.js"></script>
@@ -114,8 +116,16 @@
          only while main still has awaiting-data. -->
     <div class="page-loading" aria-hidden="true"></div>
 
-    <!-- Filled from data/version.json by dataLoader.js. -->
-    <footer id="app-version"></footer>
+    <!-- The version is filled from data/version.json by dataLoader.js. The links are
+         plain links to the issue forms; feedbackLinks.js fills the forms in. -->
+    <footer id="app-footer">
+        <span id="app-version"></span>
+        <span class="feedback-links">
+            <a href="https://github.com/GonzaloJMora/mm3drTracker/issues/new?template=bug_report.yml" data-feedback="bug" target="_blank" rel="noopener">Report a bug</a>
+            <span aria-hidden="true">|</span>
+            <a href="https://github.com/GonzaloJMora/mm3drTracker/issues/new?template=feature_request.yml" data-feedback="feature" target="_blank" rel="noopener">Suggest a feature</a>
+        </span>
+    </footer>
 
     <!-- Mobile only (hidden by CSS above the breakpoint). -->
     <button id="back-to-top" type="button" aria-label="Back to top"></button>

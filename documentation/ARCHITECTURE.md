@@ -108,7 +108,7 @@ main
          ├─ ul.slot-legend      (what the four kinds of slot mean)
          ├─ .grid-container     (the tracker's item grids, drawn by itemGrids.js)
          └─ #starting-extras    (the inventory options, in the phone layout)
-footer#app-version              (the version, from data/version.json)
+footer#app-footer               (#app-version, from data/version.json, and the feedback links)
 #back-to-top                    (phone layout only)
 ```
 
@@ -193,7 +193,7 @@ main
      └─ #location-section
          ├─ #location-map-container    (built by locationMap.js)
          └─ #region-sidebar > #region-dropdown-container   (region list)
-footer#app-version              (the version, from data/version.json)
+footer#app-footer               (#app-version, from data/version.json, and the feedback links)
 #back-to-top                    (phone layout only)
 ```
 
@@ -215,8 +215,8 @@ the header's menu (§13).
 
 ## 3. JavaScript files
 
-Both pages load `storageKeys.js`, `phoneLayout.js` and `trackerLaunch.js` in
-`<head>`, in that order. The settings page then loads `dataModel.js`,
+Both pages load `feedbackLinks.js`, `storageKeys.js`, `phoneLayout.js` and
+`trackerLaunch.js` in `<head>`, in that order. The settings page then loads `dataModel.js`,
 `settingsModel.js`, `dataChecks.js`, `dataLoader.js`, `tooltip.js`,
 `gameStateManager.js`, `settingsState.js`, `itemGrids.js`, `saveCodec.js`,
 `saveStore.js`, `offline.js`, `mobileTabManager.js`, `headerMenu.js`, and three of its own: `settingControls.js`,
@@ -226,13 +226,14 @@ in `js/`, and runs apart from both pages (*Offline*).
 
 | File | Owns | Key globals / DOM |
 |---|---|---|
-| `storageKeys.js` | **In `<head>`, first, on both pages.** Names everything kept in browser storage: `key(name)` puts the tracker's id, from the page's `<meta name="tracker-id">`, in front of the name (*Storage keys*). | `window.StorageKeys` |
+| `feedbackLinks.js` | **In `<head>`, first, on both pages.** The footer's Report a bug and Suggest a feature links are plain links to the repo's GitHub issue forms in each page's markup, so they work when nothing else does. This keeps the page's last warnings and errors from the start (passing each on to the console) and, as a link is clicked, focused or long-pressed, fills its form in through the address: the version and page, and for a bug the browser, window size and layout, text size, installed or in a tab, the save code and those messages, trimmed to stay under GitHub's address limit. The values are named by the forms' field ids in `.github/ISSUE_TEMPLATE`. | `window.FeedbackLinks`, `#app-footer` |
+| `storageKeys.js` | **In `<head>`, on both pages, after `feedbackLinks.js`.** Names everything kept in browser storage: `key(name)` puts the tracker's id, from the page's `<meta name="tracker-id">`, in front of the name (*Storage keys*). | `window.StorageKeys` |
 | `phoneLayout.js` | **In `<head>`, on both pages.** Whether the page is in the phone layout (`active`) and a listener for crossing the breakpoint (`onChange`), from `--mobile-breakpoint` in `common.css` (§10). | `window.PhoneLayout` |
 | `trackerLaunch.js` | **In `<head>`, on both pages.** Opens the tracker (`open(picks, { runId, save, stamp })`, `openOnDefaults()`) and goes back to the settings page (`toSettings()`); the two pages' addresses live here only. Reads and writes the settings handed from the settings page to the tracker, in `sessionStorage`, with the run's id, a save and its stamp handed over with them (`readRunId()`, `readSave()`, `readStamp()`, and `updateSave(picks, { runId, save, stamp })` as the tracker autosaves), and says whether storage works at all, by trying a write: a browser can read storage and still refuse to write it. On a page marked `data-requires-launch` (the tracker), goes to the settings page before the body draws when nothing was handed over, unless the address has `?defaults` (§2, *Pages*). | `window.TrackerLaunch` |
 | `dataModel.js` | Reads the files in `data/` into what the page uses: the config merged from its parts, the usable `Items.json` entries and `check_groups`, every region's sub-region tree flattened, the regions that can render (`acceptRegions`), the slot model (`slotKind`, `slotBounds`, `grantedValue`, `gridSlots`), the logic tokens, the flags and helpers by name, and which checks are one location (`locationsOf`). Reading never warns: what it finds wrong comes back as findings for `dataChecks.js` (§8). No DOM, and a Node module too, for the tests. | `window.DataModel` |
 | `settingsModel.js` | Reads `settings.json` (*Settings*): the settings that read cleanly, the sections, grants, locks, `starting_max` and which setting controls which grid slot, plus the clause shape (`matches`, `clauseProblem`) and each class's values. `settingsState.js` runs on what it reads; what it finds wrong comes back as findings, like `dataModel.js`. No DOM, and a Node module too. | `window.SettingsModel` |
 | `dataChecks.js` | Every rule the data has to keep, by id, and the one place the page prints what breaks them (§8). `dataLoader.js` runs them once the files are read; the tests run the same rules. No DOM, and a Node module too. | `window.DataChecks` |
-| `dataLoader.js` | **The first script in the body after the three that read and check the data**, so only those and the three in `<head>` run before it. The only file that reads `data/`. Fetches `config.json` and the files it lists, `Items.json`, `manifest.json`, `settings.json`, every region file, `locationFlags.json` and `logicHelpers.json` exactly once, then announces them with `trackerDataReady`. Every file is asked of the site rather than taken from the browser's cache, so a page never gets data from before a release beside data from after it. Its script tag on the settings page carries `data-skip-regions`, which leaves out the region files, `locationFlags.json` and `logicHelpers.json`. Renders the three load-failure messages (§8). | `window.TrackerData`, `#tracker-load-error`, `#tracker-region-warning`, `#tracker-logic-warning` |
+| `dataLoader.js` | **The first script in the body after the three that read and check the data**, so only those and the four in `<head>` run before it. The only file that reads `data/`. Fetches `config.json` and the files it lists, `Items.json`, `manifest.json`, `settings.json`, every region file, `locationFlags.json` and `logicHelpers.json` exactly once, then announces them with `trackerDataReady`. Every file is asked of the site rather than taken from the browser's cache, so a page never gets data from before a release beside data from after it. Its script tag on the settings page carries `data-skip-regions`, which leaves out the region files, `locationFlags.json` and `logicHelpers.json`. Renders the three load-failure messages (§8). | `window.TrackerData`, `#tracker-load-error`, `#tracker-region-warning`, `#tracker-logic-warning` |
 | `logicParser.js` | Parses a logic string into a tree, evaluates that tree against an inventory, and annotates each node as satisfied / blocking / optional. No DOM, no data of its own. `locationTracker.js` evaluates through it and the requirements tooltip reads the same tree, so the two cannot disagree (§9). | `window.LogicParser` |
 | `tooltip.js` | The tooltip: follows the pointer on hover, or docks to the bottom of the screen when pinned from a check's button on touch. Owns showing, hiding, positioning, the edge flip and pinning; owns nothing about what is in it. An owner calls `Tooltip.register(selector, build)` and gets called back with the hovered element (§14). | `window.Tooltip`, `.tracker-tooltip` |
 | `requirementsView.js` | Turns an annotated logic tree into the *Items Required* chips. Presentation only. | `window.RequirementsView` |
@@ -317,7 +318,8 @@ and `DOMContentLoaded` before firing `trackerDataReady` once.
 
 Every consumer registers via `TrackerData.onReady(...)` at script-parse time, so
 they run **in `tracker.html` script order**, which makes the sequence
-deterministic. Before any of it, the three scripts in `<head>` have run:
+deterministic. Before any of it, the four scripts in `<head>` have run:
+`feedbackLinks.js`, which starts keeping warnings and errors for a bug report,
 `storageKeys.js` and `phoneLayout.js`, which only define their helpers, and
 `trackerLaunch.js`, which has either sent the page to the settings page (§2,
 *Pages*) or let it load:
@@ -404,7 +406,7 @@ reacts to `locationStatsBoxReady` / `locationLegendReady` / `locationMapReady` /
 of those because the item grid's *rendered height* settles independently of when
 the data arrives — see §11.
 
-The settings page runs a shorter version of the same: the same three in `<head>`, then
+The settings page runs a shorter version of the same: the same four in `<head>`, then
 `dataModel.js`, `settingsModel.js`, `dataChecks.js`, `dataLoader.js` with no region
 files (and so none of the rules about them), `tooltip.js`, `gameStateManager.js` (for
 `slotKind`, which reading the grants needs, and to show the starting state),
@@ -505,7 +507,7 @@ Other files read them off `window.TrackerData`; none of them call `fetch`.
 | `locationFlags.json` | `{ "flags": [{ id, name, at: { check } or { region }, logic? }] }`: progress elsewhere that a check depends on, like a boss being beatable (*Location flags* below). Loaded on the tracker only. | `TrackerData.locationFlags` (empty on the settings page, and if the file can't be read) | `locationTracker.js` (resolves each flag as a logic token) |
 | `saveLayout.json` | `{ app, format, fields: [...] }`: which bits of a save code hold which setting, view toggle, item slot and check, in order (*Saving*). Only ever appended to, by `scripts/updateSaveLayout.py`. Loaded on both pages; a failed load turns saving and loading off and nothing else. Older formats' layouts sit under `saveLayouts/` once there are any, fetched only when a save needs one. | `TrackerData.saveLayout` (null if it can't be used), `TrackerData.saveLayoutFor(format)` | `saveManager.js` |
 | `offline.json` | `{ enabled, files: [...] }`: every file the offline copy stores, and the off switch. Written by `scripts/updateOfflineFiles.py`, never by hand (*Offline*). Fetched fresh every time, like every data file, which matters most here since it holds the off switch. | `TrackerData.offline` (null if it can't be read) | `offline.js`; `offlineWorker.js` reads it itself |
-| `version.json` | `{ "version": "x.y.z" }`, written by `scripts/release.py` rather than by hand (README.md, *Releasing*). Fetched apart from the core files, so a report that they failed to load still carries the version. | `TrackerData.version` (null until it arrives, and if it cannot be read) | `dataLoader.js` (the `#app-version` footer and the load-error report) |
+| `version.json` | `{ "version": "x.y.z" }`, written by `scripts/release.py` rather than by hand (README.md, *Releasing*). Fetched apart from the core files, so a report that they failed to load still carries the version. | `TrackerData.version` (null until it arrives, and if it cannot be read) | `dataLoader.js` (the `#app-version` footer and the load-error report), `feedbackLinks.js` (the bug form) |
 
 Map marker positions live per-region in `map_coordinates`.
 

@@ -21,6 +21,7 @@
     "js/dataLoader.js",
     "js/dataModel.js",
     "js/exportSave.js",
+    "js/feedbackLinks.js",
     "js/gameStateManager.js",
     "js/headerMenu.js",
     "js/itemCheckStateManager.js",

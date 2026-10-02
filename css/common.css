@@ -310,7 +310,7 @@ main.awaiting-data {
    drawn, and the footer sits under main's content, so either one shown early
    would jump when the page appears. */
 body:has(> main.awaiting-data) > header,
-body:has(> main.awaiting-data) > #app-version {
+body:has(> main.awaiting-data) > #app-footer {
     visibility: hidden;
     animation: reveal-if-stuck 0s linear 8s forwards;
 }
@@ -397,17 +397,48 @@ main.awaiting-data ~ .page-loading {
     }
 }
 
-/* ---------- Version footer ---------- */
+/* ---------- Footer: the version and the feedback links ---------- */
 
-/* Selectable, unlike the rest of the page, so it can be pasted into a bug report. */
-#app-version {
+#app-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4px 16px;
     margin-top: 16px;
     font-size: 0.75rem;
     color: #888888;
+}
+
+/* Selectable, unlike the rest of the page, so it can be pasted into a bug report. */
+#app-version {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
+}
+
+.feedback-links a {
+    color: #6ab0ff;
+}
+
+/* Centered and stacked on a phone, with room underneath so the fixed back-to-top
+   button never sits on the links when the page is scrolled to the bottom. The
+   button rises with the home bar's inset (pageLayout.css), so this does too. */
+@media screen and (max-width: 1499px) {
+    #app-footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+        font-size: 0.875rem;
+    }
+
+    /* A bigger target for a finger. */
+    .feedback-links a {
+        display: inline-block;
+        padding: 6px 2px;
+    }
 }
 
 /* ---------- Load failures (dataLoader.js) ---------- */

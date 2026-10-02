@@ -44,20 +44,18 @@ Chrome and Edge, Firefox, and Safari) and in Safari on iPhone. Anything else
 reasonably current should be fine — roughly Chrome/Edge 105+, Safari 16+ or
 Firefox 110+, the limiting factor being CSS container queries.
 
-## Reporting a bug
+## Reporting a bug or suggesting a feature
 
-[Open an issue](https://github.com/GonzaloJMora/mm3drTracker/issues/new).
+Use the **Report a bug** or **Suggest a feature** link at the bottom of the
+page. Each opens a GitHub form with what the page knows already filled in: the
+version, your browser and window size, your save code and anything the page
+reported going wrong. All that's left is to say what happened. You can change or
+delete anything filled in before you submit.
 
-What helps most:
-
-- The version number from the bottom-left corner of the page
-- Your browser, and roughly how wide the window was — a lot of the layout keys
-  off width, so "about 1600 across" narrows it down quickly
-- What you were doing, and what you expected to happen instead
-- If a message appeared on the page, paste it in. Those boxes are selectable on
-  purpose, even though the rest of the page isn't
-- Anything the browser console printed. The tracker reports data problems there
-  at load, naming the file and the entry at fault
+The same forms are on GitHub under
+[New issue](https://github.com/GonzaloJMora/mm3drTracker/issues/new/choose), with
+the boxes empty. If a message appeared on the page, paste it in: those boxes are
+selectable on purpose, even though the rest of the page isn't.
 
 ## Development
 
@@ -144,7 +142,8 @@ the part that broke:
 | `header` | The phone layout's header bar and menu |
 | `saving` | Autosave, Export, Load From File, the previous run, two tabs, and refused saves |
 | `offline` | The offline copy, and its off switch |
-| `layout` | Both pages measured at every window size from a small phone to a wide monitor, and at the largest text size |
+| `feedback` | The Report a bug and Suggest a feature links: each opens its form with what the page knows filled in, under field ids the form really has |
+| `layout` | Both pages measured at every window size from a small phone to a wide monitor, and at the largest text size, footer included |
 
 Every browser test also fails if the page prints a warning or an error. The full
 set runs in Chromium; Firefox and WebKit (Safari's engine, and every browser on an

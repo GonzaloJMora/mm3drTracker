@@ -129,6 +129,39 @@ function settingsProblems(page) {
     });
 }
 
+// The footer at the bottom of the page: on desktop one line, the version left and
+// the feedback links right; on a phone both centered, and clear of the fixed
+// back-to-top button however far the page is scrolled.
+async function footerProblems(page, phone) {
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    return page.evaluate(expectPhone => {
+        const problems = [];
+        const box = element => element.getBoundingClientRect();
+        const footer = box(document.getElementById("app-footer"));
+        const version = box(document.getElementById("app-version"));
+        const links = [...document.querySelectorAll("#app-footer a")].map(box);
+        const linkRow = box(document.querySelector(".feedback-links"));
+        if (footer.left < -1 || footer.right > window.innerWidth + 1) problems.push("the footer runs off the window");
+        if (!version.width) problems.push("the version is empty");
+        if (expectPhone) {
+            const center = (footer.left + footer.right) / 2;
+            [["version", version], ["links", linkRow]].forEach(([name, r]) => {
+                if (Math.abs((r.left + r.right) / 2 - center) > 2) problems.push(`the ${name} are not centered`);
+            });
+            const button = box(document.getElementById("back-to-top"));
+            links.forEach((r, i) => {
+                if (r.left < button.right && button.left < r.right && r.top < button.bottom && button.top < r.bottom) {
+                    problems.push(`back to top covers link ${i + 1}`);
+                }
+            });
+        } else {
+            if (Math.abs(version.top - linkRow.top) > 4) problems.push("the version and the links are not on one line");
+            if (Math.abs(linkRow.right - footer.right) > 1) problems.push("the links are not at the right");
+        }
+        return problems;
+    }, phone);
+}
+
 test.describe("Layout", () => {
     for (const size of SIZES) {
         const phone = size.width < BREAKPOINT;
@@ -142,6 +175,7 @@ test.describe("Layout", () => {
             if (phone) await page.locator('.tab-btn[data-tab="locations"]').click();
             expect(await trackerProblems(page)).toEqual([]);
             if (!phone) expect(await overlayProblems(page)).toEqual([]);
+            expect(await footerProblems(page, phone)).toEqual([]);
         });
 
         test(`settings page at ${label}`, async ({ page }) => {
@@ -150,6 +184,7 @@ test.describe("Layout", () => {
             await settled(page);
             expect(await pageProblems(page, phone)).toEqual([]);
             expect(await settingsProblems(page)).toEqual([]);
+            expect(await footerProblems(page, phone)).toEqual([]);
         });
     }
 
@@ -178,6 +213,7 @@ test.describe("Layout", () => {
                 expect(Math.abs(largeMap.width - normalMap.width)).toBeLessThanOrEqual(1);
                 expect(Math.abs(largeMap.height - normalMap.height)).toBeLessThanOrEqual(1);
             }
+            expect(await footerProblems(page, phone)).toEqual([]);
         });
 
         test(`settings page at ${label}`, async ({ page }) => {
@@ -188,6 +224,7 @@ test.describe("Layout", () => {
             expect(await rootTextSize(page)).toBe("72px");
             expect(await pageProblems(page, phone)).toEqual([]);
             expect(await settingsProblems(page)).toEqual([]);
+            expect(await footerProblems(page, phone)).toEqual([]);
         });
     }
 });
