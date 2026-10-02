@@ -3,12 +3,13 @@
 // Not `python -m http.server`: it queues only five waiting connections, so a few
 // test workers loading pages at once get connections refused, which the page
 // reports as "could not be fetched". Nothing is cached, so every load sees the
-// files as they are on disk. Usage: node tests/server.js <port>
+// files as they are on disk. Serves the repo, or the built site when
+// TEST_SITE_ROOT names it. Usage: node tests/server.js <port>
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.join(__dirname, "..");
+const ROOT = path.resolve(process.env.TEST_SITE_ROOT || path.join(__dirname, ".."));
 const PORT = Number(process.argv[2]) || 8731;
 
 const TYPES = {

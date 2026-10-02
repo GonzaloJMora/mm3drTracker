@@ -1110,7 +1110,11 @@ loads. A file that can't be stored, with storage full, still answers the page.
 
 One cache the worker can't skip: Chromium can reuse a script from its in-memory
 cache when a tab reloads or moves between the pages, and that request never reaches
-the worker. A new tab always gets the latest.
+the worker. So the published site stamps every script and stylesheet address with
+the version (`js/foo.js?v=1.2.3`, written by `scripts/buildSite.py` into the built
+copy only): after a release the pages ask for addresses nothing has kept. The worker
+stores each file under its address without the stamp, so a release replaces a
+file's copy rather than adding another, and finds it again the same way.
 
 **Offline, the stored copy answers.** With no connection a request fails at once
 and the copy answers instead. A connection that neither fails nor answers gets a

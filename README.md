@@ -148,7 +148,10 @@ the part that broke:
 
 Every browser test also fails if the page prints a warning or an error. The full
 set runs in Chromium; Firefox and WebKit (Safari's engine, and every browser on an
-iPhone) run a shorter pass.
+iPhone) run a shorter pass. CI then builds the site that would be published (see
+[Releasing](#releasing)) and runs the shorter pass over that too. To do the same
+locally, run `scripts/buildSite.py`, then the tests with `TEST_SITE_ROOT=_site`
+set.
 
 When a test fails, the output names the file and the step, and
 `npx playwright show-report` opens a report with a trace of each failure you can
@@ -169,17 +172,23 @@ each must load as. Never edit them: they are what proves old saves still load.
 
 ### Workflow
 
-Nothing is pushed straight to `main`. Every change lands through a pull request:
+Work happens on `develop`; `main` only changes at a release, and the live site is
+published from it. Nothing is pushed straight to either: every change lands
+through a pull request.
 
-1. Branch off the latest `main`.
+1. Branch off the latest `develop`, named `feature/<what_it_adds>` or
+   `bugfix/<what_it_fixes>`, in snake_case.
 2. Log what the branch changes as you go, with the branch changes script:
    - **Windows:** double-click `scripts/logBranchChanges.bat`, or run `python scripts/logBranchChanges.py`
    - **macOS / Linux:** `python3 scripts/logBranchChanges.py`
-3. Rebase onto the latest `main` before opening the pull request, and again if
-   `main` moves while it is open.
-4. Open a pull request into `main`.
+3. Open a pull request into `develop`. The [tests](#testing) run on it, and it can
+   only merge once they pass on the latest `develop`: if `develop` moves while it is
+   open, use **Update branch** and let them run again.
+4. Merge with **Squash and merge**, so the branch lands on `develop` as one commit.
 
-The script needs Python 3 and git. It asks for the changes one per line, finished
+The script needs Python 3 and git, and refuses to run on `main`, `develop` or a
+`release/` branch: changes are logged on the branch that makes them. It asks for
+the changes one per line, finished
 with an empty line, then whether to add notes, and writes them to
 `documentation/unreleased/<branch>.md`. Run it again whenever there is more to
 log: it shows what the file already holds and adds to it. Commit the file with
@@ -223,14 +232,19 @@ script writes both.
 
 ### Releasing
 
-A release is a pull request of its own, made once everything going into it has
-merged:
+A release takes two pull requests, made once everything going into it has merged
+into `develop`:
 
-1. Branch off the latest `main`.
+1. Branch off the latest `develop`, named `release/vX.Y.Z` after the version it
+   will be.
 2. Run the release script:
    - **Windows:** double-click `scripts/release.bat`, or run `python scripts/release.py`
    - **macOS / Linux:** `python3 scripts/release.py`
-3. Review the result with `git diff`, commit it, and open a pull request.
+3. Review the result with `git diff`, commit it, open a pull request into
+   `develop`, and squash and merge it once the tests pass.
+4. Open a pull request from `develop` into `main`, and merge it with **Create a
+   merge commit**. Never squash or rebase this one: either gives `main` new copies
+   of `develop`'s commits, and the two branches drift apart for good.
 
 The script needs Python 3 and nothing else. It lists the files waiting in
 `documentation/unreleased/` and asks whether this is a major, minor or hotfix
@@ -246,14 +260,24 @@ If a release does stop partway — the changelog entry written but the version n
 bumped — the next run says so and offers to finish that release instead of
 starting another.
 
-Merge the release pull request before anything else lands. A pull request that
-merges in between ships in the tagged commit, but its logged changes wait for the
-next release's entry.
+Merge nothing else into `develop` between the two. A pull request that merges in
+between ships in the release, but its logged changes wait for the next release's
+entry.
 
-Once it merges, the [release workflow](.github/workflows/release.yml) sees a
-version with no tag yet, tags that commit `vx.y.z`, and publishes a GitHub release
-with the changelog entry as its notes. If the changelog has no entry for the
-version, the workflow fails and nothing is tagged.
+When the merge into `main` lands, two workflows run. The
+[release workflow](.github/workflows/release.yml) sees a version with no tag yet,
+tags that commit `vx.y.z`, and publishes a GitHub release with the changelog entry
+as its notes; if the changelog has no entry for the version, it fails and nothing
+is tagged. The [deploy workflow](.github/workflows/deploy.yml) runs the full test
+suite again, then publishes the site.
+
+What gets published is a built copy, not the repo: `scripts/buildSite.py`
+(`buildSite.bat`) copies only the files the pages use (the list in
+`data/offline.json`, plus the offline worker) into `_site/`, and stamps every
+script and stylesheet address with the version (`js/foo.js?v=1.2.3`). A new
+release then gives every script a new address, so a browser can't pair a script it
+still holds from the last version with the new data. Build it locally to see
+exactly what goes out; the tests check the build on every pull request.
 
 Leave the `## Version: vx.y.z` lines in the changelog exactly as the script writes
 them: they are how the workflow finds an entry.
