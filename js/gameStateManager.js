@@ -438,7 +438,7 @@ window.TrackerDebug = {};
 
     window.addEventListener("keydown", (e) => {
         if (e.key === "F1") {
-            e.preventDefault(); 
+            e.preventDefault();
             panel.style.display = panel.style.display === "none" ? "block" : "none";
         }
     });

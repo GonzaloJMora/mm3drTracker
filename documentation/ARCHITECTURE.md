@@ -2,7 +2,9 @@
 
 A browser-based item/location tracker for randomizer runs. Which game it tracks is
 its `data/`.
-Vanilla JS, no build step, no framework, no package manager, no modules.
+Vanilla JS, no build step, no framework, no package manager, no modules. (The
+tests have a `package.json` of their own; nothing the page loads reads it. See
+README.md, *Testing*.)
 
 It does need to be **served over HTTP** rather than opened off disk — there is no
 build step, but `dataLoader.js` fetches `data/`, and a `file://` origin cannot do
@@ -1002,7 +1004,8 @@ in `missing` and fields retired since in `dropped`. A change that breaks that ha
 broken players' saves. The fixture's settings are mostly off their defaults, with
 high values, items at their top stages and checks spread from the first field to
 the last, since a save of defaults would decode correctly through most mistakes.
-The CI check that loads each fixture is not written yet.
+`tests/node/saves.test.js` decodes every fixture against that rule on each pull
+request, and `tests/browser/saving.spec.js` loads the format-1 one through the page.
 
 ### The autosave
 
