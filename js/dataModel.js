@@ -509,21 +509,36 @@
         return null;
     }
 
-    // ---------- Settings, as written ----------
+    // ---------- Locations ----------
 
-    // Every setting in settings.json by id, as written: enough for the checks that
-    // ask what kind of setting a name is. Reading the settings properly, locks and
-    // grants applied, is settingsState.js's.
-    function settingsById(settingsJson) {
-        const byId = new Map();
-        ((settingsJson && settingsJson.sections) || []).forEach(section => {
-            ((section && section.groups) || []).forEach(group => {
-                ((group && group.settings) || []).forEach(setting => {
-                    if (isObject(setting) && typeof setting.id === "string" && !byId.has(setting.id)) byId.set(setting.id, setting);
+    // Which checks are one location: each check id -> its location's key. A check is
+    // its own location unless a check_group links it with others; an id in two
+    // groups joins them into one, so a click and a count can't disagree ("check-groups"
+    // names it). Ids a group names that aren't in checkIds are left out. The key is an
+    // id from the location, internal only: saves name check ids, never these.
+    function locationsOf(checkIds, checkGroups) {
+        const keyOf = new Map();
+        const members = new Map();
+        checkIds.forEach(id => {
+            if (keyOf.has(id)) return;
+            keyOf.set(id, id);
+            members.set(id, [id]);
+        });
+        (checkGroups || []).forEach(group => {
+            const ids = group.filter(id => keyOf.has(id));
+            if (ids.length < 2) return;
+            const into = keyOf.get(ids[0]);
+            ids.slice(1).forEach(id => {
+                const from = keyOf.get(id);
+                if (from === into) return;
+                members.get(from).forEach(member => {
+                    keyOf.set(member, into);
+                    members.get(into).push(member);
                 });
+                members.delete(from);
             });
         });
-        return byId;
+        return keyOf;
     }
 
     // ---------- Everything at once ----------
@@ -562,7 +577,7 @@
     const api = {
         isObject, mergeConfig, readItems, readCheckGroups, trimRegionName, flattenRegions, acceptRegions, hasUsableCoordinates,
         slotKind, digitIds, slotBounds, grantedValue, gridSlots, emptyItemState, readTokens,
-        namedTokens, settingsById, assemble
+        namedTokens, locationsOf, assemble
     };
     root.DataModel = api;
     if (typeof module !== "undefined" && module.exports) module.exports = api;

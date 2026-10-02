@@ -527,79 +527,6 @@
         return source ? ` (set by "${source}")` : "";
     }
 
-    // A vanilla_when that can't be read never matches, so its check shows as
-    // randomized. Named once here rather than left as a check that should be purple.
-    function validateVanillaClauses(regions) {
-        const settings = window.SettingsState;
-        if (!settings) return;
-        const bad = [];
-
-        regions.forEach(region => {
-            (region.item_checks || []).forEach(check => {
-                if (!check || check.vanilla_when === undefined) return;
-                const problem = settings.clauseProblem(check.vanilla_when);
-                if (problem) {
-                    bad.push(`${checkWhere(region, check)}: vanilla_when ${problem}${fromNote(check.vanilla_when_from)}`);
-                }
-            });
-        });
-
-        if (!bad.length) return;
-        console.warn(
-            `locationTracker: ${bad.length} vanilla_when clause(s) can't be read, so each of ` +
-            `these checks shows as randomized.`
-        );
-        bad.forEach(line => console.warn(`  ${line}`));
-    }
-
-    // One location shown in several places must be randomized in all of them or in
-    // none, or it counts as half purple, and hold the same vanilla_item, or the
-    // tooltip names two different things for one spot. Compared as written rather
-    // than by what matches now, so a disagreement shows under any settings.
-    function validateVanillaAgreement(regions) {
-        const canonical = clause => {
-            if (clause === undefined) return "(randomized)";
-            const part = p => (p && typeof p === "object" && !Array.isArray(p))
-                ? JSON.stringify(Object.keys(p).sort().map(id => [id, [].concat(p[id]).sort()]))
-                : JSON.stringify(p);
-            return JSON.stringify([].concat(clause).map(part).sort());
-        };
-
-        const byLocation = new Map(); // location key -> [{ where, clause, item }]
-        regions.forEach(region => {
-            (region.item_checks || []).forEach(check => {
-                if (!check || typeof check.id !== "string" || check.id === "") return;
-                const key = window.ItemCheckState.locationKey(check.id);
-                if (!byLocation.has(key)) byLocation.set(key, []);
-                byLocation.get(key).push({
-                    where: `${region.region_name} -> ${check.id}`,
-                    clause: canonical(check.vanilla_when),
-                    item: check.vanilla_item === undefined ? "(none)" : JSON.stringify(check.vanilla_item)
-                });
-            });
-        });
-
-        const sets = [...byLocation.values()].filter(entries => entries.length > 1);
-
-        const disagreeing = sets.filter(entries => new Set(entries.map(e => e.clause)).size > 1);
-        if (disagreeing.length) {
-            console.warn(
-                `locationTracker: ${disagreeing.length} set(s) of checks are one location but disagree on ` +
-                `vanilla_when. Give every check in a set the same clause.`
-            );
-            disagreeing.forEach(entries => console.warn(`  ${entries.map(e => e.where).join(", ")}`));
-        }
-
-        const itemsDisagree = sets.filter(entries => new Set(entries.map(e => e.item)).size > 1);
-        if (itemsDisagree.length) {
-            console.warn(
-                `locationTracker: ${itemsDisagree.length} set(s) of checks are one location but disagree on ` +
-                `vanilla_item. Give every check in a set the same one.`
-            );
-            itemsDisagree.forEach(entries => console.warn(`  ${entries.map(e => e.where).join(", ")}`));
-        }
-    }
-
     // TrackerData.regions is already in manifest.json order, which is the one place
     // display order is controlled from — don't re-sort here.
     window.TrackerData.onReady(({ config, regions }) => {
@@ -667,18 +594,6 @@
                 console.error("locationTracker: could not read the location flags and logic helpers", error);
             }
 
-            try {
-                validateVanillaClauses(rendered);
-            } catch (error) {
-                console.error("locationTracker: could not validate the vanilla_when clauses", error);
-            }
-
-            try {
-                validateVanillaAgreement(rendered);
-            } catch (error) {
-                console.error("locationTracker: could not compare vanilla_when across grouped checks", error);
-            }
-
             // Run evaluation sweep using initial baseline numbers immediately after files finish rendering
             if (window.GameState) {
                 evaluateAllRegions(window.GameState.items, window.GameState.tokens);
@@ -738,8 +653,7 @@
             itemDiv.classList.add("region-check-item");
             itemDiv.dataset.checkId = check.id;
             // Decided once: a tracker's settings don't change while it is open. A
-            // clause that can't be read never matches, and validateVanillaClauses()
-            // names it.
+            // clause that can't be read never matches; "vanilla-clauses" names it.
             const vanilla = check.vanilla_when !== undefined && Boolean(window.SettingsState) &&
                 window.SettingsState.matches(check.vanilla_when);
             if (vanilla) {

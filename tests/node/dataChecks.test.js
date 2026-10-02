@@ -27,7 +27,7 @@ function findingsOf(assembled) {
 }
 
 // A tiny world that keeps every rule: two regions, a flag, a helper, a token, a
-// check group and a numeric dropdown.
+// check group, a numeric dropdown and a toggle that grants a slot under a lock.
 function cleanWorld() {
     return {
         configParts: [
@@ -59,13 +59,16 @@ function cleanWorld() {
         settings: { sections: [{ name: "S", groups: [{ name: "G", settings: [
             { id: "health", name: "Health", class: "number", default: 3, min: 3, max: 20 },
             { id: "need", name: "Need", class: "dropdown", default: "two",
-                options: [{ id: "one", name: "1", value: 1 }, { id: "two", name: "2", value: 2 }] }
-        ] }] }] }
+                options: [{ id: "one", name: "1", value: 1 }, { id: "two", name: "2", value: 2 }] },
+            { id: "start_bow", name: "Start With Bow", class: "toggle", default: false, grants: { bow: true },
+                forced: [{ when: { need: "one" }, value: true }] }
+        ] }] }], always_grants: { heart_piece: 4 }, starting_max: { heart_piece: 8 } }
     };
 }
 
 const part = (world, name) => world.configParts.find(entry => entry.name === name).data;
 const region = (world, name) => world.regions.find(entry => entry.data.region_name === name).data;
+const setting = (world, id) => world.settings.sections[0].groups[0].settings.find(entry => entry.id === id);
 const check = (world, id) => world.regions.flatMap(entry => entry.data.item_checks || []).find(c => c.id === id);
 
 // One mistake per rule, made to the clean world.
@@ -89,6 +92,12 @@ const BROKEN = {
     "check-groups": w => part(w, "checkGroups.json").check_groups.push(["a2", "no_such_check"]),
     "check-names": w => { check(w, "a2").name = ""; },
     "vanilla-items": w => { check(w, "a1").vanilla_item = "not_an_item"; },
+    "settings-entries": w => w.settings.sections[0].groups[0].settings.push({ name: "No id", class: "toggle", default: false }),
+    "settings-grants": w => { setting(w, "start_bow").grants = { not_a_slot: true }; },
+    "settings-slots": w => w.settings.sections[0].groups[0].settings.push({ id: "also_bow", name: "Also Bow", class: "toggle", default: false, grants: { bow: true } }),
+    "settings-locks": w => { setting(w, "start_bow").forced = [{ when: { no_such_setting: true }, value: true }]; },
+    "vanilla-clauses": w => { check(w, "a1").vanilla_when = { need: "three" }; },
+    "vanilla-agreement": w => { check(w, "a1").vanilla_item = "kokiri"; },
     "map-coordinates": w => { delete region(w, "A").map_coordinates; }
 };
 

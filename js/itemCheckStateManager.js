@@ -2,7 +2,7 @@
 // reads and writes. No DOM: locationTracker.js draws the rows from it.
 //
 // A location is one check id, or every id in a check_group with it: those tick
-// off together and count once. That rule lives here and nowhere else.
+// off together and count once. Which ids those are is DataModel.locationsOf().
 (function () {
     "use strict";
 
@@ -35,29 +35,13 @@
             unplaced.clear();
             statuses = new Map();
 
-            regions.forEach(region => (region.item_checks || []).forEach(check => {
-                const id = check.id;
-                if (!locationOf.has(id)) {
-                    locationOf.set(id, id);
-                    members.set(id, [id]);
-                }
-            }));
-
-            // An id in two groups joins them into one location, so a click and the
-            // count can't disagree; the data checks name it ("check-groups").
-            (checkGroups || []).forEach(group => {
-                const ids = group.filter(id => locationOf.has(id));
-                if (ids.length < 2) return;
-                const into = keyOf(ids[0]);
-                ids.slice(1).forEach(id => {
-                    const from = keyOf(id);
-                    if (from === into) return;
-                    members.get(from).forEach(member => {
-                        locationOf.set(member, into);
-                        members.get(into).push(member);
-                    });
-                    members.delete(from);
-                });
+            // Which checks are one location is DataModel's to say, so the data checks
+            // ("vanilla-agreement") compare exactly the locations this ticks.
+            const ids = regions.flatMap(region => (region.item_checks || []).map(check => check.id));
+            window.DataModel.locationsOf(ids, checkGroups).forEach((key, id) => {
+                locationOf.set(id, key);
+                if (!members.has(key)) members.set(key, []);
+                members.get(key).push(id);
             });
 
             // A check_group with a rendered member already carries the location, and

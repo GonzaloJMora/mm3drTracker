@@ -90,6 +90,27 @@ test.describe("Loading", () => {
         }
     });
 
+    // settingsState.js reads the file through the same code, so it must not name
+    // the mistake a second time.
+    test("a settings mistake is named once by its rule, on both pages", async ({ page, allowConsole }) => {
+        allowConsole.push(/Data check "settings-grants"/, /grant "not_a_slot"/);
+        const warnings = [];
+        page.on("console", message => { if (message.type() === "warning") warnings.push(message.text()); });
+        await page.route("**/data/settings.json", async route => {
+            const response = await route.fetch();
+            const settings = await response.json();
+            settings.always_grants = Object.assign({}, settings.always_grants, { not_a_slot: true });
+            await route.fulfill({ response, json: settings });
+        });
+        for (const address of ["index.html", "tracker.html?defaults"]) {
+            warnings.length = 0;
+            await page.goto(address);
+            await waitForPage(page);
+            expect(warnings.filter(text => text.includes("not_a_slot")), address).toHaveLength(1);
+            expect(warnings.filter(text => text.startsWith('Data check "settings-grants"')), address).toHaveLength(1);
+        }
+    });
+
     test("a core file that won't load shows the copyable error, not a blank page", async ({ page, allowConsole }) => {
         allowConsole.push(/./);
         await page.route("**/data/Items.json", route => route.fulfill({ status: 404, body: "" }));
