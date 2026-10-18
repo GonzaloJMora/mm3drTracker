@@ -4,6 +4,24 @@
      The release workflow finds each one by its "## Version: vx.y.z" line, so leave
      those lines exactly as written. -->
 
+## Version: v0.16.0
+
+**Released:** 10/18/2026
+
+**Changes:**
+- Added automated testing (script and CI)
+- Site files load fresh right after an update (no old scripts mixed with new data)
+- Split documentation into multiple files separated by topic.
+- Updates to match newest nightly version
+- Fixed the tracker page sometimes opening as an old version offline on devices that had used the previous release’s offline copy.
+- The requirements tooltip no longer lists a requirement that another one already covers
+- Added Report a bug and Suggest a feature links to the footer, which open a GitHub form with your version, browser and save already filled in.
+
+**Notes:**
+- Tracker is up-to-date with version Nightly-840E84 of the randomizer
+
+---
+
 ## Version: v0.15.0
 
 **Released:** 09/30/2026
