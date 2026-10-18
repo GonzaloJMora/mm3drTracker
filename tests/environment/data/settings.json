@@ -1,0 +1,60 @@
+{
+  "always_grants": {},
+  "starting_max": { "heart_piece": 6 },
+  "sections": [
+    {
+      "name": "Shuffles",
+      "groups": [
+        {
+          "settings": [
+            { "id": "shuffle_songs", "name": "Shuffle Songs", "class": "toggle", "default": true },
+            { "id": "shuffle_shops", "name": "Shuffle Shops", "class": "toggle", "default": true },
+            { "id": "shuffle_bottles", "name": "Shuffle Bottles", "class": "toggle", "default": true },
+            { "id": "item_pool", "name": "Item Pool", "class": "dropdown", "default": "normal",
+              "options": [{ "id": "normal", "name": "Normal" }, { "id": "plentiful", "name": "Plentiful" }] },
+            { "id": "fairy_shuffle", "name": "Fairy Shuffle", "class": "dropdown", "default": "vanilla",
+              "options": [{ "id": "vanilla", "name": "Vanilla" }, { "id": "anywhere", "name": "Anywhere" }],
+              "forced": [{ "when": { "item_pool": "plentiful" }, "value": "anywhere" }] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Goals",
+      "groups": [
+        {
+          "settings": [
+            { "id": "remains_required", "name": "Remains Required", "class": "dropdown", "default": "two",
+              "options": [
+                { "id": "one", "name": "One", "value": 1 },
+                { "id": "two", "name": "Two", "value": 2 },
+                { "id": "zero", "name": "Zero", "value": 0 }
+              ] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Starting Items",
+      "view": "item_grids",
+      "groups": [
+        {
+          "name": "Starting Options",
+          "settings": [
+            {"id": "starting_kit", "name": "Starting Kit", "class": "dropdown", "default": "none", "options": [{"id": "none", "name": "None"}, {"id": "full", "name": "Full", "grants": {"heart_piece": 4}}]},
+            {"id": "starting_health", "name": "Health", "class": "number", "default": 3, "min": 3, "max": 6}
+          ]
+        },
+        {
+          "name": "Starting Inventory",
+          "settings": [
+            {"id": "starting_sword", "name": "Starting Sword", "class": "dropdown", "default": "kokiri_sword", "options": [{"id": "kokiri_sword", "name": "Kokiri Sword", "grants": {"sword": "kokiri_sword"}}, {"id": "razor_sword", "name": "Razor Sword", "grants": {"sword": "razor_sword"}}, {"id": "none", "name": "None"}]},
+            {"id": "start_with_hookshot", "name": "Start With Hookshot", "class": "toggle", "default": false, "grants": {"hookshot": true}, "forced": [{"when": {"starting_kit": "full"}, "value": true}]},
+            {"id": "starting_heart_pieces", "name": "Starting Heart Pieces", "class": "number", "default": 0, "min": 0, "max": 8, "grants": {"heart_piece": "value"}},
+            {"id": "start_with_bottle", "name": "Start With Bottle", "class": "toggle", "default": false, "grants": {"empty_bottle": 1}}
+          ]
+        }
+      ]
+    }
+  ]
+}

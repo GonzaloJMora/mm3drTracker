@@ -2,7 +2,7 @@
 // window.SettingsState: the randomizer settings this tracker runs with, read out
 // of data/settings.json. It owns them the way GameState owns the inventory, so
 // anything that needs a setting asks here. Reading the file is settingsModel.js's;
-// how it is written: ARCHITECTURE.md, *Settings*.
+// how it is written: SETTINGS.md.
 
 (function () {
     const Model = window.SettingsModel;

@@ -4,6 +4,11 @@
 
 /* Container housing each individual item-grid. */
 .grid-container {
+    /* The desktop grid column's design height, in slot rows. Data with fewer rows is
+       scaled and given a map as if it had this many, so its slots stay the size this
+       tracker draws them; more rows shrink to fit as usual. Read by
+       locationPanelLayout.js. */
+    --grid-design-rows: 9;
     display: grid;
     grid-template-columns: repeat(2, max-content);
     gap: calc(15px * var(--ui-scale));

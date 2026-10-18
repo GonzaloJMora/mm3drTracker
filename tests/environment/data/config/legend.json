@@ -1,0 +1,9 @@
+{
+  "legend": [
+    { "status": "inaccessible", "label": "Inaccessible" },
+    { "status": "partialCompletion", "label": "Partially Accessible" },
+    { "status": "fullClear", "label": "Accessible" },
+    { "status": "completed", "label": "Checked" },
+    { "status": "vanilla", "label": "Not Randomized" }
+  ]
+}

@@ -1,12 +1,12 @@
 // Both pages load clean, draw everything in the data, and fail in the ways
-// ARCHITECTURE.md, *When the data is wrong*, describes.
-const fs = require("fs");
-const path = require("path");
-const { test, expect, openSettings, launchTracker, waitForPage, PHONE } = require("./fixtures");
+// DATA.md, *When the data is wrong*, describes.
+const { test, expect, openSettings, launchTracker, waitForPage, PHONE, readWorld } = require("./fixtures");
 
-const ROOT = path.join(__dirname, "..", "..");
-const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "manifest.json"), "utf8"));
-const version = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "version.json"), "utf8")).version;
+const manifest = readWorld("manifest.json");
+const version = readWorld("version.json").version;
+// 22 locations, with the Postbox a row in each Clock Town: tests/environment/README.md,
+// *Expected answers*.
+const CHECK_ROWS = 23;
 
 test.describe("Loading", () => {
     test("the settings page loads clean", { tag: "@smoke" }, async ({ page }) => {
@@ -17,15 +17,8 @@ test.describe("Loading", () => {
 
     test("the tracker loads clean and draws every region and check in the data", { tag: "@smoke" }, async ({ page }) => {
         await launchTracker(page);
-        const expected = await page.evaluate(() => ({
-            regions: window.TrackerData.regions.length,
-            checks: window.TrackerData.regions.reduce((sum, region) => sum + region.item_checks.length, 0),
-            failed: window.TrackerData.failedRegions.length
-        }));
-        expect(expected.failed).toBe(0);
-        expect(expected.regions).toBe(manifest.length);
-        await expect(page.locator(".region-group")).toHaveCount(expected.regions);
-        await expect(page.locator(".region-check-item")).toHaveCount(expected.checks);
+        await expect(page.locator(".region-group")).toHaveCount(manifest.length);
+        await expect(page.locator(".region-check-item")).toHaveCount(CHECK_ROWS);
         // Every check judged one way or the other by the first sweep.
         await expect(page.locator(".region-check-item:not(.accessible):not(.inaccessible)")).toHaveCount(0);
         await expect(page.locator("#app-version")).toContainText(version);
@@ -46,6 +39,9 @@ test.describe("Loading", () => {
     test("tracker.html?defaults opens on the default settings", async ({ page }) => {
         await page.goto("tracker.html?defaults");
         await waitForPage(page);
+        // The settings page has no picks either, so the tracker has to be what opened.
+        await expect(page).toHaveURL(/tracker\.html\?defaults$/);
+        await expect(page.locator(".region-group")).toHaveCount(manifest.length);
         expect(await page.evaluate(() => Object.keys(window.SettingsState.picks()).length)).toBe(0);
     });
 

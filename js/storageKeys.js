@@ -3,7 +3,7 @@
 // taken from the page's <meta name="tracker-id">: the one place the game reaches
 // storage. It is the same id as "app" in data/saveLayout.json, which saveManager.js
 // checks. Loaded first in <head>, since trackerLaunch.js needs a key before anything
-// else has run. See ARCHITECTURE.md, *Saving*.
+// else has run. See SAVING.md.
 (function () {
     "use strict";
 

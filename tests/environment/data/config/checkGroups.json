@@ -1,0 +1,5 @@
+{
+  "check_groups": [
+    ["sct_postbox", "nct_postbox"]
+  ]
+}

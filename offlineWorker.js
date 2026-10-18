@@ -3,7 +3,7 @@
 // takes too long to answer or fails with a server error, the stored copy answers
 // instead. The whole site is stored on the first visit, from the list in
 // data/offline.json, and re-checked in the background at most once an hour. It
-// lives at the site's root so it covers both pages. See ARCHITECTURE.md, *Offline*.
+// lives at the site's root so it covers both pages. See OFFLINE.md.
 "use strict";
 
 const CACHE = "offline:" + self.registration.scope;
@@ -68,8 +68,19 @@ self.addEventListener("install", event => {
     event.waitUntil(storeEverything().catch(() => {}).then(() => self.skipWaiting()));
 });
 
+// v0.15.0 stored addresses with their query (tracker.html?defaults), and a match that
+// ignores the query returns the oldest entry, so one of those would answer ahead of
+// every fresh copy. Nothing stores a query now, so this only clears what is left.
+async function removeQueryEntries() {
+    if (switchedOff || !(await caches.has(CACHE))) return;
+    const cache = await caches.open(CACHE);
+    for (const request of await cache.keys()) {
+        if (new URL(request.url).search) await cache.delete(request);
+    }
+}
+
 self.addEventListener("activate", event => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(removeQueryEntries().catch(() => {}).then(() => self.clients.claim()));
 });
 
 // A page asks after it loads; nothing is refreshed while nobody is using the site.

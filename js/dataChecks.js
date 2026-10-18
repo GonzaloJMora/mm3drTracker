@@ -7,7 +7,7 @@
 // drawing an empty slot or skipping a region, stays with the file that draws it.
 // Rules about the running page rather than the files (a file that won't download,
 // a region that throws while drawing, a save) stay in the file that meets them.
-// See ARCHITECTURE.md, *When the data is wrong*.
+// See DATA.md, *When the data is wrong*.
 (function (root) {
     "use strict";
 
@@ -179,6 +179,14 @@
                 }));
                 return lines;
             } },
+
+        // A vanilla check always holds something in the game; one the tracker
+        // doesn't track is written as text. A null item is vanilla-items' to report.
+        { id: "vanilla-item-named", title: "every check with a vanilla_when names its vanilla_item", regions: true,
+            header: n => `${n} check(s) can be non-randomized but name no vanilla_item, so the tooltip can't say what they hold.`,
+            check: ctx => ctx.regions.flatMap(region => region.item_checks
+                .filter(check => check.vanilla_when !== undefined && check.vanilla_item === undefined)
+                .map(check => `${checkWhere(region, check)}${fromNote(check.vanilla_when_from)}`)) },
 
         { id: "settings-entries", title: "every section, group and setting in settings.json can be read",
             header: n => `${n} problem(s) in settings.json's sections and settings. Each line says what is ignored because of it.`,

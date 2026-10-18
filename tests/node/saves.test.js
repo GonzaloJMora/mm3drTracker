@@ -1,96 +1,41 @@
-// Saves, without a browser: every released format's fixture still decodes to exactly
-// what it held, and the codec refuses what it should. See ARCHITECTURE.md, *Saving*.
+// The save codec, without a browser, on a save of the test world: it reads back what
+// it wrote, and refuses what it should. That the game's released saves still load is
+// the game suite's tests/game/node/saves.test.js. See SAVING.md.
 const { test, expect } = require("@playwright/test");
 const fs = require("fs");
 const path = require("path");
 const SaveCodec = require("../../js/saveCodec.js");
 
-const ROOT = path.join(__dirname, "..", "..");
-const FIXTURES = path.join(ROOT, "tests", "fixtures", "saves");
-const readJson = file => JSON.parse(fs.readFileSync(file, "utf8"));
+const LAYOUT = path.join(__dirname, "..", "environment", "data", "saveLayout.json");
+const current = JSON.parse(fs.readFileSync(LAYOUT, "utf8"));
 
-const current = readJson(path.join(ROOT, "data", "saveLayout.json"));
+// The test world has only ever had one format.
+const decode = code => SaveCodec.decode(code, { layoutFor: async format => (format === current.format ? current : null), current });
 
-// What TrackerData.saveLayoutFor does in the page, from the files on disk.
-async function layoutFor(format) {
-    if (format === current.format) return current;
-    const file = path.join(ROOT, "data", "saveLayouts", `format${format}.json`);
-    return fs.existsSync(file) ? readJson(file) : null;
-}
-
-const decode = code => SaveCodec.decode(code, { layoutFor, current });
-
-// Snapshot group -> field kind.
-const KINDS = { settings: "setting", slots: "slot", checks: "check", view: "view" };
-const keyOf = field => `${field.kind}:${field.id}`;
-
-// The fields a code holds: its own format's layout, as far as the field count in
-// its header (the second 16 bits) reaches.
-async function heldFields(code, format) {
-    const bytes = Buffer.from(code, "base64url");
-    const count = bytes[2] * 256 + bytes[3];
-    const own = await layoutFor(format);
-    return new Set(own.fields.slice(0, count).filter(field => field.kind !== "retired").map(keyOf));
-}
-
-const fixtures = fs.readdirSync(FIXTURES)
-    .filter(name => /^format\d+\.json$/.test(name))
-    .map(name => name.replace(/\.json$/, ""));
-
-test.describe("Save fixtures", () => {
-    test("there is a fixture for every released format", () => {
-        for (let format = 1; format <= current.format; format++) {
-            expect(fixtures, `no tests/fixtures/saves/format${format}.json`).toContain(`format${format}`);
-        }
-    });
-
-    for (const name of fixtures) {
-        test(`${name} decodes to exactly what it held`, async () => {
-            const save = readJson(path.join(FIXTURES, `${name}.json`));
-            const expected = readJson(path.join(FIXTURES, `${name}.expected.json`));
-            const code = SaveCodec.unwrap(save, current);
-            const result = await decode(code);
-            expect(result.format).toBe(expected.format);
-
-            // The layout moves on after a format ships, within the rules in
-            // ARCHITECTURE.md, *Saving*: a field appended since is missing from the
-            // save, and one retired since is dropped from it. Nothing else may change.
-            const held = await heldFields(code, result.format);
-            const live = new Set(current.fields.filter(field => field.kind !== "retired").map(keyOf));
-            for (const [group, kind] of Object.entries(KINDS)) {
-                const extraMissing = result.missing[group].filter(id => !expected.missing[group].includes(id));
-                expect(extraMissing.filter(id => held.has(`${kind}:${id}`)), `${group} the save holds, reported missing`).toEqual([]);
-                expect(result.missing[group]).toEqual(expect.arrayContaining(expected.missing[group]));
-                const extraDropped = result.dropped[group].filter(id => !expected.dropped[group].includes(id));
-                expect(extraDropped.filter(id => live.has(`${kind}:${id}`)), `${group} still in the layout, reported dropped`).toEqual([]);
-            }
-            const kept = (list, group) => list.filter(id => !result.dropped[group].includes(id));
-            const without = (values, group) => Object.fromEntries(Object.entries(values)
-                .filter(([id]) => !result.dropped[group].includes(id)));
-            expect(result.snapshot.settings).toEqual(without(expected.snapshot.settings, "settings"));
-            expect(result.snapshot.slots).toEqual(without(expected.snapshot.slots, "slots"));
-            expect(result.snapshot.view).toEqual(without(expected.snapshot.view, "view"));
-            // Checks come back in layout order; which ones is what matters.
-            expect([...result.snapshot.checks].sort()).toEqual(kept(expected.snapshot.checks, "checks").sort());
-        });
-
-        test(`${name} survives being saved again in the current format`, async () => {
-            const save = readJson(path.join(FIXTURES, `${name}.json`));
-            const first = await decode(SaveCodec.unwrap(save, current));
-            const { code, problems } = SaveCodec.encode(first.snapshot, current);
-            expect(problems).toEqual([]);
-            const again = await decode(code);
-            expect(again.format).toBe(current.format);
-            expect(again.snapshot).toEqual(first.snapshot);
-        });
-    }
-});
+// A run partway through the test world (its README's Swamp inventory, ticked a little),
+// with every setting moved off its default where it can be.
+const SNAPSHOT = {
+    settings: {
+        shuffle_songs: false, shuffle_shops: true, shuffle_bottles: false, item_pool: "plentiful", fairy_shuffle: "anywhere",
+        remains_required: "one", starting_sword: "razor_sword", start_with_hookshot: true, starting_kit: "full",
+        starting_health: 5, starting_heart_pieces: 7, start_with_bottle: true
+    },
+    slots: {
+        sword: 1, bow: 0, hookshot: 0, magic: -1, empty_bottle: 1, red_potion: -1,
+        deku_mask: 0, goron_mask: -1, bunny_hood: 0, stone_mask: -1, blast_mask: -1,
+        ocarina_of_time: -1, song_of_time: -1, heart_piece: 6, heart_container: 0, woodfall_small_key: 1,
+        odolwa_remains: -1, goht_remains: -1, code_digit_1: 1, code_digit_2: 0, code_digit_3: 3
+    },
+    checks: ["sct_clock_tower_chest", "sct_postbox", "nct_postbox", "wft_key_chest", "wft_side_chest"],
+    view: { "toggle-non-randomized": true, "toggle-only-accessible": false }
+};
 
 test.describe("Save codec", () => {
     let code;
-    test.beforeAll(async () => {
-        const save = readJson(path.join(FIXTURES, "format1.json"));
-        code = SaveCodec.encode((await decode(SaveCodec.unwrap(save, current))).snapshot, current).code;
+    test.beforeAll(() => {
+        const result = SaveCodec.encode(SNAPSHOT, current);
+        expect(result.problems).toEqual([]);
+        code = result.code;
     });
 
     const reasonOf = async promise => {
@@ -103,8 +48,20 @@ test.describe("Save codec", () => {
         throw new Error("the save was accepted");
     };
 
-    test("the current layout has no problems", () => {
+    test("the test world's layout has no problems", () => {
         expect(SaveCodec.layoutProblems(current)).toEqual([]);
+    });
+
+    test("a save reads back exactly as it was written", async () => {
+        // A lost last field reads as unset, so only a save that sets it shows the loss.
+        const last = current.fields[current.fields.length - 1];
+        expect(SNAPSHOT.checks, "the save sets the layout's last field").toContain(last.id);
+        const result = await decode(code);
+        expect(result.format).toBe(current.format);
+        expect(result.snapshot.settings).toEqual(SNAPSHOT.settings);
+        expect(result.snapshot.slots).toEqual(SNAPSHOT.slots);
+        expect(result.snapshot.view).toEqual(SNAPSHOT.view);
+        expect([...result.snapshot.checks].sort()).toEqual([...SNAPSHOT.checks].sort());
     });
 
     test("a mistyped code is refused as damaged", async () => {

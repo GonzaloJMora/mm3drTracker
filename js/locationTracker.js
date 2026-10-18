@@ -90,7 +90,7 @@
     // accessible left, but not while a tap in that region has just done it: the row
     // stays so a mistaken tap can be undone, and the list doesn't jump under the
     // finger. .keep-shown marks those rows until the region closes
-    // (ARCHITECTURE.md, *Hiding checks*).
+    // (LAYOUT.md, *Hiding checks*).
     function releaseKeptRows(root) {
         if (root.classList) root.classList.remove("keep-shown");
         root.querySelectorAll(".keep-shown").forEach(el => el.classList.remove("keep-shown"));
@@ -100,17 +100,10 @@
     // included: a check_group completes them together, and they may be sitting in
     // regions the reader also has open.
     //
-    // Whether to mark at all is asked of the row's own info button, which CSS gives
-    // a display only in the phone layout — where the hiding rules live. So a check
-    // completed in the desktop map overlay leaves no mark for a later narrow window
-    // to honor, and this file still never learns the breakpoint.
-    //
-    // The question is what CSS says about the button, not whether it is on screen:
-    // the row this runs for has just been marked completed, which Show Only
-    // Accessible hides, so anything measured would already be gone.
+    // Only in the phone layout, where the hiding rules live, so a check completed in
+    // the desktop map overlay leaves no mark for a later narrow window to honor.
     function keepRowShown(row) {
-        const button = row.querySelector(".region-check-info");
-        if (!button || window.getComputedStyle(button).display === "none") return;
+        if (!window.PhoneLayout.active) return;
         const content = row.closest(".region-content");
         if (!content || !content.classList.contains("open")) return;
         row.classList.add("keep-shown");
@@ -118,52 +111,16 @@
         if (group) group.classList.add("keep-shown");
     }
 
-    // What a bare token is worth. The requirements tooltip resolves tokens through
+    // What a bare token is worth: DataModel's resolver over the live inventory, this
+    // file's named tokens and the settings. The requirements tooltip resolves through
     // this same function, so the two cannot disagree about why a check is red.
-    //
-    // A name after >= is a setting (`item>=setting`), looked up
-    // as one so it never falls through to the inventory. Without a number it is
-    // undefined, and the comparison is unmet.
     function tokenResolver(inventory, tokens) {
-        const namedValues = new Map();
-        const namedBeingWorkedOut = new Set();
-
-        const resolve = (token, kind) => {
-            if (kind === "setting") {
-                return window.SettingsState ? window.SettingsState.numberOf(token) : undefined;
-            }
-            if (Object.prototype.hasOwnProperty.call(tokens, token)) return tokens[token];
-
-            // A named token is worth whatever its chain needs, worked out with this
-            // same resolver. One met again while it is still being worked out is a
-            // loop and reads false rather than recursing; the data checks name
-            // it at load ("flags-and-helpers").
-            const named = namedTokens.get(token);
-            if (named) {
-                if (namedValues.has(token)) return namedValues.get(token);
-                if (namedBeingWorkedOut.has(token) || !named.chain) return false;
-                namedBeingWorkedOut.add(token);
-                let value = false;
-                try {
-                    value = window.LogicParser.evaluate(named.chain, resolve);
-                } catch (error) {
-                    value = false;
-                }
-                namedBeingWorkedOut.delete(token);
-                namedValues.set(token, value);
-                return value;
-            }
-
-            const value = inventory[token];
-            if (typeof value === "boolean") return value;
-            if (typeof value === "number") return value;
-
-            // An unknown token is not an error here — the data checks have
-            // already named it once at load ("logic-tokens-known"), and the check
-            // simply stays unreachable.
-            return false;
-        };
-        return resolve;
+        return window.DataModel.resolver({
+            items: inventory,
+            tokens,
+            named: namedTokens,
+            numberOf: id => (window.SettingsState ? window.SettingsState.numberOf(id) : undefined)
+        });
     }
 
     // ---------- Named tokens: location flags and logic helpers ----------
@@ -174,7 +131,7 @@
     // own. A logic helper (logicHelpers.json) is a list of items written once, like
     // any melee damage source. Filled once the regions have rendered, so a flag
     // pointing into a region that failed to load has no chain and reads false. See
-    // ARCHITECTURE.md, *Location flags* and *Logic helpers*.
+    // LOGIC_AND_REGIONS.md, *Location flags* and *Logic helpers*.
     const namedTokens = new Map();
 
     // A named token can't take an item's name: the resolver asks for these first,
@@ -209,10 +166,10 @@
         return item && item.name ? item.name : value;
     }
 
-    // A check's element to the logic that gates it. Held here rather than on the
-    // element because a .region-group is moved into the map overlay and back, and a
-    // WeakMap follows the node wherever it goes.
-    const checkRequirements = new WeakMap();
+    // A check's element to its region and resolved check, for the tooltip. Held here
+    // rather than on the element because a .region-group is moved into the map
+    // overlay and back, and a WeakMap follows the node wherever it goes.
+    const checkPlaces = new WeakMap();
 
     // Region entry, every sub-region the check sits inside, and the check's own logic
     // are one requirement, not several lists: you need all of them, so they read as a
@@ -222,6 +179,45 @@
     // so an `a|b` group can never bind loosely against the `c` below it.
     function combinedLogic(regionLogic, check) {
         return [regionLogic, ...(check.group_logic || []), check.logic];
+    }
+
+    // The layers the tooltip lists: the sweep's, less the ones a flag already holds.
+    // A check asking outright for a flag earned in its own region has passed through
+    // every layer it shares with that flag's check, so listing them again only
+    // repeats the way in. The result can't change, because the flag's chain holds
+    // those same strings. TOOLTIPS.md, *The requirements list*.
+    function tooltipLogic(region, check) {
+        const parts = combinedLogic(region.logic, check);
+        const path = check.group_path || [];
+        const groups = check.group_logic || [];
+        let cut = 0;
+        parts.forEach((part, layer) => {
+            outrightTokens(part).forEach(id => {
+                const named = namedTokens.get(id);
+                const home = named && named.home;
+                if (!home || home.region !== region.region_name) return;
+                // The region's entry is always shared, and each group after it while
+                // both paths name it with the same logic.
+                let shared = 1;
+                while (shared - 1 < Math.min(path.length, home.path.length)
+                    && path[shared - 1] === home.path[shared - 1]
+                    && groups[shared - 1] === home.groupLogic[shared - 1]) shared++;
+                cut = Math.max(cut, Math.min(shared, layer));
+            });
+        });
+        return parts.slice(cut);
+    }
+
+    // The tokens a logic string requires outright: its top-level & terms.
+    function outrightTokens(logic) {
+        let tree = null;
+        try {
+            tree = logic ? window.LogicParser.parse(logic) : null;
+        } catch (error) {
+            return [];
+        }
+        const terms = node => (node.type === "and" ? node.children.flatMap(terms) : [node]);
+        return tree ? terms(tree).filter(node => node.type === "token").map(node => node.id) : [];
     }
 
     // Names come from the item data, with the token definitions covering the
@@ -244,7 +240,8 @@
     // Inside onReady so this file does not depend on tooltip.js loading first.
     window.TrackerData.onReady(() => {
         window.Tooltip.register(".region-check-item", (element, context) => {
-            const logic = checkRequirements.get(element);
+            const place = checkPlaces.get(element);
+            const logic = place ? tooltipLogic(place.region, place.check) : null;
             const fragment = document.createDocumentFragment();
 
             // Docked at the bottom of the screen the panel is nowhere near the row it
@@ -328,67 +325,8 @@
 
     // A layer is implied when the rest of a check's requirement already covers it:
     // a strict requirement nested under a group offering a looser one evaluates
-    // correctly and still renders a bullet nobody can act on.
-    //
-    // Decided exactly: logic has no "not", so holding more never turns a check red.
-    // Any inventory the other layers accept holds one of their minimal ways in, so a
-    // layer met by every one of those ways is met by all of them, and a way that
-    // misses it proves it matters. Flags, helpers and counts against a setting stay
-    // plain tokens as written, which can miss an implication but never invent one.
-    // A console helper rather than a validator: some implied layers are deliberate.
-
-    // Past this, the ways in are too many to list, and the layer is left undecided
-    // rather than guessed at. Checked before pruning, which compares every way with
-    // every other and would take minutes on a chain far past it.
-    const WAYS_LIMIT = 1000;
-
-    // A count against a setting only matches the same count written the same way.
-    const settingAtom = node => `${node.left.id}>=${node.right.id}`;
-
-    // Every minimal way to meet a tree, each a Map of token -> the count it needs.
-    function waysIn(node) {
-        if (node.type === "token") return [new Map([[node.id, 1]])];
-        if (node.type === "compare") {
-            return node.right.type === "setting"
-                ? [new Map([[settingAtom(node), 1]])]
-                : [new Map([[node.left.id, node.right.value]])];
-        }
-        if (node.type === "or") return withoutDominated(node.children.flatMap(waysIn));
-
-        let ways = [new Map()];
-        node.children.forEach(child => {
-            const next = [];
-            waysIn(child).forEach(tail => ways.forEach(head => {
-                const way = new Map(head);
-                tail.forEach((count, token) => way.set(token, Math.max(count, way.get(token) || 0)));
-                next.push(way);
-            }));
-            if (next.length > WAYS_LIMIT) throw new RangeError("too many ways in");
-            ways = withoutDominated(next);
-        });
-        return ways;
-    }
-
-    // A way that asks for everything another asks, and maybe more, adds nothing.
-    function withoutDominated(ways) {
-        const covers = (small, big) => [...small].every(([token, count]) => (big.get(token) || 0) >= count);
-        return ways.filter((way, index) => !ways.some((other, at) =>
-            at !== index && covers(other, way) && (!covers(way, other) || at < index)));
-    }
-
-    // Whether a tree is met by an inventory holding exactly one way in.
-    function metBy(node, way) {
-        switch (node.type) {
-            case "token": return (way.get(node.id) || 0) >= 1;
-            case "compare":
-                return node.right.type === "setting"
-                    ? way.has(settingAtom(node))
-                    : (way.get(node.left.id) || 0) >= node.right.value;
-            case "and": return node.children.every(child => metBy(child, way));
-            case "or": return node.children.some(child => metBy(child, way));
-        }
-        return false;
-    }
+    // correctly, and the tooltip drops it (requirementsView.js), but it usually
+    // means a check sits in the wrong room. Decided by LogicParser.implies().
 
     // `where` names the check in a warning, for a chain too large to decide.
     function redundantLayers(parts, where) {
@@ -404,15 +342,12 @@
         trees.forEach((tree, index) => {
             const rest = trees.filter((other, at) => at !== index && other);
             if (!tree || !rest.length) return;
-            let ways;
             try {
-                ways = waysIn({ type: "and", children: rest });
+                if (window.LogicParser.implies({ type: "and", children: rest }, tree)) dead.push(parts[index]);
             } catch (error) {
                 if (!(error instanceof RangeError)) throw error;
                 console.warn(`locationTracker: ${where}: too many ways in to decide whether "${parts[index]}" is implied.`);
-                return;
             }
-            if (ways.every(way => metBy(tree, way))) dead.push(parts[index]);
         });
         return dead;
     }
@@ -695,9 +630,10 @@
                 accessible: false
             });
 
-            // The same expression the sweep evaluates, so the tooltip can never
-            // explain a check by different rules than the ones that colored it.
-            checkRequirements.set(itemDiv, combinedLogic(regionData.logic, check));
+            // The tooltip reads the same layers the sweep evaluates (tooltipLogic), so
+            // it can never explain a check by different rules than the ones that
+            // colored it.
+            checkPlaces.set(itemDiv, { region: regionData, check });
 
             // The checkCompletionChanged listener redraws every row of the location.
             itemDiv.addEventListener("click", () => {

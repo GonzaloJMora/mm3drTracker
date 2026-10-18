@@ -1,6 +1,6 @@
 {
   "region_name": "Road to Snowhead",
-  "logic": "bow&(bomb_bag|blast_mask|goron_mask|(magic_meter&fire_arrow))",
+  "logic": "bow&(bomb_bag|(blast_mask&termina_shield)|goron_mask|(magic_meter&fire_arrow))",
   "map_coordinates": { "xPercent": 46.8, "yPercent": 20.3 },
   "item_checks": [
     {
@@ -13,7 +13,7 @@
     {
       "id": "rts_road_to_snowhead_grotto",
       "name": "Road to Snowhead Grotto",
-      "logic": "goron_mask&magic_meter&(bomb_bag|blast_mask)&mask_of_truth"
+      "logic": "goron_mask&magic_meter&(bomb_bag|(blast_mask&termina_shield))&mask_of_truth"
     },
     {
       "id": "rts_great_fairy_reward",

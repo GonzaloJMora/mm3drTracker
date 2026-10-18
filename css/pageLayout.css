@@ -79,6 +79,13 @@ main {
         width: 100%;
     }
 
+    /* A word breaks only when it alone is wider than its half. The installed iPhone
+       app, rotated to landscape, otherwise breaks "Starting" where it fits. */
+    .tab-word {
+        display: inline-block;
+        max-width: 100%;
+    }
+
     /* "Starting Items" is "Starting" where the switch is narrow. */
     @media (max-width: 479px) {
         .tab-label-more {
@@ -118,7 +125,9 @@ main {
            setting cannot push the arrow out of the circle. */
         font-size: 16px;
         cursor: pointer;
-        z-index: 60; /* above the pinned tabs */
+        /* Under the header (60): on a phone held sideways it sits where the open
+           menu reaches, and the menu has to win. */
+        z-index: 59;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
         /* Hidden until scrolled. visibility rather than display so it can fade,
            pointer-events so it can't be tapped while invisible. */

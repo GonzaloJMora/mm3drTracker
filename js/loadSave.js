@@ -2,7 +2,7 @@
 // the autosave and the previous run, Load From File (a file or a pasted code), what
 // a loaded save says about itself, and Resume Tracker. A loaded save's settings are
 // held in SettingsState, which settingsPage.js draws; this file hands the rest of
-// the save to the tracker. See ARCHITECTURE.md, *Saving*.
+// the save to the tracker. See SAVING.md.
 (function () {
     "use strict";
 

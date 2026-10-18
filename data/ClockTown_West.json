@@ -25,11 +25,39 @@
       "vanilla_item": "heart_piece"
     },
     {
+      "id": "wct_lottery_day_1",
+      "name": "Lottery Day 1",
+      "logic": "",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Purple Rupee"
+    },
+    {
+      "id": "wct_lottery_day_2",
+      "name": "Lottery Day 2",
+      "logic": "",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Purple Rupee"
+    },
+    {
+      "id": "wct_lottery_day_3",
+      "name": "Lottery Day 3",
+      "logic": "",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Purple Rupee"
+    },
+    {
       "id": "wct_all_night_mask_purchase",
       "name": "All-Night Mask Purchase",
       "logic": "fighting&giants_wallet",
       "vanilla_when": { "shuffle_masks": false },
       "vanilla_item": "all_night_mask"
+    },
+    {
+      "id": "wct_curiosity_shop_big_bomb_bag",
+      "name": "Curiosity Shop Big Bomb Bag Purchase",
+      "logic": "adults_wallet",
+      "vanilla_when": [{ "shuffle_main_inventory": false }, { "shopsanity": false }],
+      "vanilla_item": "Progressive Bomb Bag"
     },
     {
       "id": "wct_bomb_shop_bombs",

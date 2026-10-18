@@ -1,0 +1,16 @@
+{
+  "tokens": [
+    {
+      "id": "hearts", "name": "Hearts", "kind": "sum",
+      "terms": [
+        { "setting": "starting_health" },
+        { "item": "heart_piece", "per": 4 },
+        { "item": "heart_container" }
+      ]
+    },
+    { "id": "boss_count", "name": "Boss Remains", "kind": "count", "group": "boss_remains" },
+    { "id": "masks", "name": "Masks", "kind": "count", "tag": "regular_mask" },
+    { "id": "bottle", "name": "Bottle", "kind": "any", "group": "bottles" },
+    { "id": "code", "name": "Code", "kind": "distinct", "slots": "digit_slots" }
+  ]
+}

@@ -1,7 +1,7 @@
 # Tags and publishes a release when data/version.json names a version with no tag
 # yet, using that version's entry in documentation/changelog.md as the notes.
-# scripts/release.py reads both files, so the changelog format has one owner.
-# See README.md, Releasing.
+# scripts/release/release.py reads both files, so the changelog format has one owner.
+# See WORKFLOW.md, *Releasing*.
 #
 # It runs on every push, not only pushes that touch version.json: a release that
 # failed for a missing changelog entry then goes out on the push that adds it.
@@ -30,7 +30,7 @@ jobs:
         # the exit status is lost, and the failure surfaces two steps later as a
         # missing changelog entry.
         run: |
-          version=$(python3 scripts/release.py version)
+          version=$(python3 scripts/release/release.py version)
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Check for an existing tag
@@ -56,7 +56,7 @@ jobs:
         if: steps.tag.outputs.exists == 'false'
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: python3 scripts/release.py notes "$VERSION" > "$RUNNER_TEMP/notes.md"
+        run: python3 scripts/release/release.py notes "$VERSION" > "$RUNNER_TEMP/notes.md"
 
       - name: Create release
         if: steps.tag.outputs.exists == 'false'

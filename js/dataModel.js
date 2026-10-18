@@ -2,12 +2,13 @@
 // merged from its parts, Items.json's usable entries, check_groups that can be
 // linked, every region's sub-region tree flattened into one check list, the
 // regions that can render, the slot model, the logic tokens and the location
-// flags and logic helpers by name. No DOM and no fetching, so the tests read the
-// files through exactly the same code (tests/node/dataChecks.test.js).
+// flags and logic helpers by name, and the engine that decides whether a check is
+// reachable. No DOM and no fetching, so the tests read the files and evaluate logic
+// through exactly the same code (tests/node/dataChecks.test.js, engine.test.js).
 //
 // Reading never warns. Each step returns what it found wrong as findings,
 // { rule, lines }, which dataChecks.js titles and the page prints: see
-// ARCHITECTURE.md, *When the data is wrong*.
+// DATA.md, *When the data is wrong*.
 (function (root) {
     "use strict";
 
@@ -107,7 +108,7 @@
     // a check. `vanilla_when` and `vanilla_item` instead come from the nearest node
     // that sets one and replace rather than merge, because whether a check is
     // randomized is a property of that one check, not something it collects on the
-    // way in. See ARCHITECTURE.md, *Sub-regions*.
+    // way in. See LOGIC_AND_REGIONS.md, *Sub-regions*.
     function resolveRegion(region, label) {
         const problems = [];
         const checks = [];
@@ -137,14 +138,6 @@
                 }
                 delete resolved.vanilla_when;
                 delete resolved.vanilla_when_from;
-                delete resolved.vanilla_item;
-                delete resolved.vanilla_item_from;
-            }
-
-            // null is how a check says "vanilla, holding nothing listed" against a
-            // group that set an item. Absent already means inherit, so this needs a
-            // spelling of its own; nothing downstream has to see it.
-            if (resolved.vanilla_item === null) {
                 delete resolved.vanilla_item;
                 delete resolved.vanilla_item_from;
             }
@@ -223,7 +216,7 @@
     }
 
     // Flat regions go through the same walk as nested ones, so a region's own
-    // vanilla_when and vanilla_item, and the false and null escape hatches, mean the
+    // vanilla_when and vanilla_item, and the vanilla_when false escape hatch, mean the
     // same in every file. A region whose tree can't be walked keeps whatever checks
     // it listed rather than costing the whole tracker. Rewrites each region's
     // item_checks in place.
@@ -472,7 +465,7 @@
     // written once. regions are the ones that can render, so a flag pointing into one
     // that can't has no chain and reads false. taken holds every item and derived
     // token id: a named token can't take one, or it would replace every requirement
-    // for it. See ARCHITECTURE.md, *Location flags* and *Logic helpers*.
+    // for it. See LOGIC_AND_REGIONS.md, *Location flags* and *Logic helpers*.
     function namedTokens(flags, helpers, regions, taken) {
         const named = new Map();
         const add = (entry, kind, chainOf) => {
@@ -482,7 +475,8 @@
                 id: entry.id,
                 kind,
                 name: typeof entry.name === "string" && entry.name !== "" ? entry.name : entry.id,
-                chain: chainOf(entry)
+                chain: chainOf(entry),
+                home: kind === "flag" ? flagHome(entry, regions) : null
             });
         };
         (flags || []).forEach(entry => add(entry, "flag", e => flagChain(e, regions)));
@@ -505,6 +499,25 @@
         if (typeof at.region === "string") {
             const region = regions.find(r => r.region_name === at.region);
             return region ? [region.logic, extra] : null;
+        }
+        return null;
+    }
+
+    // Where a flag is earned: its region, and the groups down to its check (none for
+    // a flag at a region), with their logic. The tooltip uses it to tell which of a
+    // check's layers a flag's chain already holds.
+    function flagHome(entry, regions) {
+        const at = entry.at || {};
+        if (typeof at.check === "string" && typeof at.region === "string") return null;
+        if (typeof at.check === "string") {
+            for (const region of regions) {
+                const check = (region.item_checks || []).find(c => c && c.id === at.check);
+                if (check) return { region: region.region_name, path: check.group_path || [], groupLogic: check.group_logic || [] };
+            }
+            return null;
+        }
+        if (typeof at.region === "string" && regions.some(r => r.region_name === at.region)) {
+            return { region: at.region, path: [], groupLogic: [] };
         }
         return null;
     }
@@ -574,10 +587,95 @@
         };
     }
 
+    // ---------- Evaluation ----------
+
+    // What decides whether a check is reachable, given the inventory: the tokens'
+    // values and what each bare name in a logic string is worth. GameState and
+    // locationTracker.js call these with the live state; the tests call them with
+    // inventories written by hand (tests/node/engine.test.js).
+
+    const parser = () => root.LogicParser || require("./logicParser.js");
+
+    // What an item counts for in a token: a count is its number, a plain item is 1
+    // when owned.
+    function countOf(items, itemId) {
+        const value = items[itemId];
+        if (Number.isInteger(value)) return value;
+        return value === true ? 1 : 0;
+    }
+
+    // One token's value. settingValue(id) is a setting's current value, for a sum's
+    // setting terms.
+    function tokenValue(def, ids, items, settingValue) {
+        const count = id => countOf(items, id);
+        if (def.kind === "count") return ids.filter(id => count(id) > 0).length;
+        if (def.kind === "any") return ids.some(id => count(id) > 0);
+        if (def.kind === "sum") {
+            return def.terms.reduce((total, term) => {
+                if (term.setting !== undefined) {
+                    const value = settingValue ? settingValue(term.setting) : undefined;
+                    return total + (typeof value === "number" ? value : 0);
+                }
+                return total + Math.floor(count(term.item) / (term.per || 1));
+            }, 0);
+        }
+        // Both tests below pass on an empty list, which would make a token with no
+        // slots read true.
+        if (!ids.length) return false;
+        const digits = ids.map(count);
+        return !digits.includes(0) && new Set(digits).size === digits.length;
+    }
+
+    // What a bare name in a logic string is worth, for LogicParser.evaluate(): a
+    // token's value, a named token's chain, or the item's own value. items is
+    // GameState.items, tokens its token values, named the map namedTokens() builds,
+    // and numberOf(id) the count a setting stands for after >= (undefined when it has
+    // none, which leaves the comparison unmet). A name after >= is always looked up
+    // as a setting, so it never falls through to the inventory.
+    function resolver({ items, tokens, named, numberOf }) {
+        const namedValues = new Map();
+        const namedBeingWorkedOut = new Set();
+
+        const resolve = (token, kind) => {
+            if (kind === "setting") return numberOf ? numberOf(token) : undefined;
+            if (has(tokens, token)) return tokens[token];
+
+            // A named token is worth whatever its chain needs, worked out with this
+            // same resolver. One met again while it is still being worked out is a
+            // loop and reads false rather than recursing; the data checks name it at
+            // load ("flags-and-helpers").
+            const entry = named && named.get(token);
+            if (entry) {
+                if (namedValues.has(token)) return namedValues.get(token);
+                if (namedBeingWorkedOut.has(token) || !entry.chain) return false;
+                namedBeingWorkedOut.add(token);
+                let value = false;
+                try {
+                    value = parser().evaluate(entry.chain, resolve);
+                } catch (error) {
+                    value = false;
+                }
+                namedBeingWorkedOut.delete(token);
+                namedValues.set(token, value);
+                return value;
+            }
+
+            const value = items[token];
+            if (typeof value === "boolean") return value;
+            if (typeof value === "number") return value;
+
+            // An unknown token is not an error here: the data checks have already
+            // named it once at load ("logic-tokens-known"), and the check simply
+            // stays unreachable.
+            return false;
+        };
+        return resolve;
+    }
+
     const api = {
         isObject, mergeConfig, readItems, readCheckGroups, trimRegionName, flattenRegions, acceptRegions, hasUsableCoordinates,
         slotKind, digitIds, slotBounds, grantedValue, gridSlots, emptyItemState, readTokens,
-        namedTokens, locationsOf, assemble
+        namedTokens, locationsOf, countOf, tokenValue, resolver, assemble
     };
     root.DataModel = api;
     if (typeof module !== "undefined" && module.exports) module.exports = api;

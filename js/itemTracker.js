@@ -69,7 +69,7 @@
     // Until the slot images load, the grids are a fraction of their real height, and
     // nothing else reliably says when they stop growing — so say it again once the
     // images settle. Here because these are this file's images; the listener is
-    // idempotent. See ARCHITECTURE.md, *Map sizing and scale*.
+    // idempotent. See LAYOUT.md, *Map sizing and scale*.
     function announceWhenImagesSettle() {
         const pending = Array.from(document.querySelectorAll(".item-image"))
             .filter(img => !img.complete);

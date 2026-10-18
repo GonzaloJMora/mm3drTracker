@@ -90,7 +90,7 @@
   { "id": "room_key", "name": "Room Key", "image": "images/RoomKey.png" },
   { "id": "scarecrow_song", "name": "Scarecrow's Song", "image": "images/ScarecrowSong.png" },
   { "id": "seahorse", "name": "Seahorse", "image": "images/Seahorse.png" },
-  { "id": "termina_shield", "name": "Termina Shield", "image": "images/Shield.png" },
+  { "id": "termina_shield", "name": "Shield", "image": "images/Shield.png" },
   { "id": "snowhead_big_key", "name": "Snowhead Temple Big Key", "image": "images/SnowBigKey.png" },
   { "id": "snowhead_small_key", "name": "Snowhead Temple Small Key", "image": "images/SnowSmallKey.png" },
   { "id": "snowhead_stray_fairy", "name": "Snowhead Temple Stray Fairy", "image": "images/SnowStrayFairy.png" },

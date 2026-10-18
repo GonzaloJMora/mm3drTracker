@@ -5,8 +5,8 @@
 // tests read the file through exactly the same code (tests/node/dataChecks.test.js).
 //
 // Reading never warns. What it finds wrong comes back as findings, { rule, lines },
-// which dataChecks.js titles and the page prints: see ARCHITECTURE.md, *When the
-// data is wrong*. How the file is written: ARCHITECTURE.md, *Settings*.
+// which dataChecks.js titles and the page prints: see DATA.md, *When the data is
+// wrong*. How the file is written: SETTINGS.md.
 (function (root) {
     "use strict";
 

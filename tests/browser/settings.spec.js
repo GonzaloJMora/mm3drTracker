@@ -1,11 +1,9 @@
 // The settings page: every kind of control, locks, the Starting Items slots, Reset
-// to Defaults and Launch New Tracker. Which settings it uses is read from
-// data/settings.json, so editing that file can't break these.
-const fs = require("fs");
-const path = require("path");
-const { test, expect, openSettings, waitForTracker, slot, PHONE } = require("./fixtures");
+// to Defaults and Launch New Tracker. Which settings it uses is read from the test
+// world's settings.json.
+const { test, expect, openSettings, waitForTracker, slot, PHONE, readWorld } = require("./fixtures");
 
-const settingsFile = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "..", "data", "settings.json"), "utf8"));
+const settingsFile = readWorld("settings.json");
 const allSettings = settingsFile.sections.flatMap(section => section.groups.flatMap(group => group.settings));
 const lockedIds = allSettings.filter(setting => setting.forced).map(setting => setting.id);
 // Settings a lock depends on: changing one of these could lock something else.
@@ -74,6 +72,9 @@ test.describe("Settings page", () => {
         const control = row.locator("input, select");
         await page.evaluate(when => Object.entries(when).forEach(([id, wanted]) => window.SettingsState.set(id, wanted)), lock.when);
         expect(await value(page, lock.id)).toEqual(lock.value);
+        // The control shows the forced value, not the one it held before the lock.
+        if (typeof lock.value === "boolean") await expect(control).toBeChecked({ checked: lock.value });
+        else await expect(control).toHaveValue(String(lock.value));
         await expect(control).toBeDisabled();
         await expect(row.locator(".setting-lock-note")).toContainText("Locked by");
     });
@@ -99,8 +100,16 @@ test.describe("Settings page", () => {
         const [toggle] = await freeSettings(page, "toggle");
         await (await rowFor(page, toggle)).locator(".setting-switch").click();
         await page.locator(".grid-container .item-slot.starting-choice:not(.locked-on)").first().click();
-        expect(Object.keys(await page.evaluate(() => window.SettingsState.picks())).length).toBeGreaterThan(0);
+        const picks = await page.evaluate(() => window.SettingsState.picks());
+        expect(Object.keys(picks).length).toBeGreaterThan(0);
 
+        // Cancel keeps every pick.
+        dialogs.answer = false;
+        await page.locator("#reset-settings").click();
+        expect(dialogs.messages.at(-1)).toContain("Reset every setting");
+        expect(await page.evaluate(() => window.SettingsState.picks())).toEqual(picks);
+
+        dialogs.answer = true;
         await page.locator("#reset-settings").click();
         expect(dialogs.messages.at(-1)).toContain("Reset every setting");
         expect(await page.evaluate(() => window.SettingsState.picks())).toEqual({});
@@ -130,13 +139,19 @@ test.describe("Settings page", () => {
     });
 
     test("the inventory options move under the grids in the phone layout", async ({ page }) => {
+        // README, Settings: the Starting Options block, which holds Health, ends the
+        // settings list on desktop and sits under the grids on a phone.
+        const health = { hasText: /^Health$/ };
+        const endOfList = page.locator("#settings-list > :last-child .setting-name", health);
+        const underGrids = page.locator("#starting-extras .setting-name", health);
         await openSettings(page);
-        const inPanel = page.locator("#settings-list #starting-extras, #settings-list .settings-block").last();
+        await expect(endOfList).toHaveCount(1);
         await expect(page.locator("#starting-extras .settings-block")).toHaveCount(0);
         await page.setViewportSize(PHONE);
-        await expect(page.locator("#starting-extras .settings-block")).toHaveCount(1);
+        await expect(underGrids).toHaveCount(1);
+        await expect(endOfList).toHaveCount(0);
         await page.setViewportSize({ width: 1920, height: 1080 });
+        await expect(endOfList).toHaveCount(1);
         await expect(page.locator("#starting-extras .settings-block")).toHaveCount(0);
-        await expect(inPanel).toBeAttached();
     });
 });

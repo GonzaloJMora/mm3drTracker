@@ -20,7 +20,7 @@
       "item_checks": [
         { "id": "ssh_monument_room_crate_1", "name": "Monument Room Crate 1", "logic": "fighting|projectile" },
         { "id": "ssh_monument_room_crate_2", "name": "Monument Room Crate 2", "logic": "fighting|projectile" },
-        { "id": "ssh_monument_room_lower_wall", "name": "Monument Room Lower Wall", "logic": "((bomb_bag|blast_mask|goron_mask)&magic_bean&(bottle|(ocarina_of_time&song_of_storms))&(fighting|projectile))|hookshot|zora_mask" },
+        { "id": "ssh_monument_room_lower_wall", "name": "Monument Room Lower Wall", "logic": "((bomb_bag|(blast_mask&termina_shield)|goron_mask)&magic_bean&(bottle|(ocarina_of_time&song_of_storms))&(fighting|projectile))|hookshot|zora_mask" },
         { "id": "ssh_monument_room_torch", "name": "Monument Room Torch", "logic": "fighting|projectile" },
         { "id": "ssh_monument_room_on_monument", "name": "Monument Room On Monument", "logic": "fighting|projectile" }
       ]

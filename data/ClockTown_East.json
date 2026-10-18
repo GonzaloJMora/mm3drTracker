@@ -58,7 +58,7 @@
     {
       "id": "ect_milk_bar_aroma",
       "name": "Milk Bar Madame Aroma",
-      "logic": "kafei_mask&letter_to_mama",
+      "logic": "romani_mask&kafei_mask&letter_to_mama",
       "vanilla_when": { "shuffle_main_inventory": false },
       "vanilla_item": "chateau_romani"
     },
@@ -84,11 +84,39 @@
       "vanilla_item": "heart_piece"
     },
     {
+      "id": "ect_honey_and_darling_day_1",
+      "name": "Honey and Darling Day 1",
+      "logic": "bomb_bag",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Fishing Pass"
+    },
+    {
+      "id": "ect_honey_and_darling_day_2",
+      "name": "Honey and Darling Day 2",
+      "logic": "bomb_bag",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Fishing Pass"
+    },
+    {
       "id": "ect_honey_and_darling_3_days",
       "name": "Honey and Darling 3 Days",
       "logic": "bow&bomb_bag",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
+    },
+    {
+      "id": "ect_treasure_chest_game_human",
+      "name": "Treasure Chest Game (Human)",
+      "logic": "",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Purple Rupee"
+    },
+    {
+      "id": "ect_treasure_chest_game_deku",
+      "name": "Treasure Chest Game (Deku)",
+      "logic": "deku_mask",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Deku Nuts (10)"
     },
     {
       "id": "ect_treasure_chest_game_goron",
@@ -98,9 +126,16 @@
       "vanilla_item": "heart_piece"
     },
     {
+      "id": "ect_treasure_chest_game_zora",
+      "name": "Treasure Chest Game (Zora)",
+      "logic": "zora_mask",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Red Rupee"
+    },
+    {
       "id": "ect_bombers_hideout_chest",
       "name": "Bombers' Hideout Chest",
-      "logic": "(bombers_notebook|bombers_code|deku_mask)&(bomb_bag|blast_mask)"
+      "logic": "(bombers_notebook|bombers_code|deku_mask)&(bomb_bag|(blast_mask&termina_shield))"
     }
   ]
 }
