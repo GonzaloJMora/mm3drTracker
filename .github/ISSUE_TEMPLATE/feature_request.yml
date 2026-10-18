@@ -1,0 +1,37 @@
+name: Suggest a feature
+description: Something the tracker could do, or do better.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. A few tips that make a suggestion easy to act on:
+
+        - **One idea per suggestion,** so each can be talked over on its own.
+        - **Say what you'd use it for.** The problem it solves matters more than the exact design.
+        - **A sketch or screenshot helps** if it's about how something looks. Drag it into a box below.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      placeholder: A way to mark a check as "seen but skipped" so it stands out from the rest.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: How would you use it?
+      description: What you're doing when you'd want it, and what you do today instead.
+      placeholder: When I find something I can't get yet, I lose track of where it was.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: At the bottom left of the page.
+      placeholder: v0.16.0
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: The settings page, or the tracker.
+      placeholder: Tracker

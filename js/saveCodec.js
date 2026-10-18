@@ -4,7 +4,7 @@
 // A snapshot is plain named values:
 //   { settings: { id: value }, slots: { id: number }, checks: [ids], view: { id: bool } }
 // A layout (data/saveLayout.json) says which bits hold which of them. How the code
-// is built, and why bits never move: ARCHITECTURE.md, *Saving*.
+// is built, and why bits never move: SAVING.md.
 (function (root) {
     "use strict";
 

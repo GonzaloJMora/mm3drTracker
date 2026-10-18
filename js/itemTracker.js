@@ -7,15 +7,6 @@
         try {
             const itemMap = window.ItemGrids.itemMap(items);
 
-            // Before anything is drawn, so the diagnosis lands ahead of its symptom.
-            // Guarded because it runs before GameState.init — a throw here would leave
-            // the item state empty and make every logic token look unknown.
-            try {
-                window.ItemGrids.validate(config, itemMap);
-            } catch (error) {
-                console.error("itemTracker: could not validate the grid slots", error);
-            }
-
             // A settings failure costs the starting items, not the grids: the tracker
             // still draws, just from empty.
             let startingState = {};
@@ -78,7 +69,7 @@
     // Until the slot images load, the grids are a fraction of their real height, and
     // nothing else reliably says when they stop growing — so say it again once the
     // images settle. Here because these are this file's images; the listener is
-    // idempotent. See ARCHITECTURE.md, *Map sizing and scale*.
+    // idempotent. See LAYOUT.md, *Map sizing and scale*.
     function announceWhenImagesSettle() {
         const pending = Array.from(document.querySelectorAll(".item-image"))
             .filter(img => !img.complete);

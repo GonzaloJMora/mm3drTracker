@@ -37,7 +37,7 @@
        row along its bottom and the toolbar just above it. --summary-inset is the map's
        left edge, set by locationPanelLayout.js, so the row lines up with the map it
        describes. The rows still fit inside the logo's height at the default text
-       size, which the map sizing counts on (ARCHITECTURE.md, *Scale*). */
+       size, which the map sizing counts on (LAYOUT.md, *Scale*). */
     header:has(> #location-summary-row) {
         display: grid;
         grid-template-columns: var(--summary-inset, max-content) minmax(0, 1fr);

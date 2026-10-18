@@ -1,0 +1,15 @@
+{
+  "name": "mm3dr-tracker-tests",
+  "private": true,
+  "description": "Test tooling only. The tracker itself has no dependencies and no build step; nothing under css/, js/ or data/ reads this file.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

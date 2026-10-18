@@ -1,6 +1,6 @@
 {
   "region_name": "Mountain Village",
-  "logic": "bow&(bomb_bag|blast_mask|goron_mask|(magic_meter&fire_arrow))",
+  "logic": "bow&(bomb_bag|(blast_mask&termina_shield)|goron_mask|(magic_meter&fire_arrow))",
   "map_coordinates": { "xPercent": 49.8, "yPercent": 25.8 },
   "item_checks": [
     {

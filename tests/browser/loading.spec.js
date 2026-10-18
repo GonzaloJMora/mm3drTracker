@@ -1,0 +1,135 @@
+// Both pages load clean, draw everything in the data, and fail in the ways
+// DATA.md, *When the data is wrong*, describes.
+const { test, expect, openSettings, launchTracker, waitForPage, PHONE, readWorld } = require("./fixtures");
+
+const manifest = readWorld("manifest.json");
+const version = readWorld("version.json").version;
+// 22 locations, with the Postbox a row in each Clock Town: tests/environment/README.md,
+// *Expected answers*.
+const CHECK_ROWS = 23;
+
+test.describe("Loading", () => {
+    test("the settings page loads clean", { tag: "@smoke" }, async ({ page }) => {
+        await openSettings(page);
+        await expect(page.locator("#settings-list .setting-row").first()).toBeVisible();
+        await expect(page.locator("#app-version")).toContainText(version);
+    });
+
+    test("the tracker loads clean and draws every region and check in the data", { tag: "@smoke" }, async ({ page }) => {
+        await launchTracker(page);
+        await expect(page.locator(".region-group")).toHaveCount(manifest.length);
+        await expect(page.locator(".region-check-item")).toHaveCount(CHECK_ROWS);
+        // Every check judged one way or the other by the first sweep.
+        await expect(page.locator(".region-check-item:not(.accessible):not(.inaccessible)")).toHaveCount(0);
+        await expect(page.locator("#app-version")).toContainText(version);
+    });
+
+    test("the tracker loads clean in the phone layout", { tag: "@smoke" }, async ({ page }) => {
+        await page.setViewportSize(PHONE);
+        await launchTracker(page);
+        await expect(page.locator("#header-menu-button")).toBeVisible();
+    });
+
+    test("opening the tracker with nothing handed over goes back to settings", async ({ page }) => {
+        await page.goto("tracker.html");
+        await page.waitForURL(/index\.html/);
+        await waitForPage(page);
+    });
+
+    test("tracker.html?defaults opens on the default settings", async ({ page }) => {
+        await page.goto("tracker.html?defaults");
+        await waitForPage(page);
+        // The settings page has no picks either, so the tracker has to be what opened.
+        await expect(page).toHaveURL(/tracker\.html\?defaults$/);
+        await expect(page.locator(".region-group")).toHaveCount(manifest.length);
+        expect(await page.evaluate(() => Object.keys(window.SettingsState.picks()).length)).toBe(0);
+    });
+
+    test.describe("on an iPhone", () => {
+        test.use({
+            viewport: PHONE,
+            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.7 Mobile/15E148 Safari/604.1"
+        });
+
+        test("the Home Screen tip shows until Got It closes it for good", { tag: "@webkit" }, async ({ page }) => {
+            await openSettings(page);
+            const tip = page.locator("#home-screen-tip");
+            await expect(tip).toBeVisible();
+            await tip.getByRole("button").click();
+            await expect(tip).toHaveCount(0);
+            await page.reload();
+            await waitForPage(page);
+            await expect(page.locator("#home-screen-tip")).toHaveCount(0);
+        });
+    });
+
+    // The rules themselves are tests/node/dataChecks.test.js; this is the page
+    // printing them, on both pages.
+    test("a data mistake is named on the page by its rule, and the page still works", async ({ page, allowConsole }) => {
+        // The save layout check notices the made-up slot too, as it should.
+        allowConsole.push(/Data check "grid-slots"/, /"not_an_item" — grids\./, /TrackerSave: .*saveLayout/, /slot "not_an_item" is not in it/);
+        const warnings = [];
+        page.on("console", message => { if (message.type() === "warning") warnings.push(message.text()); });
+        await page.route("**/data/config/grids.json", async route => {
+            const response = await route.fetch();
+            const grids = await response.json();
+            const first = Object.keys(grids.grids)[0];
+            grids.grids[first] = grids.grids[first].concat(["not_an_item", "", "", "", "", ""]);
+            await route.fulfill({ response, json: grids });
+        });
+        for (const address of ["index.html", "tracker.html?defaults"]) {
+            warnings.length = 0;
+            await page.goto(address);
+            await waitForPage(page);
+            expect(warnings.filter(text => text.startsWith('Data check "grid-slots"')), address).toHaveLength(1);
+            await expect(page.locator('.item-slot[data-id="not_an_item"]')).toHaveClass(/empty-slot/);
+        }
+    });
+
+    // settingsState.js reads the file through the same code, so it must not name
+    // the mistake a second time.
+    test("a settings mistake is named once by its rule, on both pages", async ({ page, allowConsole }) => {
+        allowConsole.push(/Data check "settings-grants"/, /grant "not_a_slot"/);
+        const warnings = [];
+        page.on("console", message => { if (message.type() === "warning") warnings.push(message.text()); });
+        await page.route("**/data/settings.json", async route => {
+            const response = await route.fetch();
+            const settings = await response.json();
+            settings.always_grants = Object.assign({}, settings.always_grants, { not_a_slot: true });
+            await route.fulfill({ response, json: settings });
+        });
+        for (const address of ["index.html", "tracker.html?defaults"]) {
+            warnings.length = 0;
+            await page.goto(address);
+            await waitForPage(page);
+            expect(warnings.filter(text => text.includes("not_a_slot")), address).toHaveLength(1);
+            expect(warnings.filter(text => text.startsWith('Data check "settings-grants"')), address).toHaveLength(1);
+        }
+    });
+
+    test("a core file that won't load shows the copyable error, not a blank page", async ({ page, allowConsole }) => {
+        allowConsole.push(/./);
+        await page.route("**/data/Items.json", route => route.fulfill({ status: 404, body: "" }));
+        await page.goto("tracker.html?defaults");
+        const error = page.locator("#tracker-load-error");
+        await expect(error).toBeVisible();
+        await expect(error).toContainText("Items.json");
+        await expect(error).toContainText(version);
+        // The bug link still works, and carries what went wrong.
+        const link = page.locator('#app-footer a[data-feedback="bug"]');
+        await expect(link).toBeVisible();
+        await link.focus();
+        const address = new URL(await link.getAttribute("href"));
+        expect(address.searchParams.get("messages")).toContain("Items.json");
+    });
+
+    test("a region file that won't load costs only that region, with a banner", async ({ page, allowConsole }) => {
+        allowConsole.push(/./);
+        const broken = manifest[0];
+        await page.route(`**/data/${broken}`, route => route.fulfill({ status: 404, body: "" }));
+        await page.goto("tracker.html?defaults");
+        await waitForPage(page);
+        await expect(page.locator("#tracker-region-warning")).toBeVisible();
+        await expect(page.locator(".region-group")).toHaveCount(manifest.length - 1);
+    });
+});

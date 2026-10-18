@@ -5,7 +5,7 @@
 // toggle is markup and CSS, plus a reader below if other files need to ask about it.
 //
 // Loaded before the trackers, so their first sweep already knows what is hidden.
-// See ARCHITECTURE.md, *Hiding checks*.
+// See LAYOUT.md, *Hiding checks*.
 (function () {
     "use strict";
 

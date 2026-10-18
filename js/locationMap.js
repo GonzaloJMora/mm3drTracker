@@ -5,53 +5,24 @@
 // region's checks; only one is open at a time.
 //
 // The checks inside are a CSS grid whose column and row counts are computed in
-// fitOverlayContent(), because CSS cannot count children. See ARCHITECTURE.md,
-// "Fitting a region into the map overlay".
+// fitOverlayContent(), because CSS cannot count children. See LAYOUT.md,
+// *Fitting a region into the map overlay*.
 //
 // Shift+click the map with the F1 panel open to copy a map_coordinates snippet
 // for that point — it is how the numbers in the region files were found.
 
 (function () {
-    // Percent of the map, so anything outside 0 to 100 lands off it. A marker
-    // without both would be drawn at the map's top-left corner, looking placed.
-    function hasUsableCoordinates(data) {
-        const at = data.map_coordinates;
-        const percent = value => typeof value === "number" && value >= 0 && value <= 100;
-        return Boolean(at) && percent(at.xPercent) && percent(at.yPercent);
-    }
-
-    // A region with no usable map_coordinates gets no marker; the validator below
-    // says so.
+    // A region with no usable map_coordinates gets no marker, rather than one drawn
+    // at the map's top-left corner looking placed; the data checks name it
+    // ("map-coordinates").
     function regionMarkerConfigs(regions) {
         return regions
-            .filter(data => data && hasUsableCoordinates(data))
+            .filter(data => data && window.DataModel.hasUsableCoordinates(data))
             .map(data => ({
                 regionName: data.region_name,
                 xPercent: data.map_coordinates.xPercent,
                 yPercent: data.map_coordinates.yPercent
             }));
-    }
-
-    // Every region belongs on the map, so a missing or unusable map_coordinates is
-    // always a mistake — and a silent one: the region still renders and still counts, but
-    // with no marker and a display:none list, its checks can't be reached at all.
-    //
-    // Only regions that rendered are reported. One locationTracker.js already
-    // rejected has been named there, and repeating it buries the line that
-    // matters.
-    function validateMarkerCoordinates(regions) {
-        const missing = regions
-            .filter(data => data && regionLookup.has(data.region_name) && !hasUsableCoordinates(data))
-            .map(data => data.region_name);
-
-        if (!missing.length) return;
-
-        console.warn(
-            `locationMap: ${missing.length} region(s) have no map_coordinates with an xPercent and yPercent ` +
-            `from 0 to 100, so they get no marker. ` +
-            `On desktop that leaves their checks unreachable — the accordion list is mobile-only.`
-        );
-        missing.forEach(name => console.warn(`  ${name}`));
     }
 
     // The overlay sits this far outside the container so its border covers the
@@ -287,7 +258,7 @@
 
     // ---------- Fitting a region into the overlay ----------
 
-    // Gap between the overlay's bottom edge and the bottom of the window.
+    // Gap between the overlay's bottom edge and the footer or the window's bottom.
     const VIEWPORT_MARGIN = 12;
 
     // Where the overlay hangs from and the least it must cover, in document
@@ -304,16 +275,21 @@
         };
     }
 
-    // How tall the overlay may get: a windowful measured down from the top of the
-    // location column, which on its own keeps the overlay from ever making the page
-    // scroll. clientHeight, because it is what scrollHeight is compared against.
-    // Don't add the item grids' bottom edge as a second ceiling: it looks like what
-    // holds the scrollbar off and isn't, and only costs text size. ARCHITECTURE.md,
+    // How tall the overlay may get: down from the top of the location column to the
+    // footer or the window's bottom, whichever is higher. The window keeps the
+    // overlay from ever making the page scroll (clientHeight, because it is what
+    // scrollHeight is compared against); the footer, pinned to the window's bottom
+    // on desktop (common.css), keeps its links uncovered.
+    // Don't add the item grids' bottom edge as a further ceiling: it looks like what
+    // holds the scrollbar off and isn't, and only costs text size. LAYOUT.md,
     // *Fitting a region into the map overlay*.
     function overlayHeightBudget(box) {
+        const footer = document.getElementById("app-footer");
+        const footerTop = footer ? footer.getBoundingClientRect().top + window.scrollY : Infinity;
+        const bottom = Math.min(document.documentElement.clientHeight, footerTop);
         // Before layout settles this reads short or negative. Falling back to the
         // covered height costs text size, never a broken box.
-        const available = document.documentElement.clientHeight - VIEWPORT_MARGIN - box.top;
+        const available = bottom - VIEWPORT_MARGIN - box.top;
         return available > box.floor ? available : box.floor;
     }
 
@@ -473,8 +449,12 @@
                 return;
             }
 
-            const columns = Math.max(1, Math.floor((availableWidth + columnGap) / (itemWidth + columnGap)));
-            const rows = Math.ceil(items.length / columns);
+            const fitting = Math.max(1, Math.floor((availableWidth + columnGap) / (itemWidth + columnGap)));
+            const rows = Math.ceil(items.length / fitting);
+            // Column flow fills each column before the next, so 9 checks in 4
+            // columns of 3 rows use only 3 and leave the last one empty. Use as
+            // many columns as the rows actually fill.
+            const columns = Math.ceil(items.length / rows);
             const needed = rows * itemHeight + (rows - 1) * rowGap;
 
             chosen = { columns, rows, needed, availableHeight };
@@ -638,14 +618,6 @@
         createMapContainer(config.map);
         buildRegionLookup();
         overlayTextSizes = readTextSizes(config.map_overlay);
-
-        // Its own try/catch, so a diagnostic can't be the thing that stops the
-        // markers. After buildRegionLookup(), which tells it what rendered.
-        try {
-            validateMarkerCoordinates(regions);
-        } catch (error) {
-            console.error("locationMap: could not validate the marker coordinates", error);
-        }
 
         // Handed over as soon as the container exists, not after the markers are
         // built. The aspect ratio rides along so locationPanelLayout.js needs no

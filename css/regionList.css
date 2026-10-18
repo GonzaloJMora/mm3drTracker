@@ -163,8 +163,8 @@
     overflow-wrap: break-word;
 }
 
-/* The requirements button is touch-only: above the breakpoint hovering the row
-   does the same job. display:none rather than hidden because the row is moved
+/* The requirements button is touch-only: with a mouse, hovering the row does the
+   same job at any width. display:none rather than hidden because the row is moved
    into the map overlay, where fitOverlayContent() measures what it contains. */
 .region-check-info {
     display: none;
@@ -189,7 +189,6 @@
     }
 
     .region-check-info {
-        display: block;
         flex: 0 0 auto;
         margin-left: auto;
         width: 22px;
@@ -223,6 +222,13 @@
     .region-check-info[aria-expanded="true"] {
         border-color: #4da3ff;
         color: #4da3ff;
+    }
+
+    /* Touch, asked the way the hover styles ask it. A mouse here hovers. */
+    @media (hover: none) {
+        .region-check-info {
+            display: block;
+        }
     }
 }
 

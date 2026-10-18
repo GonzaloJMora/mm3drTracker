@@ -7,8 +7,8 @@
 // The grammar is only what an additive tracker needs: `&`, `|`, `()`, and one
 // threshold test, `item >= count`, where the count is a number or a setting that
 // carries one. `|` binds loosest, then `&`, then the comparison. See
-// ARCHITECTURE.md, "Logic strings".
-(function () {
+// LOGIC_AND_REGIONS.md, *Logic strings*.
+(function (root) {
     "use strict";
 
     // Every token keeps its character offset, so an error can point into the
@@ -228,10 +228,80 @@
         return annotated;
     }
 
-    window.LogicParser = {
+    // ---------- Whether one requirement already covers another ----------
+
+    // Decided exactly: logic has no "not", so holding more never turns a check red.
+    // Any inventory that meets a tree holds one of its minimal ways in, so a tree met
+    // by every one of those ways is met by every inventory that meets the first. Flags,
+    // helpers and counts against a setting stay plain tokens as written, which can
+    // miss an implication but never invent one.
+
+    // Past this, the ways in are too many to list, and waysIn() throws a RangeError
+    // rather than guess. Checked before pruning, which compares every way with every
+    // other and would take minutes on a chain far past it.
+    const WAYS_LIMIT = 1000;
+
+    // A count against a setting only matches the same count written the same way.
+    const settingAtom = node => `${node.left.id}>=${node.right.id}`;
+
+    // Every minimal way to meet a tree, each a Map of token -> the count it needs.
+    function waysIn(node) {
+        if (node.type === "token") return [new Map([[node.id, 1]])];
+        if (node.type === "compare") {
+            return node.right.type === "setting"
+                ? [new Map([[settingAtom(node), 1]])]
+                : [new Map([[node.left.id, node.right.value]])];
+        }
+        if (node.type === "or") return withoutDominated(node.children.flatMap(waysIn));
+
+        let ways = [new Map()];
+        node.children.forEach(child => {
+            const next = [];
+            waysIn(child).forEach(tail => ways.forEach(head => {
+                const way = new Map(head);
+                tail.forEach((count, token) => way.set(token, Math.max(count, way.get(token) || 0)));
+                next.push(way);
+            }));
+            if (next.length > WAYS_LIMIT) throw new RangeError("too many ways in");
+            ways = withoutDominated(next);
+        });
+        return ways;
+    }
+
+    // A way that asks for everything another asks, and maybe more, adds nothing.
+    function withoutDominated(ways) {
+        const covers = (small, big) => [...small].every(([token, count]) => (big.get(token) || 0) >= count);
+        return ways.filter((way, index) => !ways.some((other, at) =>
+            at !== index && covers(other, way) && (!covers(way, other) || at < index)));
+    }
+
+    // Whether a tree is met by an inventory holding exactly one way in.
+    function metBy(node, way) {
+        switch (node.type) {
+            case "token": return (way.get(node.id) || 0) >= 1;
+            case "compare":
+                return node.right.type === "setting"
+                    ? way.has(settingAtom(node))
+                    : (way.get(node.left.id) || 0) >= node.right.value;
+            case "and": return node.children.every(child => metBy(child, way));
+            case "or": return node.children.some(child => metBy(child, way));
+        }
+        return false;
+    }
+
+    // Whether every inventory that meets tree `a` also meets tree `b`. Throws a
+    // RangeError when `a` has too many ways in to decide.
+    function implies(a, b) {
+        return waysIn(a).every(way => metBy(b, way));
+    }
+
+    const api = {
         parse,
         isSatisfied,
         annotate,
+        waysIn,
+        metBy,
+        implies,
 
         // Empty logic means no requirement, which is how the region files spell
         // "always reachable". Takes a string or a list of strings, like parse().
@@ -241,4 +311,6 @@
             return isSatisfied(tree, resolve);
         }
     };
-})();
+    root.LogicParser = api;
+    if (typeof module !== "undefined" && module.exports) module.exports = api;
+})(typeof window !== "undefined" ? window : globalThis);

@@ -7,13 +7,13 @@
 //
 // Two ways in. On a pointer it follows the cursor on hover. On touch there is no
 // hover and a tap on a check toggles it, so the location list gives each check a
-// button that *pins* the tooltip to the bottom of the screen instead. Pinned
-// mode is deliberately not gated on hover capability — it is driven by a real
-// click, so it works on a mouse too.
+// button that *pins* the tooltip to the bottom of the screen instead. CSS shows
+// that button only on touch in the phone layout; pinning itself just answers a
+// click, whatever made it.
 //
 // Binding is delegated from document on purpose. A .region-group is *moved*
 // between the sidebar and the map overlay, and delegation survives that with no
-// rebinding — see ARCHITECTURE.md, *Desktop vs mobile — the 1500px split*.
+// rebinding — see LAYOUT.md, *Desktop vs mobile*.
 (function () {
     "use strict";
 
@@ -90,6 +90,10 @@
         }
 
         el.classList.toggle("docked", pinned);
+        // The hover position is written on the element, which beats .docked's
+        // edges: left over from a hover, it would stretch the docked panel from
+        // the pointer's last spot to the bottom of the screen.
+        if (pinned) el.style.left = el.style.top = "";
         el.hidden = false;
         position();
     }

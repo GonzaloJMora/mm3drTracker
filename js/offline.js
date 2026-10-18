@@ -1,7 +1,7 @@
 // The offline copy's page side, on both pages: registers offlineWorker.js, or removes it and its
 // stored copy when data/offline.json's "enabled" is false; asks for persistent
 // storage when the tracker runs as an installed app; and on an iPhone or iPad, once,
-// suggests adding it to the Home Screen. See ARCHITECTURE.md, *Offline*.
+// suggests adding it to the Home Screen. See OFFLINE.md.
 (function () {
     "use strict";
 

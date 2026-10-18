@@ -44,8 +44,8 @@
         const views = new Map();
 
         Object.keys(config.grids).forEach(gridName => {
-            // validate() has already named this one; skipping keeps the grids after
-            // it in config.grids order from going down with it.
+            // The data checks have already named this one ("grid-slots"); skipping
+            // keeps the grids after it in config.grids order from going down with it.
             if (!Array.isArray(config.grids[gridName])) return;
 
             const gridEl = document.createElement("div");
@@ -63,7 +63,8 @@
     }
 
     // A digit slot has no Items.json entry, so its name comes from digit_slots and
-    // its place in that list. Without a name the slot id is shown; validate() says so.
+    // its place in that list. Without a name the slot id is shown, and the data
+    // checks say so ("digit-slots-named").
     function digitName(config, slotId) {
         const name = config.digit_slots && config.digit_slots.name;
         if (typeof name !== "string" || name.trim() === "") return slotId;
@@ -86,7 +87,7 @@
 
         // An item not in Items.json would throw on the lookup below and take out
         // this grid and every one after it. Draw a hole instead — the cell still
-        // occupies its column, and validate() already named the id.
+        // occupies its column, and the data checks already named the id ("grid-slots").
         const imageId = chain ? chain[0] : slotId;
         if (kind !== "digit" && !itemMap[imageId]) {
             slot.classList.add("empty-slot");
@@ -147,7 +148,7 @@
         if (kind === "progression") {
             slot.dataset.stage = value;
             // Only chain[0] is sure to have artwork. A later stage without any keeps
-            // what is already drawn, and validate() has named it.
+            // what is already drawn, and the data checks have named it ("grid-slots").
             const item = itemMap[chain[Math.max(value, 0)]];
             if (item) {
                 if (img.getAttribute("src") !== item.image) img.src = item.image;
@@ -160,69 +161,6 @@
                 if (value === view.max) counterNode.classList.add("max-count");
             }
         }
-    }
-
-    // A bad slot draws as an empty one rather than taking the grid down, but a hole
-    // with no explanation is its own puzzle — so say what is wrong, once, at load.
-    //
-    // Progression chains are walked in full on purpose: a typo in a later stage
-    // draws fine at load and only shows once the slot is clicked up to it, as a
-    // stage that keeps the previous stage's artwork.
-    function validate(config, itemMap) {
-        const missing = [];
-
-        const digitIds = window.GameState.digitIds(config);
-        if (digitIds.length && digitName(config, digitIds[0]) === digitIds[0]) {
-            console.warn(`ItemGrids: config/inventory.json's "digit_slots" has no "name", so each digit slot's tooltip shows its slot id.`);
-        }
-
-        Object.keys(config.grids).forEach(gridName => {
-            const slots = config.grids[gridName];
-
-            if (!Array.isArray(slots)) {
-                missing.push({ id: gridName, where: `grids.${gridName} is not a list of slot ids — the whole grid is skipped` });
-                return;
-            }
-
-            slots.forEach((slotId, index) => {
-                if (typeof slotId !== "string") {
-                    missing.push({ id: String(slotId), where: `grids.${gridName}[${index}] is not a slot id` });
-                    return;
-                }
-                if (slotId === "") return;
-                if (window.GameState.digitIds(config).includes(slotId)) return;
-
-                const at = `grids.${gridName}[${index}]`;
-                const chain = config.progressions[slotId];
-
-                if (!chain) {
-                    if (!itemMap[slotId]) missing.push({ id: slotId, where: at });
-                    return;
-                }
-
-                if (!chain.length) {
-                    missing.push({ id: slotId, where: `${at} — progressions.${slotId} is an empty chain` });
-                    return;
-                }
-
-                chain.forEach((stageId, stageIndex) => {
-                    if (!itemMap[stageId]) {
-                        missing.push({
-                            id: stageId,
-                            where: `${at} — progressions.${slotId} stage ${stageIndex + 1}`
-                        });
-                    }
-                });
-            });
-        });
-
-        if (!missing.length) return;
-
-        console.warn(
-            `ItemGrids: ${missing.length} grid slot(s) will not draw an item. ` +
-            `Each one renders as an empty slot instead.`
-        );
-        missing.forEach(({ id, where }) => console.warn(`  "${id}" — ${where}`));
     }
 
     // Inside onReady so this file does not depend on tooltip.js loading first.
@@ -269,5 +207,5 @@
         });
     });
 
-    window.ItemGrids = { itemMap: itemMapOf, render, draw, nextValue, validate };
+    window.ItemGrids = { itemMap: itemMapOf, render, draw, nextValue };
 })();

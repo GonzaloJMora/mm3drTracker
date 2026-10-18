@@ -12,7 +12,7 @@
     <!-- This tracker's name in the browser's storage (storageKeys.js). The same on both
          pages, and the same as "app" in data/saveLayout.json. -->
     <meta name="tracker-id" content="mm3drTracker">
-    
+
     <link rel="icon" type="image/png" href="images/icons/icon.png">
     <link rel="icon" sizes="32x32" href="images/icons/favicon.ico">
     <link rel="apple-touch-icon" href="images/icons/icon-180.png">
@@ -41,6 +41,8 @@
     <link rel="stylesheet" href="css/trackerToolbar.css">
     <link rel="stylesheet" href="css/saveDialog.css">
 
+    <!-- First, so it keeps every warning and error for a bug report. -->
+    <script src="js/feedbackLinks.js"></script>
     <script src="js/storageKeys.js"></script>
     <script src="js/phoneLayout.js"></script>
     <!-- In <head> so a redirect happens before the body draws. -->
@@ -95,14 +97,26 @@
          only while main still has awaiting-data. -->
     <div class="page-loading" aria-hidden="true"></div>
 
-    <!-- Filled from data/version.json by dataLoader.js. -->
-    <footer id="app-version"></footer>
+    <!-- The version is filled from data/version.json by dataLoader.js. The links are
+         plain links to the issue forms; feedbackLinks.js fills the forms in. -->
+    <footer id="app-footer">
+        <span id="app-version"></span>
+        <span class="feedback-links">
+            <a href="https://github.com/GonzaloJMora/mm3drTracker/issues/new?template=bug_report.yml" data-feedback="bug" target="_blank" rel="noopener">Report a bug</a>
+            <span aria-hidden="true">|</span>
+            <a href="https://github.com/GonzaloJMora/mm3drTracker/issues/new?template=feature_request.yml" data-feedback="feature" target="_blank" rel="noopener">Suggest a feature</a>
+        </span>
+    </footer>
 
     <!-- Mobile only (hidden by CSS above the breakpoint). -->
     <button id="back-to-top" type="button" aria-label="Back to top"></button>
 
-    <script src="js/dataLoader.js"></script>
+    <!-- Before dataLoader.js, which reads the data through them and checks it. -->
     <script src="js/logicParser.js"></script>
+    <script src="js/dataModel.js"></script>
+    <script src="js/settingsModel.js"></script>
+    <script src="js/dataChecks.js"></script>
+    <script src="js/dataLoader.js"></script>
     <script src="js/tooltip.js"></script>
     <script src="js/requirementsView.js"></script>
     <script src="js/gameStateManager.js"></script>

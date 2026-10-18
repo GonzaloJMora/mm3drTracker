@@ -1,0 +1,14 @@
+{
+  "grids": {
+    "item": [
+      "sword", "bow", "hookshot", "magic", "empty_bottle", "red_potion"
+    ],
+    "mask": [
+      "deku_mask", "goron_mask", "bunny_hood", "stone_mask", "blast_mask", ""
+    ],
+    "quest": [
+      "ocarina_of_time", "song_of_time", "heart_piece", "heart_container", "woodfall_small_key", "odolwa_remains",
+      "goht_remains", "code_digit_1", "code_digit_2", "code_digit_3", "", ""
+    ]
+  }
+}

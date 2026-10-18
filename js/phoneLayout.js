@@ -1,7 +1,6 @@
 // Whether the page is in the phone layout, for the scripts that move things across
 // the breakpoint. The width is --mobile-breakpoint in common.css, so JS and CSS can't
-// disagree about where the phone layout starts. See ARCHITECTURE.md, *Desktop vs
-// mobile*.
+// disagree about where the phone layout starts. See LAYOUT.md, *Desktop vs mobile*.
 (function () {
     "use strict";
 

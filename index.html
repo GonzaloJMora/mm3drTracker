@@ -34,6 +34,8 @@
     <link rel="stylesheet" href="css/saveDialog.css">
     <link rel="stylesheet" href="css/settingsPage.css">
 
+    <!-- First, so it keeps every warning and error for a bug report. -->
+    <script src="js/feedbackLinks.js"></script>
     <script src="js/storageKeys.js"></script>
     <script src="js/phoneLayout.js"></script>
     <script src="js/trackerLaunch.js"></script>
@@ -48,7 +50,7 @@
         <img src="images/logo.png" alt="Majora's Mask 3D Randomizer Tracker">
         <div class="mobile-tabs">
             <button type="button" class="tab-btn active" data-tab="settings" data-section="settings-section">Settings</button>
-            <button type="button" class="tab-btn" data-tab="starting" data-section="starting-section">Starting<span class="tab-label-more"> Items</span></button>
+            <button type="button" class="tab-btn" data-tab="starting" data-section="starting-section"><span class="tab-word">Starting</span> <span class="tab-word tab-label-more">Items</span></button>
         </div>
         <button type="button" id="header-menu-button" class="toolbar-btn" aria-label="Menu" aria-expanded="false" aria-controls="tracker-toolbar"></button>
         <!-- settingsPage.js enables Reset to Defaults and Launch New Tracker once the
@@ -114,12 +116,24 @@
          only while main still has awaiting-data. -->
     <div class="page-loading" aria-hidden="true"></div>
 
-    <!-- Filled from data/version.json by dataLoader.js. -->
-    <footer id="app-version"></footer>
+    <!-- The version is filled from data/version.json by dataLoader.js. The links are
+         plain links to the issue forms; feedbackLinks.js fills the forms in. -->
+    <footer id="app-footer">
+        <span id="app-version"></span>
+        <span class="feedback-links">
+            <a href="https://github.com/GonzaloJMora/mm3drTracker/issues/new?template=bug_report.yml" data-feedback="bug" target="_blank" rel="noopener">Report a bug</a>
+            <span aria-hidden="true">|</span>
+            <a href="https://github.com/GonzaloJMora/mm3drTracker/issues/new?template=feature_request.yml" data-feedback="feature" target="_blank" rel="noopener">Suggest a feature</a>
+        </span>
+    </footer>
 
     <!-- Mobile only (hidden by CSS above the breakpoint). -->
     <button id="back-to-top" type="button" aria-label="Back to top"></button>
 
+    <!-- Before dataLoader.js, which reads the data through them and checks it. -->
+    <script src="js/dataModel.js"></script>
+    <script src="js/settingsModel.js"></script>
+    <script src="js/dataChecks.js"></script>
     <script src="js/dataLoader.js" data-skip-regions></script>
     <script src="js/tooltip.js"></script>
     <script src="js/gameStateManager.js"></script>

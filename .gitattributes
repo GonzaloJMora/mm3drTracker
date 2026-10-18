@@ -1,2 +1,9 @@
+# Every text file is stored and checked out with LF, whatever each machine's own
+# Git settings say, so a commit never flips a whole file's line endings.
+* text=auto eol=lf
+
+# Windows' command prompt can misread a batch file with LF endings.
+*.bat text eol=crlf
+
 # The save fixtures are exact exports, compared byte for byte: no line-ending conversion.
 tests/fixtures/** -text

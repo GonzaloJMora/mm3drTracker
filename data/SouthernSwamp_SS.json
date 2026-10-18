@@ -40,7 +40,7 @@
     {
       "id": "ss_pictograph_contest_winner",
       "name": "Pictograph Contest Winner",
-      "logic": "pictograph_box",
+      "logic": "pictograph_box&deku_mask&(bottle|odolwa_defeated|(bow|zora_mask|hookshot))",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
     },

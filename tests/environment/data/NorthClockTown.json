@@ -1,0 +1,18 @@
+{
+  "region_name": "North Clock Town",
+  "logic": "",
+  "map_coordinates": { "xPercent": 51.1, "yPercent": 33.5 },
+  "item_checks": [
+    { "id": "nct_postbox", "name": "Postbox" },
+    { "id": "nct_target_practice", "name": "Target Practice", "logic": "projectile" },
+    { "id": "nct_guards_gift", "name": "Guard's Gift", "logic": "fighting" },
+    {
+      "id": "nct_bottle_shop",
+      "name": "Bottle Shop",
+      "logic": "bottle",
+      "vanilla_when": [{ "shuffle_shops": false }, { "shuffle_bottles": false }],
+      "vanilla_item": "empty_bottle"
+    },
+    { "id": "nct_odolwa_reward", "name": "Odolwa Reward", "logic": "odolwa_defeated" }
+  ]
+}

@@ -59,7 +59,7 @@
     },
     {
       "name": "Compass Room",
-      "logic": "snowhead_small_key>=1|fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)",
+      "logic": "snowhead_small_key>=1",
       "item_checks": [
         {
           "id": "sht_compass_chest",
@@ -68,7 +68,7 @@
           "vanilla_item": "compass_snowhead_temple"
         },
         { "id": "sht_compass_room_ice_puzzle_stray_fairy", "name": "Compass Room Ice Puzzle Stray Fairy", "logic": "fire_arrow" },
-        { "id": "sht_compass_room_crate_stray_fairy", "name": "Compass Room Crate Stray Fairy", "logic": "(bomb_bag|blast_mask)&great_fairy_mask" }
+        { "id": "sht_compass_room_crate_stray_fairy", "name": "Compass Room Crate Stray Fairy", "logic": "(bomb_bag|(blast_mask&termina_shield))&great_fairy_mask" }
       ],
       "subregions": [
         {
@@ -80,7 +80,7 @@
         },
         {
           "name": "Icicle Room",
-          "logic": "(bomb_bag|blast_mask)|fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)",
+          "logic": "(bomb_bag|(blast_mask&termina_shield))|(snowhead_small_key>=2&(fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)))",
           "item_checks": [
             {
               "id": "sht_icicle_room_small_key_chest",
@@ -95,7 +95,7 @@
     },
     {
       "name": "Main Room 2F",
-      "logic": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|blast_mask))",
+      "logic": "fire_arrow|(hookshot&ocarina_of_time&scarecrow_song)|(snowhead_small_key>=2&(bomb_bag|(blast_mask&termina_shield)))",
       "item_checks": [
         { "id": "sht_main_room_2f_wall_stray_fairy", "name": "Main Room 2F Wall Stray Fairy", "logic": "hookshot&scarecrow_song&great_fairy_mask&lens_of_truth" }
       ],
@@ -125,7 +125,7 @@
         },
         {
           "name": "Snow Room",
-          "logic": "fire_arrow&snowhead_small_key>=3",
+          "logic": "fire_arrow",
           "item_checks": [
             { "id": "sht_snow_room_bubble_stray_fairy", "name": "Snow Room Bubble Stray Fairy", "logic": "great_fairy_mask&lens_of_truth" }
           ],
@@ -167,6 +167,18 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Oath to Order",
+      "item_checks": [
+        {
+          "id": "sht_oath_to_order",
+          "name": "Oath to Order",
+          "logic": "goht_defeated",
+          "vanilla_when": { "shuffle_songs": "off" },
+          "vanilla_item": "oath_to_order"
         }
       ]
     }

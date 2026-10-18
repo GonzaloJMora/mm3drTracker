@@ -1,0 +1,18 @@
+{
+  "region_name": "Mountain Village",
+  "logic": "odolwa_defeated",
+  "map_coordinates": { "xPercent": 49.8, "yPercent": 25.8 },
+  "item_checks": [
+    { "id": "mv_moon_gate", "name": "Moon Gate", "logic": "boss_count>=remains_required" },
+    { "id": "mv_mask_collector", "name": "Mask Collector", "logic": "masks>=3" },
+    { "id": "mv_bombers_door", "name": "Bomber's Door", "logic": "code" }
+  ],
+  "subregions": [
+    {
+      "name": "Last",
+      "item_checks": [
+        { "id": "mv_frog_choir", "name": "Frog Choir", "logic": "frog_found" }
+      ]
+    }
+  ]
+}

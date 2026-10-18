@@ -3,7 +3,7 @@
 // takes too long to answer or fails with a server error, the stored copy answers
 // instead. The whole site is stored on the first visit, from the list in
 // data/offline.json, and re-checked in the background at most once an hour. It
-// lives at the site's root so it covers both pages. See ARCHITECTURE.md, *Offline*.
+// lives at the site's root so it covers both pages. See OFFLINE.md.
 "use strict";
 
 const CACHE = "offline:" + self.registration.scope;
@@ -29,8 +29,12 @@ async function storable(response) {
     return new Response(await response.blob(), { status: response.status, statusText: response.statusText, headers: response.headers });
 }
 
-async function store(cache, request, response) {
-    if (response && response.ok && response.type === "basic") await cache.put(request, await storable(response.clone()));
+// Stored under the address without its query, so a script stamped with a new
+// version (js/foo.js?v=…) replaces its copy rather than adding one per release.
+async function store(cache, address, response) {
+    const key = new URL(address);
+    key.search = "";
+    if (response && response.ok && response.type === "basic") await cache.put(key.href, await storable(response.clone()));
 }
 
 // Stores every listed file. "no-cache" has the browser ask the site whether each
@@ -64,8 +68,19 @@ self.addEventListener("install", event => {
     event.waitUntil(storeEverything().catch(() => {}).then(() => self.skipWaiting()));
 });
 
+// v0.15.0 stored addresses with their query (tracker.html?defaults), and a match that
+// ignores the query returns the oldest entry, so one of those would answer ahead of
+// every fresh copy. Nothing stores a query now, so this only clears what is left.
+async function removeQueryEntries() {
+    if (switchedOff || !(await caches.has(CACHE))) return;
+    const cache = await caches.open(CACHE);
+    for (const request of await cache.keys()) {
+        if (new URL(request.url).search) await cache.delete(request);
+    }
+}
+
 self.addEventListener("activate", event => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(removeQueryEntries().catch(() => {}).then(() => self.clients.claim()));
 });
 
 // A page asks after it loads; nothing is refreshed while nobody is using the site.
@@ -86,7 +101,7 @@ self.addEventListener("fetch", event => {
         // a file for minutes after a release and hand a page old scripts beside new
         // data. A copy that can't be stored, with storage full, still answers the page.
         const fromNetwork = fetch(new Request(request, { cache: "no-cache" })).then(async response => {
-            if (!switchedOff) await store(cache, request, response).catch(() => {});
+            if (!switchedOff) await store(cache, request.url, response).catch(() => {});
             return response;
         });
         // A late answer still updates the stored copy after the stored one was used.
@@ -98,7 +113,8 @@ self.addEventListener("fetch", event => {
         // beats it. A 404 still goes through: that file is gone from the site.
         if (answer && answer.status < 500) return answer;
 
-        // ignoreSearch, so tracker.html?defaults finds tracker.html.
+        // ignoreSearch, so tracker.html?defaults and a stamped js/foo.js?v=… find
+        // their stored copies.
         const stored = await cache.match(request, { ignoreSearch: true });
         if (stored) return stored;
         return fromNetwork;

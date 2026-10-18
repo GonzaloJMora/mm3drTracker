@@ -46,7 +46,7 @@
     --shape-completed: circle(50%);
 
     /* Map markers only: the triangle at 80% of its box and the square at 76%, so
-       their corners clear neighboring markers (ARCHITECTURE.md, *Markers*). Every
+       their corners clear neighboring markers (LAYOUT.md, *Markers*). Every
        other surface has no neighbors to clear and keeps the full shapes above. */
     --shape-inaccessible-marker: polygon(50% 15.36%, 90% 84.64%, 10% 84.64%);
     --shape-vanilla-marker: polygon(12% 12%, 88% 12%, 88% 88%, 12% 88%);
@@ -310,7 +310,7 @@ main.awaiting-data {
    drawn, and the footer sits under main's content, so either one shown early
    would jump when the page appears. */
 body:has(> main.awaiting-data) > header,
-body:has(> main.awaiting-data) > #app-version {
+body:has(> main.awaiting-data) > #app-footer {
     visibility: hidden;
     animation: reveal-if-stuck 0s linear 8s forwards;
 }
@@ -397,17 +397,78 @@ main.awaiting-data ~ .page-loading {
     }
 }
 
-/* ---------- Version footer ---------- */
+/* ---------- Footer: the version and the feedback links ---------- */
 
-/* Selectable, unlike the rest of the page, so it can be pasted into a bug report. */
-#app-version {
+#app-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4px 16px;
     margin-top: 16px;
     font-size: 0.75rem;
     color: #888888;
+}
+
+/* Selectable, unlike the rest of the page, so it can be pasted into a bug report. */
+#app-version {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
+}
+
+.feedback-links a {
+    color: #6ab0ff;
+}
+
+/* On desktop the footer sits at the window's bottom edge when the page is shorter,
+   and the map overlay stops above it (locationMap.js, overlayHeightBudget). Main
+   takes up the slack, not an auto margin on the footer: locationPanelLayout.js
+   reads the footer's margin, and an auto one reads back as all the free space.
+   Flex centers an item with auto margins at its content width, so header and main
+   are given their width back. */
+@media not all and (max-width: 1499px) {
+    body {
+        display: flex;
+        flex-direction: column;
+        /* The browser's own body margin, spelled out so the height can take it
+           off; without it the page always scrolls by that much. */
+        margin: 8px;
+        min-height: calc(100vh - 16px);
+        box-sizing: border-box;
+    }
+
+    body > header,
+    body > main {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* flex-start, or a banner on a line of its own is spread away from the page. */
+    body > main {
+        flex-grow: 1;
+        align-content: flex-start;
+    }
+}
+
+/* Centered and stacked on a phone, with room underneath so the fixed back-to-top
+   button never sits on the links when the page is scrolled to the bottom. The
+   button rises with the home bar's inset (pageLayout.css), so this does too. */
+@media screen and (max-width: 1499px) {
+    #app-footer {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+        font-size: 0.875rem;
+    }
+
+    /* A bigger target for a finger. */
+    .feedback-links a {
+        display: inline-block;
+        padding: 6px 2px;
+    }
 }
 
 /* ---------- Load failures (dataLoader.js) ---------- */
@@ -511,8 +572,10 @@ main.awaiting-data ~ .page-loading {
     margin-bottom: 0;
 }
 
+/* On its own line: inline, a button stretches the last line of text it sits on. */
 #save-load-message .toolbar-btn,
 #autosave-warning .toolbar-btn,
 #home-screen-tip .toolbar-btn {
+    display: block;
     margin-top: 8px;
 }

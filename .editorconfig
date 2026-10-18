@@ -1,0 +1,27 @@
+# Editors that read this make files the way the repo keeps them; line endings
+# match .gitattributes.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{js,css,html,py}]
+indent_style = space
+indent_size = 4
+
+[*.bat]
+end_of_line = crlf
+
+# Two trailing spaces are a line break in Markdown.
+[*.md]
+trim_trailing_whitespace = false
+
+# Exact exports, compared byte for byte.
+[tests/fixtures/saves/**]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset

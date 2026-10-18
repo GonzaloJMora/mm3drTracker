@@ -2,7 +2,7 @@
 // the toolbar as a menu. The same toolbar buttons serve both layouts, so their
 // handlers and states need nothing from here. A button marked data-menu-keep-out
 // shows under the bar instead of in the menu. On desktop none of this applies and
-// the toolbar sits in the header as usual. See ARCHITECTURE.md, *The phone layout*.
+// the toolbar sits in the header as usual. See LAYOUT.md, *The phone layout*.
 (function () {
     "use strict";
 

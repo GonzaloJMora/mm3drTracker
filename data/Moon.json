@@ -53,8 +53,8 @@
           "vanilla_when": { "shuffle_fierce_deity": false },
           "vanilla_item": "fierce_deity_mask",
           "item_checks": [
-            { 
-              "id": "moon_fierce_deitys_mask", 
+            {
+              "id": "moon_fierce_deitys_mask",
               "name": "Fierce Deity's Mask"
             }
           ]

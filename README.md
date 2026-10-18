@@ -13,7 +13,7 @@ you go.
 **Settings first.** Pick the settings your seed was generated with, click your
 starting items into the same grids the tracker uses, then launch a tracker. It
 starts you with those items and marks the checks your settings leave
-unrandomized. Launch New Tracker on the tracker takes you back to change them.
+unrandomized. Back to Settings on the tracker takes you back to them.
 
 **Item tracker.** Four grids covering items, masks, dungeon items and quest gear.
 Left-click a slot to advance it, right-click to step back. Upgrades walk their
@@ -34,8 +34,12 @@ the map.
 list. Show Only Accessible Checks cuts that list down to what you can go and do
 right now.
 
-Either way, a Location Progress box keeps a running count of what is checked,
-what is reachable and what is left.
+Either way, a running count of what is reachable, what is checked and what is
+left sits at the top of the page.
+
+**Your run is saved as you go**, in the browser, and comes back when you reopen the
+tracker. Export it to a file or a short code to move it to another device, and once
+it has been opened online, the tracker works with no connection.
 
 ## Browser support
 
@@ -44,31 +48,30 @@ Chrome and Edge, Firefox, and Safari) and in Safari on iPhone. Anything else
 reasonably current should be fine — roughly Chrome/Edge 105+, Safari 16+ or
 Firefox 110+, the limiting factor being CSS container queries.
 
-## Reporting a bug
+## How it was built
 
-[Open an issue](https://github.com/GonzaloJMora/mm3drTracker/issues/new).
+The code was largely written with an AI coding assistant (Claude Code), under my
+direction: I made the design decisions, approved each change before it went in, and
+tested it by hand, on desktop, on a phone, and in-game where the logic depended on
+it.
 
-What helps most:
+## Reporting a bug or suggesting a feature
 
-- The version number from the bottom-left corner of the page
-- Your browser, and roughly how wide the window was — a lot of the layout keys
-  off width, so "about 1600 across" narrows it down quickly
-- What you were doing, and what you expected to happen instead
-- If a message appeared on the page, paste it in. Those boxes are selectable on
-  purpose, even though the rest of the page isn't
-- Anything the browser console printed. The tracker reports data problems there
-  at load, naming the file and the entry at fault
+Use the **Report a bug** or **Suggest a feature** link at the bottom of the
+page. Each opens a GitHub form with what the page knows already filled in: the
+version, your browser and window size, your save code and anything the page
+reported going wrong. All that's left is to say what happened. You can change or
+delete anything filled in before you submit.
+
+The same forms are on GitHub under
+[New issue](https://github.com/GonzaloJMora/mm3drTracker/issues/new/choose), with
+the boxes empty. If a message appeared on the page, paste it in: those boxes are
+selectable on purpose, even though the rest of the page isn't.
 
 ## Development
 
-[`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) covers how the
-pieces fit together.
-
-### Running it locally
-
-It has to be served over HTTP. The tracker fetches its data out of `data/`, and
-browsers block that on `file://`, so opening `index.html` straight from disk gets
-you a load error rather than a tracker.
+It has to be served over HTTP: the tracker fetches its data out of `data/`, and
+browsers block that on `file://`. There is no build step and no dependency:
 
 ```bash
 git clone https://github.com/GonzaloJMora/mm3drTracker.git
@@ -76,128 +79,37 @@ cd mm3drTracker
 python -m http.server 8000
 ```
 
-Then open <http://localhost:8000>. Any static file server will do — there is no
-build step, no bundler, no package manager and no dependencies.
+Then open <http://localhost:8000>. To try it on a phone, run
+`scripts/dev/serveOnNetwork.py` (or double-click its `.bat`) and open the address it
+prints, on the same Wi-Fi.
 
-To try it on an external device like a phone, serve it to your network instead and open the address the
-script prints, on the same Wi-Fi:
+Run the tests with `scripts/dev/runTests.py` (or its `.bat`) before opening a pull
+request; you need Node.js 24 or later and Python 3.
 
-- **Windows:** double-click `scripts/serveOnNetwork.bat`, or run `python scripts/serveOnNetwork.py`
-- **macOS / Linux:** `python3 scripts/serveOnNetwork.py`
-
-It takes a port as an argument (8000 by default), tells the browser not to cache
-anything so an edit shows up on the next reload, and keeps dot-named files and
-folders such as `.git` off the network.
-
-### Data
-
-Everything the tracker knows lives in `data/` as JSON. None of it is written into
-the JavaScript:
-
-| File | Holds |
-|---|---|
-| `config.json`, `config/*.json` | which items appear in which grid, upgrade chains, counters, the values logic counts (hearts, masks), the legend, linked checks, the map |
-| `Items.json` | every item's display name and icon |
-| `<Region>.json` | one per region: its checks, each check's requirement, and where its marker sits on the map |
-| `manifest.json` | the region list, in display order |
-| `settings.json` | the randomizer's settings in its menu order: what each can be set to, what it starts you with, and what it locks |
-| `locationFlags.json` | progress made somewhere else that a check depends on, named once and used in the logic like an item |
-| `logicHelpers.json` | lists of items written once and used by name in the logic |
-| `version.json` | the app version, written by the release script |
-
-So adding a region, correcting a requirement or reordering the list is a JSON
-edit — nothing in `js/` needs touching. Data that does not make sense is reported
-in the browser console as the page loads, naming the file and the entry, rather
-than failing quietly.
-
-### Workflow
-
-Nothing is pushed straight to `main`. Every change lands through a pull request:
-
-1. Branch off the latest `main`.
-2. Log what the branch changes as you go, with the branch changes script:
-   - **Windows:** double-click `scripts/logBranchChanges.bat`, or run `python scripts/logBranchChanges.py`
-   - **macOS / Linux:** `python3 scripts/logBranchChanges.py`
-3. Rebase onto the latest `main` before opening the pull request, and again if
-   `main` moves while it is open.
-4. Open a pull request into `main`.
-
-The script needs Python 3 and git. It asks for the changes one per line, finished
-with an empty line, then whether to add notes, and writes them to
-`documentation/unreleased/<branch>.md`. Run it again whenever there is more to
-log: it shows what the file already holds and adds to it. Commit the file with
-the work it describes. It is plain markdown, so correcting a line is an ordinary
-edit, and a long bullet can wrap onto indented lines, which the release joins back
-into one.
-
-Each branch gets a file of its own so that two pull requests open at the same time
-never edit the same one. The next release gathers them all into the changelog.
-The file records the branch that started it, and the script won't add to a file
-another branch started: two branch names can make the same file name, like
-`feature/foo` and `feature-foo`.
-
-### Versioning
-
-Releases are numbered `x.y.z`:
-
-| Part | Bumped when |
-|---|---|
-| `x` — major | Saves from earlier versions can no longer be brought up to date |
-| `y` — minor | A new feature is added, and earlier saves still load |
-| `z` — hotfix | Bug fixes only: nothing new, and earlier saves still load |
-
-A release takes the highest part that applies. A new feature alongside some bug
-fixes is minor, and a change that leaves old saves behind is major whatever else
-is in it. Until saving arrives, no release has saves to break.
-`scripts/release.py` shows these same three rules when it asks for the release
-type, so a change to one of them is made in both places.
-
-The number lives in one place, `data/version.json`. The page shows it in the
-footer and adds it to the load-error report, and
-[`documentation/changelog.md`](documentation/changelog.md) records what each
-version changed. Neither file is edited by hand for a release — the release
-script writes both.
-
-### Releasing
-
-A release is a pull request of its own, made once everything going into it has
-merged:
-
-1. Branch off the latest `main`.
-2. Run the release script:
-   - **Windows:** double-click `scripts/release.bat`, or run `python scripts/release.py`
-   - **macOS / Linux:** `python3 scripts/release.py`
-3. Review the result with `git diff`, commit it, and open a pull request.
-
-The script needs Python 3 and nothing else. It lists the files waiting in
-`documentation/unreleased/` and asks whether this is a major, minor or hotfix
-release, each option showing its rule and the version it would produce. It then
-shows the finished entry and asks before writing anything. On yes it adds the
-entry, dated today, to the top of the changelog, deletes the files it read, and
-sets the new version in `data/version.json`. It never commits, tags or pushes. If
-no changes are logged, it stops and says so.
-
-Before asking anything, it checks that the logged files can be deleted, so a
-read-only one, or one open in another program, stops it before anything is written.
-If a release does stop partway — the changelog entry written but the version not
-bumped — the next run says so and offers to finish that release instead of
-starting another.
-
-Merge the release pull request before anything else lands. A pull request that
-merges in between ships in the tagged commit, but its logged changes wait for the
-next release's entry.
-
-Once it merges, the [release workflow](.github/workflows/release.yml) sees a
-version with no tag yet, tags that commit `vx.y.z`, and publishes a GitHub release
-with the changelog entry as its notes. If the changelog has no entry for the
-version, the workflow fails and nothing is tagged.
-
-Leave the `## Version: vx.y.z` lines in the changelog exactly as the script writes
-them: they are how the workflow finds an entry.
+- [How the tracker works](documentation/README.md): the architecture, the data, and one
+  doc per part of the tracker
+- [Testing](documentation/TESTING.md) and [the workflow](documentation/WORKFLOW.md):
+  branches, versions and releases
+- [The scripts](scripts/README.md): what each one does and when you'd run it
 
 ### Contributing
 
-A one-person project for now. I'll open it up to contributions after 1.0.
+Contributions are welcome. For anything bigger than a small fix, open an issue
+first (a bug report or a feature suggestion) so we can agree on the approach before
+you put the work in.
+
+1. Fork the repo and branch off `develop`, named `feature/<what_it_adds>` or
+   `bugfix/<what_it_fixes>`.
+2. Read [how the tracker works](documentation/README.md) for the part you're
+   changing. Game data goes in `data/`, never in the JavaScript.
+3. Log what a player would notice with `scripts/release/logBranchChanges.py`, and
+   commit the file it writes with your work.
+4. Run the tests (`scripts/dev/runTests.py`) and open a pull request into `develop`.
+   The tests run on it once a maintainer approves the run, and it merges once they
+   pass and it has been reviewed.
+
+[The workflow](documentation/WORKFLOW.md) has the details. Releases are cut by the
+maintainer.
 
 ## License
 

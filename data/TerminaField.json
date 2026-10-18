@@ -33,14 +33,14 @@
     {
       "id": "tf_cow_grotto_cow_1",
       "name": "Grotto Cow 1",
-      "logic": "(bomb_bag|blast_mask)&mask_of_truth&ocarina_of_time&eponas_song&bottle",
+      "logic": "(bomb_bag|(blast_mask&termina_shield))&mask_of_truth&ocarina_of_time&eponas_song&bottle",
       "vanilla_when": { "shuffle_cows": false },
       "vanilla_item": "Milk"
     },
     {
       "id": "tf_cow_grotto_cow_2",
       "name": "Grotto Cow 2",
-      "logic": "(bomb_bag|blast_mask)&mask_of_truth&ocarina_of_time&eponas_song&bottle",
+      "logic": "(bomb_bag|(blast_mask&termina_shield))&mask_of_truth&ocarina_of_time&eponas_song&bottle",
       "vanilla_when": { "shuffle_cows": false },
       "vanilla_item": "Milk"
     },
@@ -65,7 +65,7 @@
     {
       "id": "tf_bio_baba_grotto",
       "name": "Bio Baba Grotto",
-      "logic": "(bomb_bag|blast_mask|goron_mask)&zora_mask",
+      "logic": "(bomb_bag|(blast_mask&termina_shield)|goron_mask)&zora_mask",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
     },
@@ -77,7 +77,7 @@
     {
       "id": "tf_colored_gossip_stones",
       "name": "Colored Gossip Stones",
-      "logic": "ocarina_of_time&(bomb_bag|blast_mask|goron_mask)&((deku_mask&sonata_of_awakening)|(zora_mask&new_wave_bossa_nova)|(goron_mask&goron_lullaby_full))",
+      "logic": "ocarina_of_time&(bomb_bag|(blast_mask&termina_shield)|goron_mask)&((deku_mask&sonata_of_awakening)|(zora_mask&new_wave_bossa_nova)|(goron_mask&goron_lullaby_full))",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
     },

@@ -1,0 +1,47 @@
+{
+  "region_name": "Woodfall",
+  "logic": "deku_mask",
+  "map_coordinates": { "xPercent": 54.4, "yPercent": 68.9 },
+  "item_checks": [
+    { "id": "wf_entrance_chest", "name": "Entrance Chest", "logic": "deku_mask|hookshot" },
+    { "id": "wf_frog_pond", "name": "Frog Pond", "logic": "frog_found" }
+  ],
+  "subregions": [
+    {
+      "name": "Temple",
+      "logic": "projectile",
+      "vanilla_when": { "fairy_shuffle": "vanilla" },
+      "vanilla_item": "Stray Fairy",
+      "item_checks": [
+        { "id": "wft_entrance_fairy", "name": "Entrance Fairy" },
+        { "id": "wft_map_chest", "name": "Map Chest", "vanilla_when": false }
+      ],
+      "subregions": [
+        {
+          "name": "Side Room",
+          "logic": "hookshot",
+          "item_checks": [
+            { "id": "wft_side_chest", "name": "Side Chest", "logic": "odolwa_defeated&ocarina_of_time", "vanilla_when": false }
+          ]
+        },
+        {
+          "name": "Inner Room",
+          "logic": "woodfall_small_key>=1",
+          "item_checks": [
+            { "id": "wft_inner_fairy", "name": "Inner Fairy" },
+            { "id": "wft_key_chest", "name": "Key Chest", "vanilla_when": false }
+          ],
+          "subregions": [
+            {
+              "name": "Boss Room",
+              "logic": "woodfall_small_key>=2&bow",
+              "item_checks": [
+                { "id": "wft_odolwa_remains", "name": "Odolwa's Remains", "logic": "fighting", "vanilla_when": false }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
