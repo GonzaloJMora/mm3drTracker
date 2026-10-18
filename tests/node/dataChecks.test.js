@@ -1,30 +1,13 @@
-// Every rule in js/dataChecks.js, twice: the real data in data/ keeps it, and a
-// small made-up data set with just that one mistake breaks it, which proves the
-// check works. The made-up names mean no edit to the game's data can break the
-// second half. A new rule needs an example in BROKEN, or the last test fails.
+// Every rule in js/dataChecks.js, twice: the test world in tests/environment keeps it,
+// and a small made-up data set with just that one mistake breaks it, which proves the
+// check works. A new rule needs an example in BROKEN, or the last test fails. The
+// game's own data is held to the same rules in tests/game/node/gameData.test.js.
 const { test, expect } = require("@playwright/test");
-const { readData } = require("./readData.js");
+const { readData, ENVIRONMENT } = require("./readData.js");
+const { findingsOf } = require("./findings.js");
 require("../../js/logicParser.js");
 const DataModel = require("../../js/dataModel.js");
 const DataChecks = require("../../js/dataChecks.js");
-
-// Every finding for a data set, as rule id -> lines. A string that fails to parse
-// is reported by the parser through console.error; the rule says the same, so the
-// parser's line is kept out of the test output.
-function findingsOf(assembled) {
-    const original = console.error;
-    console.error = () => {};
-    try {
-        const context = DataChecks.context(assembled.data, { fileOf: assembled.fileOf });
-        const byRule = {};
-        assembled.findings.concat(DataChecks.run(context)).forEach(({ rule, lines }) => {
-            byRule[rule] = (byRule[rule] || []).concat(lines);
-        });
-        return byRule;
-    } finally {
-        console.error = original;
-    }
-}
 
 // A tiny world that keeps every rule: two regions, a flag, a helper, a token, a
 // check group, a numeric dropdown and a toggle that grants a slot under a lock.
@@ -84,7 +67,7 @@ const BROKEN = {
     "progressions-or-counts": w => { part(w, "inventory.json").item_counts.sword = 2; },
     "logic-tokens-defined": w => part(w, "logicTokens.json").tokens.push({ id: "bow", name: "Bow", kind: "any", group: "blades" }),
     "logic-parses": w => { check(w, "a1").logic = "bow&"; },
-    "logic-tokens-known": w => { check(w, "a1").logic = "no_such_item"; },
+    "logic-tokens-known": w => { check(w, "a1").logic = "bow|no_such_item>=2"; },
     "logic-counts": w => { check(w, "a1").logic = "heart_piece>=health"; },
     "logic-demanded-once": w => { check(w, "a2").logic = "kokiri&kokiri"; region(w, "A").logic = "kokiri"; },
     "flags-and-helpers": w => { w.flags[0].at = { check: "no_such_check" }; },
@@ -92,6 +75,7 @@ const BROKEN = {
     "check-groups": w => part(w, "checkGroups.json").check_groups.push(["a2", "no_such_check"]),
     "check-names": w => { check(w, "a2").name = ""; },
     "vanilla-items": w => { check(w, "a1").vanilla_item = "not_an_item"; },
+    "vanilla-item-named": w => { check(w, "a2").vanilla_when = true; },
     "settings-entries": w => w.settings.sections[0].groups[0].settings.push({ name: "No id", class: "toggle", default: false }),
     "settings-grants": w => { setting(w, "start_bow").grants = { not_a_slot: true }; },
     "settings-slots": w => w.settings.sections[0].groups[0].settings.push({ id: "also_bow", name: "Also Bow", class: "toggle", default: false, grants: { bow: true } }),
@@ -101,15 +85,26 @@ const BROKEN = {
     "map-coordinates": w => { delete region(w, "A").map_coordinates; }
 };
 
-test.describe("Data checks: the real data", () => {
+// Mistakes a rule has to catch beyond its first example, each its own test. The logic
+// rules share one walk, so a name in a sub-region's or a helper's logic proves the walk
+// reaches them.
+const MORE = {
+    "logic-tokens-known": {
+        "a name in a sub-region's logic": w => { region(w, "B").subregions[0].logic = "helper_y&no_such_item"; },
+        "a name in a helper's logic": w => { w.helpers[0].logic = "bow|no_such_item"; },
+        "a progression's slot id": w => { check(w, "a1").logic = "sword"; }
+    }
+};
+
+test.describe("Data checks: the test world", () => {
     let found;
     test.beforeAll(() => {
-        found = findingsOf(readData());
+        found = findingsOf(readData(ENVIRONMENT));
     });
 
     for (const rule of DataChecks.RULES) {
         test(`${rule.id}: ${rule.title}`, () => {
-            expect(found[rule.id] || [], `data/ breaks "${rule.id}"`).toEqual([]);
+            expect(found[rule.id] || [], `tests/environment/data breaks "${rule.id}"`).toEqual([]);
         });
     }
 });
@@ -129,8 +124,19 @@ test.describe("Data checks: each catches its mistake", () => {
         });
     }
 
+    for (const [id, examples] of Object.entries(MORE)) {
+        for (const [what, make] of Object.entries(examples)) {
+            test(`${id} catches ${what}`, () => {
+                const world = cleanWorld();
+                make(world);
+                const found = findingsOf(DataModel.assemble(world));
+                expect(found[id], `"${id}" didn't catch ${what}`).toBeTruthy();
+            });
+        }
+    }
+
     test("every example is for a rule that exists", () => {
         const ids = DataChecks.RULES.map(rule => rule.id);
-        expect(Object.keys(BROKEN).filter(id => !ids.includes(id))).toEqual([]);
+        expect(Object.keys(BROKEN).concat(Object.keys(MORE)).filter(id => !ids.includes(id))).toEqual([]);
     });
 });

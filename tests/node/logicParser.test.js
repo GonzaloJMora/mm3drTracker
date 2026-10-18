@@ -1,5 +1,5 @@
 // The logic grammar on made-up names, so no edit to the game's data can break these.
-// See ARCHITECTURE.md, *Logic strings*.
+// See LOGIC_AND_REGIONS.md, *Logic strings*.
 const { test, expect } = require("@playwright/test");
 const LogicParser = require("../../js/logicParser.js");
 
@@ -35,11 +35,17 @@ test.describe("Logic parser", () => {
     test("a bare token is whether you have it", () => {
         expect(evaluate("lamp", { lamp: true })).toBe(true);
         expect(evaluate("lamp", {})).toBe(false);
+        // A count is owned once it is above zero.
+        expect(evaluate("lamp", { lamp: 1 })).toBe(true);
+        expect(evaluate("lamp", { lamp: 2 })).toBe(true);
+        expect(evaluate("lamp", { lamp: 0 })).toBe(false);
     });
 
     test("& needs both, | needs either", () => {
         expect(evaluate("lamp&rope", { lamp: true })).toBe(false);
+        expect(evaluate("lamp&rope", { rope: true })).toBe(false);
         expect(evaluate("lamp&rope", { lamp: true, rope: true })).toBe(true);
+        expect(evaluate("lamp|rope", { lamp: true })).toBe(true);
         expect(evaluate("lamp|rope", { rope: true })).toBe(true);
         expect(evaluate("lamp|rope", {})).toBe(false);
     });
@@ -65,11 +71,13 @@ test.describe("Logic parser", () => {
         expect(evaluate("key>=2", { key: 1 })).toBe(false);
         expect(evaluate("key>=2", { key: 2 })).toBe(true);
         expect(evaluate("key >= 2", { key: 3 })).toBe(true);
+        expect(evaluate("key>=12", { key: 11 })).toBe(false);
+        expect(evaluate("key>=12", { key: 12 })).toBe(true);
     });
 
     test(">= a name compares against a setting, never an item", () => {
         // An item with the setting's name must not be read in its place.
-        expect(evaluate("masks>=needed", { masks: 2, needed: 9 }, { needed: 3 })).toBe(false);
+        expect(evaluate("masks>=needed", { masks: 2, needed: 1 }, { needed: 3 })).toBe(false);
         expect(evaluate("masks>=needed", { masks: 3 }, { needed: 3 })).toBe(true);
         // A setting with no number leaves the comparison unmet.
         expect(evaluate("masks>=needed", { masks: 99 }, {})).toBe(false);
@@ -78,11 +86,14 @@ test.describe("Logic parser", () => {
     test("a comparison binds tighter than & and |", () => {
         expect(evaluate("a|key>=2&b", { key: 2, b: true })).toBe(true);
         expect(evaluate("a|key>=2&b", { key: 1, b: true })).toBe(false);
+        expect(evaluate("a|key>=2&b", { key: 2, b: false })).toBe(false);
     });
 
     test("a list of strings is joined by &", () => {
         expect(evaluate(["a|b", "c"], { b: true, c: true })).toBe(true);
         expect(evaluate(["a|b", "c"], { b: true })).toBe(false);
+        // Each part parses on its own, so a|b can't bind loosely against c.
+        expect(evaluate(["a|b", "c"], { a: true })).toBe(false);
         expect(evaluate(["", "c", null], { c: true })).toBe(true);
     });
 
@@ -121,5 +132,19 @@ test.describe("Logic parser", () => {
         const missing = LogicParser.annotate(tree, resolver({ b: true }));
         expect(missing.state).toBe("blocking");
         expect(missing.children[0].state).toBe("blocking");
+
+        // With no alternative met, each one is blocking.
+        const neither = LogicParser.annotate(LogicParser.parse("a|b"), resolver({}));
+        expect(neither.children.map(child => child.state)).toEqual(["blocking", "blocking"]);
+
+        // Every alternative owned is satisfied, not just the first.
+        const all = LogicParser.annotate(LogicParser.parse("a|b"), resolver({ a: true, b: true }));
+        expect(all.children.map(child => child.state)).toEqual(["satisfied", "satisfied"]);
+
+        // A covered alternative's own requirements are optional all the way down.
+        const covered = LogicParser.annotate(LogicParser.parse("a|(b&c)"), resolver({ a: true }));
+        const both = covered.children[1];
+        expect(both.state).toBe("optional");
+        expect(both.children.map(child => child.state)).toEqual(["optional", "optional"]);
     });
 });

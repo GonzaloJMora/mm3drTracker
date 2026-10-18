@@ -216,7 +216,7 @@ window.TrackerData = {
 
     // The layout an older save was written with, kept under data/saveLayouts/ once
     // the format moves on. Fetched only when such a save is loaded; null if there is
-    // none. See ARCHITECTURE.md, *Saving*.
+    // none. See SAVING.md.
     window.TrackerData.saveLayoutFor = format => {
         const current = window.TrackerData.saveLayout;
         if (current && current.format === format) return Promise.resolve(current);

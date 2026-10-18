@@ -1,6 +1,6 @@
 {
   "region_name": "Goron Village",
-  "logic": "bow&(bomb_bag|blast_mask|goron_mask|(magic_meter&fire_arrow))",
+  "logic": "bow&(bomb_bag|(blast_mask&termina_shield)|goron_mask|(magic_meter&fire_arrow))",
   "map_coordinates": { "xPercent": 60.4, "yPercent": 18.7 },
   "item_checks": [
     {
@@ -45,26 +45,26 @@
     {
       "id": "gv_lens_cave_rock_chest",
       "name": "Lens Cave Rock Chest",
-      "logic": "bomb_bag|blast_mask"
+      "logic": "bomb_bag|(blast_mask&termina_shield)"
     },
     {
       "id": "gv_goron_shop_item_1",
       "name": "Goron Shop Item 1",
-      "logic": "goron_mask|(magic_meter&fire_arrow)",
+      "logic": "goron_mask",
       "vanilla_when": { "shopsanity": false },
       "vanilla_item": "Bombs (10)"
     },
     {
       "id": "gv_goron_shop_item_2",
       "name": "Goron Shop Item 2",
-      "logic": "goron_mask|(magic_meter&fire_arrow)",
+      "logic": "goron_mask",
       "vanilla_when": { "shopsanity": false },
       "vanilla_item": "Bombchu (10)"
     },
     {
       "id": "gv_goron_shop_item_3",
       "name": "Goron Shop Item 3",
-      "logic": "goron_mask|(magic_meter&fire_arrow)",
+      "logic": "goron_mask",
       "vanilla_when": { "shopsanity": false },
       "vanilla_item": "Red Potion"
     },

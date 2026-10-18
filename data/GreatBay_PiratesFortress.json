@@ -22,7 +22,7 @@
   "subregions": [
     {
       "name": "Sewer Maze Room",
-      "logic": "magic_meter&goron_mask",
+      "logic": "(magic_meter&goron_mask)|hookshot",
       "item_checks": [
         {
           "id": "pf_sewer_maze_chest",
@@ -68,7 +68,7 @@
         {
           "id": "pf_interior_invisible_soldier",
           "name": "Interior Invisible Soldier",
-          "logic": "lens_of_truth&bottle",
+          "logic": "lens_of_truth&magic_meter&bottle",
           "vanilla_when": { "shuffle_masks": false },
           "vanilla_item": "stone_mask"
         }

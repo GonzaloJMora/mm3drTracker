@@ -1,11 +1,7 @@
 // Saving and loading: the autosave and a reload, Export and Load From File in both
-// forms, the previous run, two tabs, refused saves, and the format-1 fixture
-// through the real page. The codec itself is tests/node/saves.test.js.
-const fs = require("fs");
-const path = require("path");
+// forms, the previous run, two tabs, and refused saves. The codec itself is
+// tests/node/saves.test.js; the game's released saves are the game suite's.
 const { test, expect, launchTracker, openSettings, waitForTracker, settle, slot, PHONE } = require("./fixtures");
-
-const FIXTURES = path.join(__dirname, "..", "fixtures", "saves");
 
 const snapshot = page => page.evaluate(() => window.TrackerSave.snapshot());
 const sortedChecks = state => Object.assign({}, state, { checks: [...state.checks].sort() });
@@ -98,6 +94,13 @@ test.describe("Saving", () => {
         ]);
         expect(download.suggestedFilename()).toMatch(/^mm3drTracker-\d{4}-\d{2}-\d{2}-\d{4}\.json$/);
         const file = await download.path();
+        await page.locator("#export-dialog .save-dialog-close").click();
+
+        // The run moves on in the autosave, so resuming the file has to bring back the
+        // file's state, not the newer copy of the same run.
+        await page.evaluate(() => document.querySelector(".region-check-item:not(.completed)").click());
+        await settle(page);
+        await autosaved(page);
 
         await openSettings(page);
         await page.locator("#load-file").click();
@@ -133,8 +136,16 @@ test.describe("Saving", () => {
         const oldRun = (await stored(page, "autosave")).runId;
 
         await openSettings(page);
+        // Cancel launches nothing and leaves both slots as they were.
+        dialogs.answer = false;
         await page.locator("#launch-new-tracker").click();
         expect(dialogs.messages.at(-1)).toContain("previous run");
+        await expect(page).toHaveURL(/index\.html$/);
+        expect((await stored(page, "autosave")).runId).toBe(oldRun);
+        expect(await stored(page, "previousRun")).toBeNull();
+
+        dialogs.answer = true;
+        await page.locator("#launch-new-tracker").click();
         await waitForTracker(page);
         expect((await stored(page, "previousRun")).runId).toBe(oldRun);
 
@@ -145,12 +156,20 @@ test.describe("Saving", () => {
         await expect(chooser).toContainText("The previous run");
         await chooser.locator(".save-dialog-row", { hasText: "The previous run" }).getByRole("button", { name: "Load" }).click();
         await expect(message(page)).toContainText("Loaded the previous run");
+
+        // Resuming it opens the old run, and the two runs trade slots.
+        const newRun = (await stored(page, "autosave")).runId;
+        await resume(page);
+        expect(await page.evaluate(() => window.TrackerLaunch.readRunId())).toBe(oldRun);
+        expect((await stored(page, "autosave")).runId).toBe(oldRun);
+        expect((await stored(page, "previousRun")).runId).toBe(newRun);
     });
 
     test("a second tab on another run stops autosaving and says so, until it takes over", async ({ page, context }) => {
         await launchTracker(page);
         await makeProgress(page);
         await autosaved(page);
+        const ownRun = (await stored(page, "autosave")).runId;
 
         // A new run started in another tab takes the autosave, the way a player does it.
         const other = await context.newPage();
@@ -159,12 +178,28 @@ test.describe("Saving", () => {
         await other.locator("#launch-new-tracker").click();
         await waitForTracker(other);
         await autosaved(other);
+        const otherRun = (await stored(other, "autosave")).runId;
 
         const banner = page.locator("#autosave-warning");
         await expect(banner).toBeVisible();
         await expect(banner).toContainText("isn't autosaving");
+
+        // Progress made here after that, and the reload's page-hide write, reach this
+        // tab's handoff only, never the other run in the autosave.
+        await page.evaluate(() => document.querySelector(".region-check-item:not(.completed)").click());
+        await settle(page);
+        const before = await snapshot(page);
+        await page.reload();
+        await waitForTracker(page);
+        expect(sortedChecks(await snapshot(page))).toEqual(sortedChecks(before));
+        await expect(banner).toContainText("isn't autosaving");
+        expect((await stored(page, "autosave")).runId).toBe(otherRun);
+
+        // Taking over keeps the other run as the previous run.
         await banner.getByRole("button", { name: "Autosave This Tab" }).click();
         await autosaved(page);
+        expect((await stored(page, "autosave")).runId).toBe(ownRun);
+        expect((await stored(page, "previousRun")).runId).toBe(otherRun);
         await expect(other.locator("#autosave-warning")).toBeVisible();
     });
 
@@ -188,21 +223,6 @@ test.describe("Saving", () => {
         await pasteCode(page, JSON.stringify({ app: "someOtherTracker", code }));
         await expect(message(page)).toContainText("isn't a save from this tracker");
         await expect(page.locator("#resume-tracker")).toBeHidden();
-    });
-
-    test("the format-1 fixture loads through the page and resumes as it was saved", { tag: "@webkit" }, async ({ page }) => {
-        const expected = JSON.parse(fs.readFileSync(path.join(FIXTURES, "format1.expected.json"), "utf8")).snapshot;
-        await openSettings(page);
-        await page.locator("#load-file").click();
-        await page.locator("#load-file-dialog input[type=file]").setInputFiles(path.join(FIXTURES, "format1.json"));
-        await expect(message(page)).toContainText("Loaded the file");
-        await resume(page);
-        const state = await snapshot(page);
-        // toMatchObject: a setting or slot added since the fixture takes its default.
-        expect(state.settings).toMatchObject(expected.settings);
-        expect(state.slots).toMatchObject(expected.slots);
-        expect(state.view).toEqual(expected.view);
-        expect([...state.checks].sort()).toEqual([...expected.checks].sort());
     });
 });
 

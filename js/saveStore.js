@@ -2,7 +2,7 @@
 // before it, and the backup of an autosave that was just updated from an older
 // format. The one file that touches those keys, on both pages. Each holds
 // SaveCodec's wrapper plus the run it belongs to, the tab that wrote it and how
-// far along it was. See ARCHITECTURE.md, *Saving*.
+// far along it was. See SAVING.md.
 (function () {
     "use strict";
 

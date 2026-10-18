@@ -1,6 +1,6 @@
 # Changelog
 
-<!-- Entries are added by scripts/release.py (README.md, Releasing), newest first.
+<!-- Entries are added by scripts/release/release.py (README.md, Releasing), newest first.
      The release workflow finds each one by its "## Version: vx.y.z" line, so leave
      those lines exactly as written. -->
 

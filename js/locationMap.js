@@ -5,8 +5,8 @@
 // region's checks; only one is open at a time.
 //
 // The checks inside are a CSS grid whose column and row counts are computed in
-// fitOverlayContent(), because CSS cannot count children. See ARCHITECTURE.md,
-// "Fitting a region into the map overlay".
+// fitOverlayContent(), because CSS cannot count children. See LAYOUT.md,
+// *Fitting a region into the map overlay*.
 //
 // Shift+click the map with the F1 panel open to copy a map_coordinates snippet
 // for that point — it is how the numbers in the region files were found.
@@ -258,7 +258,7 @@
 
     // ---------- Fitting a region into the overlay ----------
 
-    // Gap between the overlay's bottom edge and the bottom of the window.
+    // Gap between the overlay's bottom edge and the footer or the window's bottom.
     const VIEWPORT_MARGIN = 12;
 
     // Where the overlay hangs from and the least it must cover, in document
@@ -275,16 +275,21 @@
         };
     }
 
-    // How tall the overlay may get: a windowful measured down from the top of the
-    // location column, which on its own keeps the overlay from ever making the page
-    // scroll. clientHeight, because it is what scrollHeight is compared against.
-    // Don't add the item grids' bottom edge as a second ceiling: it looks like what
-    // holds the scrollbar off and isn't, and only costs text size. ARCHITECTURE.md,
+    // How tall the overlay may get: down from the top of the location column to the
+    // footer or the window's bottom, whichever is higher. The window keeps the
+    // overlay from ever making the page scroll (clientHeight, because it is what
+    // scrollHeight is compared against); the footer, pinned to the window's bottom
+    // on desktop (common.css), keeps its links uncovered.
+    // Don't add the item grids' bottom edge as a further ceiling: it looks like what
+    // holds the scrollbar off and isn't, and only costs text size. LAYOUT.md,
     // *Fitting a region into the map overlay*.
     function overlayHeightBudget(box) {
+        const footer = document.getElementById("app-footer");
+        const footerTop = footer ? footer.getBoundingClientRect().top + window.scrollY : Infinity;
+        const bottom = Math.min(document.documentElement.clientHeight, footerTop);
         // Before layout settles this reads short or negative. Falling back to the
         // covered height costs text size, never a broken box.
-        const available = document.documentElement.clientHeight - VIEWPORT_MARGIN - box.top;
+        const available = bottom - VIEWPORT_MARGIN - box.top;
         return available > box.floor ? available : box.floor;
     }
 
@@ -444,8 +449,12 @@
                 return;
             }
 
-            const columns = Math.max(1, Math.floor((availableWidth + columnGap) / (itemWidth + columnGap)));
-            const rows = Math.ceil(items.length / columns);
+            const fitting = Math.max(1, Math.floor((availableWidth + columnGap) / (itemWidth + columnGap)));
+            const rows = Math.ceil(items.length / fitting);
+            // Column flow fills each column before the next, so 9 checks in 4
+            // columns of 3 rows use only 3 and leave the last one empty. Use as
+            // many columns as the rows actually fill.
+            const columns = Math.ceil(items.length / rows);
             const needed = rows * itemHeight + (rows - 1) * rowGap;
 
             chosen = { columns, rows, needed, availableHeight };

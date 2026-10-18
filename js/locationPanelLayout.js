@@ -117,6 +117,45 @@
         return height > 0 ? height : header.getBoundingClientRect().height;
     }
 
+    // How many slot rows the grid column is short of --grid-design-rows
+    // (itemGrids.css). Counted from where the slots sit, since CSS decides how the
+    // grids wrap: grids side by side share a row, as tall as the taller of them.
+    function slotRows(grid) {
+        return new Set([...grid.children].map(slot => Math.round(slot.getBoundingClientRect().top))).size;
+    }
+
+    function missingRows(gridContainer) {
+        const design = parseFloat(getComputedStyle(gridContainer).getPropertyValue("--grid-design-rows"));
+        if (!(design > 0)) return 0;
+        const rowsByTop = new Map();
+        gridContainer.querySelectorAll(".item-grid").forEach(grid => {
+            const top = Math.round(grid.getBoundingClientRect().top);
+            rowsByTop.set(top, Math.max(rowsByTop.get(top) || 0, slotRows(grid)));
+        });
+        let rows = 0;
+        rowsByTop.forEach(count => { rows += count; });
+        return Math.max(0, design - rows);
+    }
+
+    // The grid column's size as the layout sizes against it: the rows it is short of
+    // the design height added on. A row is what one adds to a grid's height, worked
+    // out from the grid's own content box. Not the distance between two rows of
+    // slots: a slot's border overflows its track, so slots sit 2px further apart
+    // than a row adds.
+    function columnSize(gridContainer, missing) {
+        const rect = gridContainer.getBoundingClientRect();
+        if (!missing) return { width: rect.width, height: rect.height };
+        const grid = gridContainer.querySelector(".item-grid");
+        const rows = grid ? slotRows(grid) : 0;
+        if (!rows) return { width: rect.width, height: rect.height };
+        const style = getComputedStyle(grid);
+        const px = name => parseFloat(style[name]) || 0;
+        const content = grid.getBoundingClientRect().height - px("borderTopWidth") - px("borderBottomWidth")
+            - px("paddingTop") - px("paddingBottom");
+        const row = (content + px("rowGap")) / rows;
+        return { width: rect.width, height: rect.height + missing * row };
+    }
+
     // The largest scale, from 1 up, at which the grids and a full-height map fit
     // the window side by side and the page does not need to scroll. False when the
     // grids are not measurable yet.
@@ -126,11 +165,11 @@
     // 2 rather than divided down from the current scale, which would make the answer
     // depend on the size the window was resized from. The real scale goes back in
     // the same script, so neither reading is ever painted.
-    function applyScale(gridContainer) {
+    function applyScale(gridContainer, missing) {
         const root = document.documentElement;
         const sizeAt = scale => {
             root.style.setProperty("--ui-scale", String(scale));
-            return gridContainer.getBoundingClientRect();
+            return columnSize(gridContainer, missing);
         };
         const one = sizeAt(1);
         const two = sizeAt(2);
@@ -198,9 +237,10 @@
 
         if (!mapContainerEl || !mapAspectRatio) return;
 
-        if (!applyScale(gridContainer)) return;
+        const missing = missingRows(gridContainer);
+        if (!applyScale(gridContainer, missing)) return;
 
-        const totalTarget = gridContainer.getBoundingClientRect().height;
+        const totalTarget = columnSize(gridContainer, missing).height;
         const maxWidth = locationSection.getBoundingClientRect().width;
 
         // See MIN_SANE_PX.

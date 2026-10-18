@@ -48,31 +48,15 @@ test.describe("Item grids", () => {
     });
 
     test("a starting item is a floor that clicking never goes below", async ({ page }) => {
-        // The first slot a setting controls on its own, picked at its top choice.
-        await page.goto("index.html");
-        const pick = await page.evaluate(() => new Promise(resolve => window.TrackerData.onReady(() => {
-            for (const entry of window.SettingsState.list()) {
-                const description = window.SettingsState.describe(entry.id);
-                if (description.slot && description.slotChoices.length && !entry.forced) {
-                    resolve({ id: description.id, slot: description.slot, value: description.slotChoices.at(-1) });
-                    return;
-                }
-            }
-            resolve(null);
-        })));
-        expect(pick, "no setting controls a slot").not.toBeNull();
-        await launchTracker(page, { [pick.id]: pick.value });
-
-        const { bottom, top } = await page.evaluate(id => window.GameState.slotRange(id), pick.slot);
-        expect(await slotValue(page, pick.slot)).toBe(bottom);
-        const target = slot(page, pick.slot);
-        if (bottom === top) {
-            await expect(target).toHaveClass(/locked/);
-        }
-        for (let i = 0; i < top - bottom + 2; i++) {
-            await target.click({ button: "right" });
-            expect(await slotValue(page, pick.slot)).toBeGreaterThanOrEqual(bottom);
-        }
+        // README, Settings: Starting Kit Full grants 4 of the 8 Heart Pieces, so 4 is
+        // the floor both ways round.
+        await launchTracker(page, { starting_kit: "full" });
+        const target = slot(page, "heart_piece");
+        expect(await slotValue(page, "heart_piece")).toBe(4);
+        await target.click({ button: "right" });
+        expect(await slotValue(page, "heart_piece")).toBe(8);
+        await target.click();
+        expect(await slotValue(page, "heart_piece")).toBe(4);
     });
 
     test("owning an item turns a check it gates from red to green", { tag: "@smoke" }, async ({ page }) => {

@@ -5,7 +5,7 @@
   "subregions": [
     {
       "name": "Inside the house",
-      "logic": "bomb_bag|blast_mask",
+      "logic": "bomb_bag|(blast_mask&termina_shield)",
       "vanilla_when": { "tokensanity": false },
       "vanilla_item": "Ocean Skulltula Token",
       "subregions": [

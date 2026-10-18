@@ -25,6 +25,20 @@
       "vanilla_item": "heart_piece"
     },
     {
+      "id": "nct_deku_playground_day_1",
+      "name": "Deku Playground Day 1",
+      "logic": "deku_mask",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Fishing Pass"
+    },
+    {
+      "id": "nct_deku_playground_day_2",
+      "name": "Deku Playground Day 2",
+      "logic": "deku_mask",
+      "vanilla_when": { "extra_minigames": false },
+      "vanilla_item": "Fishing Pass"
+    },
+    {
       "id": "nct_deku_playground_3_days",
       "name": "Deku Playground 3 Days",
       "logic": "deku_mask",

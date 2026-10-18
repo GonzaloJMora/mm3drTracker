@@ -152,12 +152,8 @@ window.GameState = {
         }
     },
 
-    // What an item counts for in a token: a count is its number, a plain item is 1
-    // when owned.
     countOf(itemId) {
-        const value = this.items[itemId];
-        if (Number.isInteger(value)) return value;
-        return value === true ? 1 : 0;
+        return window.DataModel.countOf(this.items, itemId);
     },
 
     // Reads config/logicTokens.json into tokenSources: each token that can be worked
@@ -170,24 +166,10 @@ window.GameState = {
         this.computeTokens();
     },
 
-    // One token's value from the inventory and the settings.
+    // One token's value from the inventory and the settings: DataModel's, so the
+    // tests work it out exactly as the page does.
     tokenValue(def, ids, settings) {
-        if (def.kind === "count") return ids.filter(id => this.countOf(id) > 0).length;
-        if (def.kind === "any") return ids.some(id => this.countOf(id) > 0);
-        if (def.kind === "sum") {
-            return def.terms.reduce((total, term) => {
-                if (term.setting !== undefined) {
-                    const value = settings ? settings.get(term.setting) : undefined;
-                    return total + (typeof value === "number" ? value : 0);
-                }
-                return total + Math.floor(this.countOf(term.item) / (term.per || 1));
-            }, 0);
-        }
-        // Both tests below pass on an empty list, which would make a token with no
-        // slots read true.
-        if (!ids.length) return false;
-        const digits = ids.map(id => this.countOf(id));
-        return !digits.includes(0) && new Set(digits).size === digits.length;
+        return window.DataModel.tokenValue(def, ids, this.items, settings ? id => settings.get(id) : null);
     },
 
     // Tokens already named as failing in computeTokens(), so each is named once.

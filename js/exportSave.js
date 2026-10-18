@@ -1,7 +1,7 @@
 // Export on the tracker: the run as a file to download or share, or as a code to
 // copy. What it exports is this tab's state, even while another tab holds the
 // autosave. Loading it back is loadSave.js's, on the settings page. See
-// ARCHITECTURE.md, *Saving*.
+// SAVING.md.
 (function () {
     "use strict";
 

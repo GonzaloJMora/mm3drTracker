@@ -1,13 +1,10 @@
-// Logic on the real data. Nothing here says what any check should need: the page is
-// held to what its own logic strings say, under many inventories, so editing a
-// check's logic can't break these. Whether the data matches the randomizer is a
-// review, not a test. The grammar itself is tests/node/logicParser.test.js.
-const fs = require("fs");
-const path = require("path");
-const { test, expect, launchTracker, settle, statusNumbers, slot, gameFacts } = require("./fixtures");
+// Logic on the test world, in the page: every check is drawn the color the engine
+// gives it, the counts follow, and settings reach the engine. Whether the engine's
+// answers are right is tests/node/engine.test.js, against the test world's README; the
+// grammar is tests/node/logicParser.test.js.
+const { test, expect, launchTracker, settle, statusNumbers, slot, readWorld } = require("./fixtures");
 
-const ROOT = path.join(__dirname, "..", "..");
-const readJson = file => JSON.parse(fs.readFileSync(path.join(ROOT, "data", file), "utf8"));
+const readJson = readWorld;
 const settingsFile = readJson("settings.json");
 const allSettings = settingsFile.sections.flatMap(section => section.groups.flatMap(group => group.settings));
 const tokens = readJson("config/logicTokens.json").tokens;
@@ -112,7 +109,7 @@ const ownEverything = page => page.evaluate(() => window.GameState.gridSlots().f
     window.GameState.setSlot(id, window.GameState.slotRange(id).top)));
 
 test.describe("Logic", () => {
-    test("every check's color and every count match the data's own logic, across many inventories", { tag: "@smoke" }, async ({ page }) => {
+    test("every check is drawn the color the engine gives it, and every count matches, across many inventories", { tag: "@smoke" }, async ({ page }) => {
         await launchTracker(page);
         await expectConsistent(page, "the starting items");
 
@@ -129,6 +126,15 @@ test.describe("Logic", () => {
             if (index % 3 === 0 && !row.classList.contains("completed")) row.click();
         }));
         await expectConsistent(page, "a third of the checks ticked");
+
+        // README, Region color: a region with every location ticked reads completed.
+        const southClockTown = page.locator('.region-group[data-region-name="South Clock Town"]');
+        await southClockTown.evaluate(group => group.querySelectorAll(".region-check-item").forEach(row => {
+            if (!row.classList.contains("completed")) row.click();
+        }));
+        await expectConsistent(page, "every South Clock Town check ticked");
+        await expect(southClockTown.locator(".region-header")).toHaveAttribute("data-status", "completed");
+
         await page.locator("#toggle-non-randomized").click();
         await expectConsistent(page, "non-randomized checks hidden");
     });
@@ -152,7 +158,7 @@ test.describe("Logic", () => {
         // A check written `token>=setting`, where the token counts an item group.
         const found = (() => {
             for (const file of readJson("manifest.json")) {
-                const text = fs.readFileSync(path.join(ROOT, "data", file), "utf8");
+                const text = JSON.stringify(readJson(file));
                 for (const [, left, right] of text.matchAll(/([a-z0-9_]+)\s*>=\s*([a-z_][a-z0-9_]*)/g)) {
                     const token = tokens.find(entry => entry.id === left && entry.kind === "count" && entry.group);
                     const setting = allSettings.find(entry => entry.id === right);
@@ -232,6 +238,51 @@ test.describe("Logic", () => {
         await expect(row).not.toHaveClass(/vanilla/);
     });
 
+    test("a lock's forced value decides which checks are non-randomized", async ({ page }) => {
+        // A locked setting that a one-setting vanilla_when names, where the pick
+        // matches the clause and the forced value doesn't.
+        // Every check such a clause covers: a room's vanilla_when reaches every check
+        // under it that doesn't set its own.
+        const coveredBy = lock => {
+            const covered = [];
+            let pick;
+            const walk = (node, inherited) => {
+                const own = node.vanilla_when !== undefined ? node.vanilla_when : inherited;
+                (node.item_checks || []).forEach(check => {
+                    const clause = check.vanilla_when !== undefined ? check.vanilla_when : own;
+                    if (!clause || typeof clause !== "object" || Array.isArray(clause)) return;
+                    const values = [].concat(clause[lock.setting.id]);
+                    if (Object.keys(clause).length !== 1 || values[0] === undefined || values.includes(lock.value)) return;
+                    if (pick === undefined) pick = values[0];
+                    if (values.includes(pick)) covered.push(check);
+                });
+                (node.subregions || []).forEach(child => walk(child, own));
+            };
+            readJson("manifest.json").forEach(file => walk(readJson(file), undefined));
+            return { lock, covered, pick };
+        };
+        const found = allSettings
+            .filter(setting => setting.forced)
+            .flatMap(setting => setting.forced.map(rule => ({ setting, when: rule.when, value: rule.value })))
+            .filter(rule => !Array.isArray(rule.when))
+            .map(coveredBy)
+            .find(entry => entry.covered.length);
+        expect(found, "no lock forces a setting a vanilla_when names").toBeTruthy();
+        const { lock, covered, pick } = found;
+        const id = lock.setting.id;
+        // README, Settings that change the answers: "Item Pool Plentiful".
+        expect(covered.map(check => check.name).sort()).toEqual(["Entrance Fairy", "Inner Fairy", "Stray Fairy"]);
+
+        const rows = page.locator(covered.map(check => `.region-check-item[data-check-id="${check.id}"]`).join(", "));
+        await launchTracker(page, { [id]: pick });
+        await expect(rows).toHaveCount(covered.length);
+        for (const row of await rows.all()) await expect(row).toHaveClass(/vanilla/);
+
+        await launchTracker(page, Object.assign({ [id]: pick }, lock.when));
+        await expect(rows).toHaveCount(covered.length);
+        for (const row of await rows.all()) await expect(row).not.toHaveClass(/vanilla/);
+    });
+
     test("a lock's forced value reaches the tracker, grants included", async ({ page }) => {
         const lock = allSettings
             .filter(setting => setting.forced && setting.grants)
@@ -258,17 +309,47 @@ test.describe("Logic", () => {
 
     test("starting_max caps a counter however many settings grant it", async ({ page }) => {
         const [capped, cap] = Object.entries(settingsFile.starting_max)[0];
-        // One pick from each setting that can grant the capped slot, more than the cap.
+        // Every setting that can grant the capped counter, picked at its largest grant;
+        // together they have to grant more than the cap for the cap to show.
         const picks = {};
+        let granted = 0;
         allSettings.forEach(setting => {
-            if (Object.keys(picks).length > cap) return;
-            if (setting.class === "toggle" && setting.grants && capped in setting.grants) picks[setting.id] = true;
-            const option = (setting.options || []).find(entry => entry.grants && capped in entry.grants);
-            if (option) picks[setting.id] = option.id;
+            const amount = grants => (grants && capped in grants ? grants[capped] : undefined);
+            if (setting.class === "toggle" && amount(setting.grants) !== undefined) {
+                picks[setting.id] = true;
+                granted += amount(setting.grants);
+            } else if (setting.class === "number" && amount(setting.grants) === "value") {
+                picks[setting.id] = setting.max;
+                granted += setting.max;
+            } else if (setting.class === "dropdown") {
+                const best = (setting.options || []).filter(option => typeof amount(option.grants) === "number")
+                    .sort((a, b) => amount(b.grants) - amount(a.grants))[0];
+                if (best) {
+                    picks[setting.id] = best.id;
+                    granted += amount(best.grants);
+                }
+            }
         });
-        expect(Object.keys(picks).length, `fewer than ${cap + 1} settings grant ${capped}`).toBeGreaterThan(cap);
+        expect(granted, `the settings together grant only ${granted} ${capped}, not more than the cap of ${cap}`).toBeGreaterThan(cap);
         await launchTracker(page, picks);
         expect(await page.evaluate(id => window.GameState.slotValue(id), capped)).toBe(cap);
+    });
+
+    test("the desktop progress numbers match the progress line", async ({ page }) => {
+        // The line is the one the other tests hold to the README; the desktop box is
+        // drawn separately beside it.
+        const boxNumbers = async () => {
+            const text = (await page.locator("#location-stats-content").textContent()).replace(/\s+/g, " ").trim();
+            const match = text.match(/^(\d+) accessible (\d+) checked (\d+) remaining$/);
+            if (!match) throw new Error(`unexpected desktop progress numbers: "${text}"`);
+            return { accessible: Number(match[1]), checked: Number(match[2]), remaining: Number(match[3]) };
+        };
+        await launchTracker(page);
+        await expect(page.locator("#location-stats-box")).toBeVisible();
+        expect(await boxNumbers(), "the starting items").toEqual(await statusNumbers(page));
+        await ownEverything(page);
+        await settle(page);
+        expect(await boxNumbers(), "everything owned").toEqual(await statusNumbers(page));
     });
 
     test("a setting that is a term of a token moves the token", async ({ page }) => {
@@ -281,22 +362,5 @@ test.describe("Logic", () => {
         const after = await page.evaluate(id => window.GameState.tokens[id], token.id);
         expect(after - before).toBe(setting.max - setting.default);
         await expectConsistent(page, `${settingId} at ${setting.max}`);
-    });
-
-    test("no implied layers beyond the ones kept on purpose", async ({ page }) => {
-        await launchTracker(page);
-        const found = await page.evaluate(() => window.TrackerDebug.impliedLayers()
-            .map(entry => ({ region: entry.region, check: entry.check, implied: entry.implied })));
-        const allowed = gameFacts.implied_layers.allowed;
-        const same = (a, b) => a.region === b.region && a.check === b.check && a.implied === b.implied;
-        const added = found.filter(entry => !allowed.some(other => same(entry, other)));
-        const gone = allowed.filter(entry => !found.some(other => same(entry, other)));
-
-        expect(added, "A new implied layer: the rest of this check's requirement already covers it, so for this " +
-            "check it can never change anything. Usually the check belongs beside that group, not inside it. " +
-            "If it's deliberate, add this to implied_layers.allowed in tests/fixtures/majorasMask.json:\n" +
-            added.map(entry => JSON.stringify(entry)).join(",\n")).toEqual([]);
-        expect(gone, "Listed in tests/fixtures/majorasMask.json as implied, but no longer is: remove these lines.")
-            .toEqual([]);
     });
 });

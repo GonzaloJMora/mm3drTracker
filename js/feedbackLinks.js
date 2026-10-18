@@ -2,7 +2,7 @@
 // its GitHub issue form in the page's markup, so it works even when nothing else
 // on the page does; this fills the form in through the link's address as it is
 // used. The field names are the forms' field ids in .github/ISSUE_TEMPLATE, and
-// tests/node/feedbackForms.test.js holds the two to each other.
+// tests/browser/feedback.spec.js holds the two to each other.
 //
 // First in <head>, so it keeps every warning and error the page prints from the
 // start, for the bug form. Nothing is silenced: each still reaches the console.
@@ -11,8 +11,10 @@
 
     const KEPT = 20;
     const MESSAGE_LENGTH = 300;
-    // GitHub refuses a new-issue address much past 8 KB. The messages are trimmed,
-    // oldest first, until the whole address fits under this.
+    // GitHub refuses a new-issue address past about 6.5 KB, and signed out it sends the
+    // player to sign in with the address re-encoded into return_to, which it drops,
+    // form and all, past about 7.6 KB. The messages are trimmed, oldest first, until
+    // the whole address fits under this.
     const ADDRESS_LENGTH = 6000;
 
     const messages = [];

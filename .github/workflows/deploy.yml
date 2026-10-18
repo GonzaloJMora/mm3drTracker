@@ -1,8 +1,8 @@
 # Publishes the site to GitHub Pages on every push to main, which only happens at a
 # release: the full test suite first (tests.yml), then the built site
-# (scripts/buildSite.py), replacing the whole published copy so nothing deleted
+# (scripts/release/buildSite.py), replacing the whole published copy so nothing deleted
 # lingers. The manual run is for republishing a release, as when the Pages source
-# is first switched to GitHub Actions. See README.md, Releasing.
+# is first switched to GitHub Actions. See WORKFLOW.md, *Releasing*.
 name: Deploy
 
 on:
@@ -40,7 +40,7 @@ jobs:
           python-version: "3.12"
 
       - name: Build the site
-        run: python scripts/buildSite.py
+        run: python scripts/release/buildSite.py
 
       - uses: actions/configure-pages@v6
 

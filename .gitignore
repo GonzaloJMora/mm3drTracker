@@ -16,5 +16,5 @@ node_modules/
 test-results/
 playwright-report/
 
-# The built site (scripts/buildSite.py)
+# The built site (scripts/release/buildSite.py)
 _site/

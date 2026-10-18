@@ -9,7 +9,7 @@
           "settings": [
             { "id": "shuffle_main_inventory", "name": "Shuffle Main Inventory", "class": "toggle", "default": true },
             { "id": "shuffle_masks", "name": "Shuffle Masks", "class": "toggle", "default": true },
-            { "id": "shuffle_transformation", "name": "Shuffle Transformation", "class": "toggle", "default": false },
+            { "id": "shuffle_transformation", "name": "Shuffle Transformation", "class": "toggle", "default": true },
             { "id": "starting_sword", "name": "Starting Sword", "class": "dropdown", "default": "kokiri_sword",
               "options": [
                 { "id": "kokiri_sword", "name": "Kokiri Sword", "grants": { "sword": "kokiri_sword" } },
@@ -29,7 +29,7 @@
               "forced": [{ "when": { "item_pool": "plentiful" }, "value": true }] },
             { "id": "shuffle_songs", "name": "Shuffle Songs", "class": "dropdown", "default": "off",
               "options": [
-                { "id": "off", "name": "Off" },
+                { "id": "off", "name": "No" },
                 { "id": "song_locations", "name": "Song Locations" },
                 { "id": "anywhere", "name": "Anywhere" }
               ] },
@@ -39,7 +39,7 @@
             { "id": "tokensanity", "name": "Tokensanity", "class": "toggle", "default": false },
             { "id": "shuffle_fairy_rewards", "name": "Shuffle Fairy Rewards", "class": "dropdown", "default": "off",
               "options": [
-                { "id": "off", "name": "Off" },
+                { "id": "off", "name": "No" },
                 { "id": "great_fairies", "name": "Great Fairies" },
                 { "id": "anywhere", "name": "Anywhere" }
               ] }
@@ -52,13 +52,15 @@
       "groups": [
         {
           "settings": [
-            { "id": "shuffle_scrub_purchases", "name": "Shuffle Scrub Purchases", "class": "toggle", "default": false },
             { "id": "shuffle_scrub_trades", "name": "Shuffle Scrub Trades", "class": "toggle", "default": false },
             { "id": "shuffle_anju_and_kafei", "name": "Shuffle Anju and Kafei", "class": "toggle", "default": false },
-            { "id": "shuffle_cows", "name": "Shuffle Cows", "class": "toggle", "default": false },
             { "id": "shuffle_tingle_maps", "name": "Shuffle Tingle Maps", "class": "toggle", "default": false },
-            { "id": "shuffle_magic_beans", "name": "Shuffle Magic Beans", "class": "toggle", "default": false },
             { "id": "shuffle_notebook", "name": "Shuffle Notebook", "class": "toggle", "default": false },
+            { "id": "shuffle_cows", "name": "Shuffle Cows", "class": "toggle", "default": false },
+            { "id": "shuffle_magic_beans", "name": "Shuffle Magic Beans", "class": "toggle", "default": false },
+            { "id": "shuffle_scrub_purchases", "name": "Shuffle Scrub Purchases", "class": "toggle", "default": false },
+            { "id": "extra_minigames", "name": "Extra Minigames", "class": "toggle", "default": false },
+            { "id": "extra_checks", "name": "Extra Checks", "class": "toggle", "default": false },
             { "id": "shuffle_moon_items", "name": "Shuffle Moon Items", "class": "toggle", "default": false },
             { "id": "shuffle_fierce_deity", "name": "Shuffle Fierce Deity", "class": "toggle", "default": false }
           ]
@@ -118,7 +120,7 @@
                 { "id": "overworld", "name": "Overworld" },
                 { "id": "anywhere", "name": "Anywhere" }
               ] },
-            { "id": "heart_containers", "name": "Heart Containers", "class": "dropdown", "default": "vanilla",
+            { "id": "heart_containers", "name": "Heart Containers", "class": "dropdown", "default": "random",
               "options": [
                 { "id": "vanilla", "name": "Vanilla" },
                 { "id": "random", "name": "Random" }
@@ -409,7 +411,7 @@
         {
           "name": "Songs",
           "settings": [
-            { "id": "starting_song_of_time", "name": "Song of Time", "class": "toggle", "default": false,
+            { "id": "starting_song_of_time", "name": "Song of Time", "class": "toggle", "default": true,
               "grants": { "song_of_time": true } },
             { "id": "starting_oath_to_order", "name": "Oath to Order", "class": "toggle", "default": false,
               "grants": { "oath_to_order": true } },

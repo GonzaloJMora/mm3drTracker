@@ -45,7 +45,7 @@
     {
       "id": "gbc_marine_lab_baby_zoras",
       "name": "Marine Lab Baby Zoras",
-      "logic": "zora_egg>=7",
+      "logic": "zora_mask&zora_egg>=7",
       "vanilla_when": { "shuffle_songs": "off" },
       "vanilla_item": "new_wave_bossa_nova"
     },
@@ -73,7 +73,7 @@
     {
       "id": "gbc_fishermans_game",
       "name": "Fisherman's Game",
-      "logic": "gyorg_defeated&hookshot",
+      "logic": "gyorg_defeated&mikau_healed&hookshot",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
     }

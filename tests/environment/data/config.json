@@ -1,0 +1,10 @@
+{
+  "files": [
+    "config/grids.json",
+    "config/inventory.json",
+    "config/logicTokens.json",
+    "config/checkGroups.json",
+    "config/legend.json",
+    "config/map.json"
+  ]
+}

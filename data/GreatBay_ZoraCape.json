@@ -4,6 +4,13 @@
   "map_coordinates": { "xPercent": 28.7, "yPercent": 51 },
   "item_checks": [
     {
+      "id": "zc_zora_jars_minigame",
+      "name": "Zora Jars Minigame",
+      "logic": "zora_mask",
+      "vanilla_when": { "extra_checks": false },
+      "vanilla_item": "Silver Rupee"
+    },
+    {
       "id": "zc_like_like_hp",
       "name": "Like Like HP",
       "logic": "zora_mask",
@@ -28,7 +35,7 @@
     {
       "id": "zc_grotto_chest",
       "name": "Grotto Chest",
-      "logic": "bomb_bag|blast_mask|goron_mask"
+      "logic": "bomb_bag|(blast_mask&termina_shield)|goron_mask"
     },
     {
       "id": "zc_beaver_race_1",

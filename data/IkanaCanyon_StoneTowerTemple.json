@@ -1,6 +1,6 @@
 {
   "region_name": "Stone Tower Temple",
-  "logic": "hookshot&(garo_mask|gibdo_mask)&ocarina_of_time&eponas_song&bow&magic_meter&ice_arrow&elegy_of_emptiness&goron_mask&zora_mask",
+  "logic": "hookshot&garo_mask&ocarina_of_time&eponas_song&bow&magic_meter&ice_arrow&elegy_of_emptiness&goron_mask&zora_mask",
   "map_coordinates": { "xPercent": 85.4, "yPercent": 32.1 },
   "vanilla_when": { "stray_fairies": "vanilla" },
   "vanilla_item": "stone_tower_stray_fairy",
@@ -34,14 +34,14 @@
             {
               "id": "stt_map_chest",
               "name": "Map Chest",
-              "logic": "light_arrow|((bomb_bag|blast_mask)&mirror_shield)",
+              "logic": "light_arrow|((bomb_bag|(blast_mask&termina_shield))&mirror_shield)",
               "vanilla_when": { "maps_compasses": "vanilla" },
               "vanilla_item": "map_stone_tower_temple"
             },
             {
               "id": "stt_armos_room_small_key_chest",
               "name": "Armos Room Small Key Chest",
-              "logic": "light_arrow|((bomb_bag|blast_mask)&mirror_shield)",
+              "logic": "light_arrow|((bomb_bag|(blast_mask&termina_shield))&mirror_shield)",
               "vanilla_when": { "small_keys": "vanilla" },
               "vanilla_item": "stone_tower_small_key"
             },
@@ -212,6 +212,18 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Oath to Order",
+      "item_checks": [
+        {
+          "id": "stt_oath_to_order",
+          "name": "Oath to Order",
+          "logic": "twinmold_defeated",
+          "vanilla_when": { "shuffle_songs": "off" },
+          "vanilla_item": "oath_to_order"
         }
       ]
     }

@@ -46,7 +46,7 @@
     --shape-completed: circle(50%);
 
     /* Map markers only: the triangle at 80% of its box and the square at 76%, so
-       their corners clear neighboring markers (ARCHITECTURE.md, *Markers*). Every
+       their corners clear neighboring markers (LAYOUT.md, *Markers*). Every
        other surface has no neighbors to clear and keeps the full shapes above. */
     --shape-inaccessible-marker: polygon(50% 15.36%, 90% 84.64%, 10% 84.64%);
     --shape-vanilla-marker: polygon(12% 12%, 88% 12%, 88% 88%, 12% 88%);
@@ -420,6 +420,36 @@ main.awaiting-data ~ .page-loading {
 
 .feedback-links a {
     color: #6ab0ff;
+}
+
+/* On desktop the footer sits at the window's bottom edge when the page is shorter,
+   and the map overlay stops above it (locationMap.js, overlayHeightBudget). Main
+   takes up the slack, not an auto margin on the footer: locationPanelLayout.js
+   reads the footer's margin, and an auto one reads back as all the free space.
+   Flex centers an item with auto margins at its content width, so header and main
+   are given their width back. */
+@media not all and (max-width: 1499px) {
+    body {
+        display: flex;
+        flex-direction: column;
+        /* The browser's own body margin, spelled out so the height can take it
+           off; without it the page always scrolls by that much. */
+        margin: 8px;
+        min-height: calc(100vh - 16px);
+        box-sizing: border-box;
+    }
+
+    body > header,
+    body > main {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* flex-start, or a banner on a line of its own is spread away from the page. */
+    body > main {
+        flex-grow: 1;
+        align-content: flex-start;
+    }
 }
 
 /* Centered and stacked on a phone, with room underneath so the fixed back-to-top

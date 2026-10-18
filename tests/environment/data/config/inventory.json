@@ -1,0 +1,22 @@
+{
+  "progressions": {
+    "sword": ["kokiri_sword", "razor_sword"],
+    "bow": ["bow", "bow_large_quiver"],
+    "magic": ["magic_meter", "magic_meter_double"]
+  },
+  "item_counts": {
+    "empty_bottle": 2,
+    "heart_piece": 8,
+    "heart_container": 2,
+    "woodfall_small_key": 2
+  },
+  "item_groups": {
+    "boss_remains": ["odolwa_remains", "goht_remains"],
+    "bottles": ["red_potion", "empty_bottle"]
+  },
+  "digit_slots": {
+    "name": "Code Digit",
+    "ids": ["code_digit_1", "code_digit_2", "code_digit_3"],
+    "max_value": 3
+  }
+}

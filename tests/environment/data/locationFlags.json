@@ -1,0 +1,6 @@
+{
+  "flags": [
+    { "id": "odolwa_defeated", "name": "Odolwa Defeated", "at": { "check": "wft_odolwa_remains" }, "logic": "song_of_time" },
+    { "id": "frog_found", "name": "Frog Found", "at": { "region": "Mountain Village" }, "logic": "bunny_hood" }
+  ]
+}

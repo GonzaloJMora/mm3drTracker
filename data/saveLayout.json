@@ -616,6 +616,26 @@
     {"kind": "check", "id": "moon_twinmold_trial_iron_knuckle_chest", "bits": 1},
     {"kind": "check", "id": "moon_twinmold_trial_heart_piece", "bits": 1},
     {"kind": "check", "id": "moon_fierce_deitys_mask", "bits": 1},
-    {"kind": "check", "id": "moon_majoras_mask_boss", "bits": 1}
+    {"kind": "check", "id": "moon_majoras_mask_boss", "bits": 1},
+    {"kind": "check", "id": "wct_curiosity_shop_big_bomb_bag", "bits": 1},
+    {"kind": "check", "id": "sht_oath_to_order", "bits": 1},
+    {"kind": "check", "id": "gbt_oath_to_order", "bits": 1},
+    {"kind": "check", "id": "stt_oath_to_order", "bits": 1},
+    {"kind": "setting", "id": "extra_minigames", "bits": 1, "options": [false, true]},
+    {"kind": "setting", "id": "extra_checks", "bits": 1, "options": [false, true]},
+    {"kind": "check", "id": "nct_deku_playground_day_1", "bits": 1},
+    {"kind": "check", "id": "nct_deku_playground_day_2", "bits": 1},
+    {"kind": "check", "id": "wct_lottery_day_1", "bits": 1},
+    {"kind": "check", "id": "wct_lottery_day_2", "bits": 1},
+    {"kind": "check", "id": "wct_lottery_day_3", "bits": 1},
+    {"kind": "check", "id": "ect_honey_and_darling_day_1", "bits": 1},
+    {"kind": "check", "id": "ect_honey_and_darling_day_2", "bits": 1},
+    {"kind": "check", "id": "ect_treasure_chest_game_human", "bits": 1},
+    {"kind": "check", "id": "ect_treasure_chest_game_deku", "bits": 1},
+    {"kind": "check", "id": "ect_treasure_chest_game_zora", "bits": 1},
+    {"kind": "check", "id": "zc_zora_jars_minigame", "bits": 1},
+    {"kind": "check", "id": "zh_stage_lights", "bits": 1},
+    {"kind": "check", "id": "zh_bad_lulu_picture", "bits": 1},
+    {"kind": "check", "id": "zh_good_lulu_picture", "bits": 1}
   ]
 }

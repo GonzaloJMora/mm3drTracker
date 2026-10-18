@@ -2,8 +2,7 @@
 // Collects the snapshot from each owner (SettingsState, GameState, ItemCheckState,
 // TrackerView), encodes it through SaveCodec, and keeps it in SaveStore's autosave
 // and in this tab's handoff, so a reload opens where the run is. At load it checks
-// that the save layout covers everything there is to save. See ARCHITECTURE.md,
-// *Saving*.
+// that the save layout covers everything there is to save. See SAVING.md.
 (function () {
     "use strict";
 
@@ -292,7 +291,7 @@
         try {
             const problems = coverageProblems();
             if (problems.length) {
-                console.warn(`TrackerSave: ${problems.length} problem(s) in data/saveLayout.json. Run scripts/updateSaveLayout.py.`);
+                console.warn(`TrackerSave: ${problems.length} problem(s) in data/saveLayout.json. Run scripts/data/updateSaveLayout.py.`);
                 problems.forEach(line => console.warn(`  ${line}`));
             }
         } catch (error) {

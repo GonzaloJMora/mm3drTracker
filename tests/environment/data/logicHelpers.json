@@ -1,0 +1,6 @@
+{
+  "helpers": [
+    { "id": "fighting", "name": "Melee Damage", "logic": "kokiri_sword|razor_sword|goron_mask" },
+    { "id": "projectile", "name": "Projectile Damage", "logic": "bow|hookshot|(deku_mask&magic_meter)" }
+  ]
+}

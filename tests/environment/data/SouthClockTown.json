@@ -1,0 +1,24 @@
+{
+  "region_name": "South Clock Town",
+  "logic": "",
+  "map_coordinates": { "xPercent": 51.1, "yPercent": 47.9 },
+  "item_checks": [
+    { "id": "sct_clock_tower_chest", "name": "Clock Tower Chest" },
+    { "id": "sct_hookshot_ledge", "name": "Hookshot Ledge", "logic": "hookshot|(bow&magic_meter)" },
+    {
+      "id": "sct_song_spot",
+      "name": "Song Spot",
+      "logic": "ocarina_of_time",
+      "vanilla_when": { "shuffle_songs": false, "item_pool": "normal" },
+      "vanilla_item": "song_of_time"
+    },
+    { "id": "sct_postbox", "name": "Postbox" },
+    {
+      "id": "sct_stray_fairy",
+      "name": "Stray Fairy",
+      "vanilla_when": { "fairy_shuffle": "vanilla" },
+      "vanilla_item": "Stray Fairy"
+    },
+    { "id": "sct_heart_door", "name": "Heart Door", "logic": "hearts>=4" }
+  ]
+}

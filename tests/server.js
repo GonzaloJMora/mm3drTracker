@@ -4,13 +4,21 @@
 // test workers loading pages at once get connections refused, which the page
 // reports as "could not be fetched". Nothing is cached, so every load sees the
 // files as they are on disk. Serves the repo, or the built site when
-// TEST_SITE_ROOT names it. Usage: node tests/server.js <port>
+// TEST_SITE_ROOT names it. With TEST_ENVIRONMENT set, data/ and images/ come from
+// tests/environment instead, the made-up world in its README.
+// Usage: node tests/server.js <port>
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(process.env.TEST_SITE_ROOT || path.join(__dirname, ".."));
+const ENVIRONMENT = process.env.TEST_ENVIRONMENT ? path.join(__dirname, "environment") : null;
 const PORT = Number(process.argv[2]) || 8731;
+
+// The folder a request is answered from: the world's own data/ and images/, or the site.
+function baseFor(pathname) {
+    return ENVIRONMENT && /^\/(data|images)\//.test(pathname) ? ENVIRONMENT : ROOT;
+}
 
 const TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -34,9 +42,10 @@ const server = http.createServer((request, response) => {
         return;
     }
     if (pathname.endsWith("/")) pathname += "index.html";
-    const file = path.join(ROOT, pathname);
-    // Inside the repo, and never a dot-named file or folder such as .git.
-    if (!file.startsWith(ROOT + path.sep) || pathname.split("/").some(part => part.startsWith("."))) {
+    const base = baseFor(pathname);
+    const file = path.join(base, pathname);
+    // Inside the folder it is served from, and never a dot-named file or folder such as .git.
+    if (!file.startsWith(base + path.sep) || pathname.split("/").some(part => part.startsWith("."))) {
         response.writeHead(404).end();
         return;
     }
@@ -54,5 +63,5 @@ const server = http.createServer((request, response) => {
 });
 
 server.listen(PORT, "127.0.0.1", 511, () => {
-    console.log(`Serving ${ROOT} at http://localhost:${PORT}/`);
+    console.log(`Serving ${ROOT}${ENVIRONMENT ? `, with data/ and images/ from ${ENVIRONMENT}` : ""} at http://localhost:${PORT}/`);
 });

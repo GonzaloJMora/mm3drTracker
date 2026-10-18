@@ -198,6 +198,18 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Oath to Order",
+      "item_checks": [
+        {
+          "id": "gbt_oath_to_order",
+          "name": "Oath to Order",
+          "logic": "gyorg_defeated",
+          "vanilla_when": { "shuffle_songs": "off" },
+          "vanilla_item": "oath_to_order"
+        }
+      ]
     }
   ]
 }

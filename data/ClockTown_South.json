@@ -73,11 +73,13 @@
     },
     {
       "id": "sct_bank_reward_2",
-      "name": "Bank Reward 2"
+      "name": "Bank Reward 2",
+      "logic": "adults_wallet"
     },
     {
       "id": "sct_bank_reward_3",
       "name": "Bank Reward 3",
+      "logic": "giants_wallet",
       "vanilla_when": { "shuffle_pieces_of_heart": false },
       "vanilla_item": "heart_piece"
     }

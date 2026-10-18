@@ -4,6 +4,27 @@
   "map_coordinates": { "xPercent": 23.6, "yPercent": 51.4 },
   "item_checks": [
     {
+      "id": "zh_stage_lights",
+      "name": "Stage Lights",
+      "logic": "bow&magic_meter&fire_arrow",
+      "vanilla_when": { "extra_checks": false },
+      "vanilla_item": "Blue Rupee"
+    },
+    {
+      "id": "zh_bad_lulu_picture",
+      "name": "Bad Lulu Picture",
+      "logic": "pictograph_box",
+      "vanilla_when": { "extra_checks": false },
+      "vanilla_item": "Blue Rupee"
+    },
+    {
+      "id": "zh_good_lulu_picture",
+      "name": "Good Lulu Picture",
+      "logic": "pictograph_box",
+      "vanilla_when": { "extra_checks": false },
+      "vanilla_item": "Red Rupee"
+    },
+    {
       "id": "zh_evan",
       "name": "Evan",
       "logic": "zora_mask",
@@ -13,7 +34,7 @@
     {
       "id": "zh_deku_scrub_purchase",
       "name": "Deku Scrub Merchant Purchase",
-      "logic": "zora_mask",
+      "logic": "zora_mask&bottle",
       "vanilla_when": { "shuffle_scrub_purchases": false },
       "vanilla_item": "Green Potion"
     },

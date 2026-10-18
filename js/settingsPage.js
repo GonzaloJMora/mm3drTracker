@@ -3,7 +3,7 @@
 // will open with. A slot one setting controls steps through that setting's choices
 // when clicked; the item grids section's other settings end the settings panel on
 // desktop and sit under the grids on a phone. Edits apply as they are made. See
-// ARCHITECTURE.md, *The settings page*.
+// SETTINGS.md, *The settings page*.
 (function () {
     "use strict";
 
