@@ -1,6 +1,6 @@
 {
   "region_name": "Swamp Spider House",
-  "logic": "(deku_mask&(bottle|bow|zora_mask|hookshot))|odolwa_defeated",
+  "logic": "(bottle|odolwa_defeated|(hookshot&garo_mask&ocarina_of_time&eponas_song))&(deku_stick|(bow&magic_meter&fire_arrow))",
   "map_coordinates": { "xPercent": 47.4, "yPercent": 63.3 },
   "vanilla_when": { "tokensanity": false },
   "vanilla_item": "Swamp Skulltula Token",

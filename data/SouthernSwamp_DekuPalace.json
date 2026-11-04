@@ -1,6 +1,6 @@
 {
   "region_name": "Deku Palace",
-  "logic": "bottle|odolwa_defeated|(deku_mask&(bow|zora_mask|hookshot))",
+  "logic": "bottle|odolwa_defeated|(hookshot&garo_mask&ocarina_of_time&eponas_song)",
   "map_coordinates": { "xPercent": 47.4, "yPercent": 70.5 },
   "item_checks": [
     {

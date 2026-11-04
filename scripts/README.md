@@ -12,7 +12,7 @@ They need Python 3. `runTests` also needs Node.js 24 or later.
 | Script | What it does | When you run it |
 |---|---|---|
 | `runTests` | Installs what the tests need the first time (the pinned test packages and the browsers they drive, into this folder only), then runs the suite. Name a group to run only that one (`runTests.py saving`); anything else goes to `playwright test`. | Before opening a pull request. CI runs the same suite on every one. [TESTING.md](../documentation/TESTING.md). |
-| `serveOnNetwork` | Serves the repo to the other devices on your Wi-Fi with caching off, and prints the address to open. | To try a change on a phone. On your own computer, `python -m http.server` is enough. The repo's [README.md](../README.md), *Development*. |
+| `serveOnNetwork` | Serves the repo to the other devices on your Wi-Fi with caching off, and prints the address to open. It is plain HTTP, so Share, the clipboard and offline play don't work through it. | To try a change on a phone. On your own computer, `python -m http.server` is enough. The repo's [README.md](../README.md), *Development*. |
 
 ## `data/`: files that are written by a script, never by hand
 

@@ -59,7 +59,7 @@
       "name": "Goron Shop Item 2",
       "logic": "goron_mask",
       "vanilla_when": { "shopsanity": false },
-      "vanilla_item": "Bombchu (10)"
+      "vanilla_item": "Arrows (10)"
     },
     {
       "id": "gv_goron_shop_item_3",

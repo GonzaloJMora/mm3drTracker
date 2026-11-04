@@ -87,7 +87,7 @@
             if (next.length === terms.length && next.every((term, index) => term === terms[index])) break;
             terms = next;
         }
-        return terms;
+        return foldCounts(terms);
     }
 
     // Every pass removes or splits a term, so a real requirement settles in a few.
@@ -210,6 +210,32 @@
         return [...shared, { type: "or", children: remainders.map(allOf) }];
     }
 
+    // An item asked for outright beside an either/or where some way in asks for more
+    // of it moves into that either/or, onto the ways in that don't already cover it:
+    // "Key 1/1" beside "Key 0/2 and Fire Arrow" reads as two answers to one question,
+    // while "Key 1 and Bomb Bag" or "Key 2 and Fire Arrow" each say the whole cost.
+    // Runs last, after the steps above have settled, since dropGiven() would hand the
+    // item straight back out. Left alone beside two such either/ors, where it would
+    // be repeated in both.
+    function foldCounts(terms) {
+        for (let index = 0; index < terms.length; index++) {
+            const leaf = terms[index];
+            if (!isLeaf(leaf)) continue;
+            const asksMore = term => term.type === "or" && term.children.some(child => covers(child, leaf));
+            const targets = terms.filter(asksMore);
+            if (targets.length !== 1) continue;
+
+            const target = targets[0];
+            const children = target.children.map(child => (covers(child, leaf)
+                ? child
+                : { type: "and", children: [leaf, ...(child.type === "and" ? child.children : [child])] }));
+            const folded = { type: "or", children };
+            terms = terms.filter(term => term !== leaf).map(term => (term === target ? folded : term));
+            index = -1;
+        }
+        return terms;
+    }
+
     // The same leaf written the same way, for spotting a shared item.
     function leafKey(node) {
         if (node.type === "token") return `token:${node.id}`;
@@ -320,14 +346,25 @@
         const terms = simplify(annotated.node, resolve).map(term => parser().annotate(term, resolve, true));
         list.dataset.missing = String(terms.filter(term => !term.satisfied).length);
 
-        terms.forEach(term => {
+        const drawn = terms.map(term => {
             const node = term.node;
             const routes = node.type === "or" && (!isPlainChoice(node) || node.children.length >= LIST_FROM)
                 ? routesOf(node, true)
                 : null;
+            return { term, routes: routes && routes.length <= Math.max(ROUTE_LIMIT, node.children.length) ? routes : null };
+        });
+
+        // Single chips first and the Any one of groups after them, each in the
+        // logic's order, so a lone missing item never sits between two groups.
+        // Whether a term is a group depends only on the logic, so nothing moves as
+        // items are collected.
+        const ordered = drawn.filter(entry => !entry.routes).concat(drawn.filter(entry => entry.routes));
+
+        ordered.forEach(({ term, routes }) => {
+            const node = term.node;
 
             // The terms of a top-level AND, so each one is either met or blocking.
-            if (routes && routes.length <= Math.max(ROUTE_LIMIT, node.children.length)) {
+            if (routes) {
                 const group = document.createElement("span");
                 group.className = `tooltip-group tooltip-group-${term.satisfied ? "met" : "unmet"}`;
                 group.setAttribute("role", "listitem");

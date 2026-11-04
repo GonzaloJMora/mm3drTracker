@@ -32,8 +32,9 @@ test.describe("Requirements list", () => {
         expect(listed("key&key>=2")).toEqual(["key>=2"]);
         expect(listed("key>=3&(key>=2|bow)")).toEqual(["key>=3"]);
         expect(listed("key>=3&(key>=3|bow)")).toEqual(["key>=3"]);
-        // A higher count isn't met by a lower one.
-        expect(listed("key>=2&(key>=3|bow)")).toEqual(["key>=2", "key>=3|bow"]);
+        // A higher count isn't met by a lower one (so the lower moves into the
+        // either/or, below).
+        expect(listed("key>=2&(key>=3|bow)")).toEqual(["key>=3|(key>=2&bow)"]);
         // A way in loses the part already given, and keeps the rest.
         expect(listed("key>=2&(bow|(key>=1&stick))")).toEqual(["key>=2", "bow|stick"]);
     });
@@ -67,6 +68,21 @@ test.describe("Requirements list", () => {
         expect(listed("((a&m)|(b&m))&(c|(m&d))")).toEqual(["m", "a|b", "c|d"]);
         // Not every way in needs it, so it stays in the routes that do.
         expect(listed("light|((bomb|(blast&shield))&mirror)")).toEqual(["light|((bomb|(blast&shield))&mirror)"]);
+    });
+
+    test("an item asked for outright moves into an either/or where a way in asks for more of it", () => {
+        expect(listed("key>=1&(bomb|(key>=2&fire))")).toEqual(["(key>=1&bomb)|(key>=2&fire)"]);
+        expect(listed("key&(bomb|key>=2)")).toEqual(["(key&bomb)|key>=2"]);
+        // A way in that asks for more on only some of its own routes doesn't cover it.
+        expect(listed("key>=1&(bomb|(key>=2&fire)|(c&(key>=3|d)))"))
+            .toEqual(["(key>=1&bomb)|(key>=2&fire)|(key>=1&c&(key>=3|d))"]);
+        // Every way in asks for more, so it goes.
+        expect(listed("key>=1&((key>=2&a)|(key>=3&b))")).toEqual(["(key>=2&a)|(key>=3&b)"]);
+        // No way in asks for more: it stays its own term.
+        expect(listed("key>=1&(bomb|fire)")).toEqual(["key>=1", "bomb|fire"]);
+        // Two either/ors ask for more: it stays, rather than be repeated in both.
+        expect(listed("key>=1&(bomb|(key>=2&fire))&(bow|(key>=3&hook))"))
+            .toEqual(["key>=1", "bomb|(key>=2&fire)", "bow|(key>=3&hook)"]);
     });
 
     test("every check in the test world lists exactly what it needs", () => {
