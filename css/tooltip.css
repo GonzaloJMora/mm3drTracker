@@ -85,6 +85,8 @@
 .tooltip-chips {
     display: flex;
     flex-wrap: wrap;
+    /* Not stretch: a chip beside a taller "Any one of" group keeps its own height. */
+    align-items: center;
     gap: 4px;
     font-size: 0.8125rem;
     line-height: 1.3;

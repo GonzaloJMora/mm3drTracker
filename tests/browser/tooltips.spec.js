@@ -93,6 +93,19 @@ async function expectListed(page, rows) {
 }
 
 test.describe("Tooltips", () => {
+    test("single chips come before the Any one of groups, each in the logic's order", async ({ page }) => {
+        await launchTracker(page);
+        const drawn = await page.evaluate(() => {
+            const resolve = () => 0;
+            const tree = LogicParser.parse("((a&b)|c)&d&(e|(f&g))&h");
+            const list = RequirementsView.render(LogicParser.annotate(tree, resolve, true), id => id, resolve);
+            return [...list.children].map(node => (node.classList.contains("tooltip-group")
+                ? [...node.querySelectorAll(".tooltip-chip-text")].map(text => text.textContent)
+                : node.querySelector(".tooltip-chip-text").textContent));
+        });
+        expect(drawn).toEqual(["d", "h", ["a and b", "c"], ["e", "f and g"]]);
+    });
+
     test("hovering a check in the map overlay shows what it needs", { tag: "@smoke" }, async ({ page }) => {
         // At Swamp, from README's region logic and its tooltip tables. Odolwa's
         // Remains asks for 1 key in the Inner Room and 2 in the Boss Room, and with

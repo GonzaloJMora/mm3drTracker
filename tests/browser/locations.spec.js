@@ -242,6 +242,67 @@ test.describe("Locations", () => {
         await expect(town).toBeHidden();
     });
 
+    // With no earlier tap, nothing has marked the region yet when this one empties it.
+    test("Show Only Accessible Checks keeps a region when the first tap since opening empties it", async ({ page }) => {
+        await turnOnOnlyAccessible(page);
+        const north = region(page, "North Clock Town");
+        const header = north.locator(".region-header");
+        await header.click();
+        await check(page, "nct_guards_gift").click();
+        await header.click();
+        await header.click();
+
+        const postbox = check(page, "nct_postbox");
+        await postbox.click();
+        await expect(postbox).toHaveClass(/completed/);
+        await expect(north).toBeVisible();
+        await expect(postbox).toBeVisible();
+
+        // Still there to undo.
+        await postbox.click();
+        await expect(postbox).not.toHaveClass(/completed/);
+        await postbox.click();
+        await header.click();
+        await expect(north).toBeHidden();
+    });
+
+    test("Show Only Accessible Checks keeps another open region a linked check empties", async ({ page }) => {
+        await turnOnOnlyAccessible(page);
+        const north = region(page, "North Clock Town");
+        const northHeader = north.locator(".region-header");
+        await northHeader.click();
+        await check(page, "nct_guards_gift").click();
+        await northHeader.click();
+        await northHeader.click();
+
+        await region(page, "South Clock Town").locator(".region-header").click();
+        await check(page, "sct_postbox").click();
+        await expect(check(page, "nct_postbox")).toHaveClass(/completed/);
+        await expect(north).toBeVisible();
+        await expect(check(page, "nct_postbox")).toBeVisible();
+    });
+
+    test("Show Only Accessible Checks closes an open region that un-marking an item empties", async ({ page }) => {
+        await turnOnOnlyAccessible(page);
+        await page.locator('.tab-btn[data-tab="items"]').click();
+        await slot(page, "deku_mask").click();
+        await showLocations(page);
+        const woodfall = region(page, "Woodfall");
+        await woodfall.locator(".region-header").click();
+        await expect(woodfall.locator(".region-content")).toHaveClass(/open/);
+
+        await page.locator('.tab-btn[data-tab="items"]').click();
+        await slot(page, "deku_mask").click({ button: "right" });
+        await showLocations(page);
+        await expect(woodfall).toBeHidden();
+
+        await page.locator('.tab-btn[data-tab="items"]').click();
+        await slot(page, "deku_mask").click();
+        await showLocations(page);
+        await expect(woodfall).toBeVisible();
+        await expect(woodfall.locator(".region-content")).not.toHaveClass(/open/);
+    });
+
     test("Show Only Accessible Checks is phone-only and hides nothing on desktop, and hides again when narrowed", async ({ page }) => {
         await launchTracker(page);
         await page.locator("#header-menu-button").click();

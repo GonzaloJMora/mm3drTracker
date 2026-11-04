@@ -14,7 +14,7 @@
       "id": "sct_song_of_time",
       "name": "Song of Time",
       "logic": "projectile",
-      "vanilla_when": [{ "shuffle_songs": "off" }, { "shuffle_songs": ["song_locations", "anywhere"], "shuffle_song_of_time": false }],
+      "vanilla_when": [{ "shuffle_songs": "off" }, { "starting_song_of_time": true }],
       "vanilla_item": "song_of_time"
     },
     {

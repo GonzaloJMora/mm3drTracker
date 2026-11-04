@@ -61,9 +61,30 @@
         return known ? `v${known}` : "unknown (it didn't load)";
     }
 
-    function screen() {
-        const layout = window.PhoneLayout ? (window.PhoneLayout.active ? "phone layout" : "desktop layout") : "layout unknown";
-        return `${window.innerWidth}x${window.innerHeight} window, ${layout}, pixel ratio ${window.devicePixelRatio}`;
+    // Only the browser's name and major version: the user agent also names the
+    // operating system and often the device, which a report shouldn't carry. Order
+    // matters, since Edge's and Opera's strings also say Chrome, and Chrome's says Safari.
+    const BROWSERS = [
+        ["Edge", /(?:Edg|EdgA|EdgiOS)\/(\d+)/],
+        ["Opera", /(?:OPR|OPiOS)\/(\d+)/],
+        ["Samsung Internet", /SamsungBrowser\/(\d+)/],
+        ["Firefox", /(?:Firefox|FxiOS)\/(\d+)/],
+        ["Chrome", /(?:Chrome|CriOS)\/(\d+)/],
+        ["Safari", /Version\/(\d+).*Safari\//]
+    ];
+
+    function browser() {
+        const agent = navigator.userAgent;
+        for (const [name, pattern] of BROWSERS) {
+            const match = agent.match(pattern);
+            if (match) return `${name} ${match[1]}`;
+        }
+        return "unknown";
+    }
+
+    function layout() {
+        if (!window.PhoneLayout) return "unknown";
+        return window.PhoneLayout.active ? "phone layout" : "desktop layout";
     }
 
     // A browser's text-size setting moves the root font size away from 16px.
@@ -110,8 +131,8 @@
         const values = { version: version(), page: pageName() };
         if (form === "bug") {
             Object.assign(values, {
-                browser: navigator.userAgent,
-                screen: screen(),
+                browser: browser(),
+                layout: layout(),
                 text_size: textSize(),
                 installed: installed(),
                 save_code: saveCode()

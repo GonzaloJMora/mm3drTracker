@@ -34,9 +34,10 @@
                 { "id": "anywhere", "name": "Anywhere" }
               ] },
             { "id": "shuffle_song_of_soaring", "name": "Shuffle Song of Soaring", "class": "toggle", "default": false },
-            { "id": "shuffle_song_of_time", "name": "Shuffle Song of Time", "class": "toggle", "default": false },
-            { "id": "shopsanity", "name": "Shopsanity", "class": "toggle", "default": false },
+            { "id": "starting_song_of_time", "name": "Start With Song of Time", "class": "toggle", "default": true,
+              "grants": { "song_of_time": true } },
             { "id": "tokensanity", "name": "Tokensanity", "class": "toggle", "default": false },
+            { "id": "shopsanity", "name": "Shopsanity", "class": "toggle", "default": false },
             { "id": "shuffle_fairy_rewards", "name": "Shuffle Fairy Rewards", "class": "dropdown", "default": "off",
               "options": [
                 { "id": "off", "name": "No" },
@@ -411,8 +412,6 @@
         {
           "name": "Songs",
           "settings": [
-            { "id": "starting_song_of_time", "name": "Song of Time", "class": "toggle", "default": true,
-              "grants": { "song_of_time": true } },
             { "id": "starting_oath_to_order", "name": "Oath to Order", "class": "toggle", "default": false,
               "grants": { "oath_to_order": true } },
             { "id": "starting_eponas_song", "name": "Epona's Song", "class": "toggle", "default": false,

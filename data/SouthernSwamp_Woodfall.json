@@ -1,6 +1,6 @@
 {
   "region_name": "Woodfall",
-  "logic": "deku_mask&(bottle|bow|zora_mask|hookshot)",
+  "logic": "deku_mask&(bottle|(hookshot&garo_mask&ocarina_of_time&eponas_song))",
   "map_coordinates": { "xPercent": 54.4, "yPercent": 68.9 },
   "item_checks": [
     {

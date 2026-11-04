@@ -111,8 +111,10 @@ so the state never rests on color alone. A chip is blue when met, red when it is
 missing, and gray when another route already covers it. Nested `&` is flattened, so a
 region's entry and the check's own logic give separate chips. The heading counts what's
 missing (`3 missing`, or `all met`), from the list's `data-missing`. The same chips are
-drawn on hover and in the pinned panel. They keep the logic's order, so they don't move
-around as items are collected.
+drawn on hover and in the pinned panel. Single chips come first and the *Any one of*
+groups after them, each in the logic's order, so a lone missing item never sits between
+two groups. Which is which depends only on the logic, so nothing moves around as items
+are collected.
 
 **Alternatives stay in one chip** (`A or B`), except an either/or whose alternatives
 have parts of their own, which would need nested parentheses to read. That becomes a
@@ -134,6 +136,12 @@ steps repeat until nothing changes:
   inside it narrows (an implied layer, LOGIC_AND_REGIONS.md).
 - **Inside an either/or**, a way in that asks for everything another does and more drops
   out, and an item every way in asks for becomes its own chip.
+
+Once those settle, **an item asked for outright moves into an either/or where some way in
+asks for more of it**, onto every way in that doesn't already cover it, so each route
+says its whole cost: `key>=1` beside `bomb|(key>=2&fire)` becomes `(key>=1&bomb)|(key>=2&fire)`
+rather than a 1/1 chip beside a route asking 0/2. Beside two such either/ors it stays its
+own chip, rather than be repeated in both.
 
 An item can still appear twice when it is part of two separate choices, neither of
 which covers the other: both choices are real. `tests/node/requirementsView.test.js`
