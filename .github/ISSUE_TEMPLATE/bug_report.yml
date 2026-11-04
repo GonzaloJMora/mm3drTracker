@@ -41,15 +41,15 @@ body:
   - type: input
     id: browser
     attributes:
-      label: Browser and device
-      description: The app you use the tracker in, and the device.
-      placeholder: Safari on an iPhone 15, or Chrome on Windows
+      label: Browser
+      description: The browser you use the tracker in.
+      placeholder: Safari, or Chrome
   - type: input
-    id: screen
+    id: layout
     attributes:
-      label: Window size
-      description: Roughly how big the window was. A lot of the layout depends on it.
-      placeholder: Full screen on a 1920x1080 monitor
+      label: Layout
+      description: Whether the tracker showed its phone layout or its desktop layout.
+      placeholder: Desktop layout
   - type: input
     id: text_size
     attributes:

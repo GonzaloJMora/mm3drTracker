@@ -13,6 +13,10 @@ const countChecks = node => (node.item_checks || []).length +
     (node.subregions || []).reduce((sum, sub) => sum + countChecks(sub), 0);
 const checksInFiles = manifest.reduce((sum, file) => sum + countChecks(readWorld(file)), 0);
 
+// A field retired since the fixture was made has nothing left to come back as.
+const live = new Set(readWorld("saveLayout.json").fields.map(field => `${field.kind}:${field.id}`));
+const stillLive = (values, kind) => Object.fromEntries(Object.entries(values).filter(([id]) => live.has(`${kind}:${id}`)));
+
 test.describe("Game data", () => {
     test("the settings page loads clean", { tag: "@smoke" }, async ({ page }) => {
         await openSettings(page);
@@ -40,9 +44,9 @@ test.describe("Game data", () => {
         await waitForTracker(page);
         const state = await page.evaluate(() => window.TrackerSave.snapshot());
         // toMatchObject: a setting or slot added since the fixture takes its default.
-        expect(state.settings).toMatchObject(expected.settings);
-        expect(state.slots).toMatchObject(expected.slots);
-        expect(state.view).toEqual(expected.view);
-        expect([...state.checks].sort()).toEqual([...expected.checks].sort());
+        expect(state.settings).toMatchObject(stillLive(expected.settings, "setting"));
+        expect(state.slots).toMatchObject(stillLive(expected.slots, "slot"));
+        expect(state.view).toEqual(stillLive(expected.view, "view"));
+        expect([...state.checks].sort()).toEqual(expected.checks.filter(id => live.has(`check:${id}`)).sort());
     });
 });

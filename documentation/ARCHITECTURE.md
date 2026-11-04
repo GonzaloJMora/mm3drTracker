@@ -575,7 +575,7 @@ issue form, so it works when nothing else on the page does. `feedbackLinks.js` r
 first in `<head>`, keeps the last 20 warnings and errors the page prints (passing
 each on to the console), and fills the form in through the link's address as the
 link is clicked, focused or long-pressed: the version and page, and for a bug the
-browser, window size and layout, text size, whether it is installed, the save code
+browser's name and version (never the operating system or device), the layout, text size, whether it is installed, the save code
 and those messages, trimmed to stay under GitHub's address limit. The values are
 named by the forms' field ids in `.github/ISSUE_TEMPLATE`, and the `feedback` test
 group checks the two match. GitHub only reads issue forms from the default branch.

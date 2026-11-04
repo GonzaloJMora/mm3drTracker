@@ -39,6 +39,7 @@
         });
 
         if (window.ItemCheckState) window.ItemCheckState.setStatuses(statuses);
+        closeHiddenRegions();
 
         // One announcement per sweep rather than per region: locationStatsTracker.js
         // recounts from scratch, so it only needs telling that something moved.
@@ -78,7 +79,25 @@
     });
 
     // Leaving the list for the other tab counts as done with the open regions.
-    window.addEventListener("mobileTabChanged", () => releaseKeptRows(document));
+    window.addEventListener("mobileTabChanged", () => {
+        releaseKeptRows(document);
+        closeHiddenRegions();
+    });
+
+    // A region Show Only Accessible Checks hides is closed too, or it comes back
+    // open whenever it shows again. Asks CSS whether it is hidden, so the rule
+    // stays in one place.
+    function closeHiddenRegions() {
+        if (!window.PhoneLayout.active || !window.TrackerView || !window.TrackerView.showsOnlyAccessible()) return;
+        activeRegionTrackers.forEach(region => {
+            const content = region.groupEl.querySelector(":scope > .region-content");
+            if (!content || !content.classList.contains("open")) return;
+            if (getComputedStyle(region.groupEl).display !== "none") return;
+            content.classList.remove("open");
+            region.headerBtn.classList.remove("expanded");
+            region.headerBtn.setAttribute("aria-expanded", "false");
+        });
+    }
 
     // The map overlay closes a region without its header, so it announces the close.
     window.addEventListener("regionOverlayClosed", (event) => {
@@ -636,10 +655,13 @@
             checkPlaces.set(itemDiv, { region: regionData, check });
 
             // The checkCompletionChanged listener redraws every row of the location.
+            // Marked before the tick, whose sweep closes any open region left hidden.
             itemDiv.addEventListener("click", () => {
                 const id = itemDiv.dataset.checkId;
-                if (!window.ItemCheckState.toggle(id)) return;
-                window.ItemCheckState.linkedIds(id).forEach(linkedId => rowsFor(linkedId).forEach(keepRowShown));
+                if (!window.ItemCheckState.isCompleted(id)) {
+                    window.ItemCheckState.linkedIds(id).forEach(linkedId => rowsFor(linkedId).forEach(keepRowShown));
+                }
+                window.ItemCheckState.toggle(id);
             });
 
             contentDiv.appendChild(itemDiv);

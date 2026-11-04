@@ -2,7 +2,7 @@
 // with what the page knows filled in, under the forms' own field ids.
 const fs = require("fs");
 const path = require("path");
-const { test, expect, openSettings, launchTracker, slot, DESKTOP, readWorld } = require("./fixtures");
+const { test, expect, openSettings, launchTracker, slot, readWorld } = require("./fixtures");
 
 const ROOT = path.join(__dirname, "..", "..");
 const version = readWorld("version.json").version;
@@ -27,7 +27,7 @@ function unknownFields(address, file) {
 }
 
 test.describe("Feedback links", () => {
-    test("Report a bug on the tracker carries the version, the window, the save and recent warnings", { tag: "@smoke" }, async ({ page, allowConsole }) => {
+    test("Report a bug on the tracker carries the version, the layout, the save and recent warnings", { tag: "@smoke" }, async ({ page, allowConsole }) => {
         allowConsole.push(/made-up warning for the bug report/);
         await launchTracker(page);
         await slot(page, "bow").click();
@@ -40,8 +40,9 @@ test.describe("Feedback links", () => {
         expect(field("template")).toBe("bug_report.yml");
         expect(field("version")).toBe(`v${version}`);
         expect(field("page")).toBe("Tracker");
-        expect(field("browser")).toBeTruthy();
-        expect(field("screen")).toContain(`${DESKTOP.width}x${DESKTOP.height} window, desktop layout`);
+        // The browser's name and version and nothing more: no operating system or device.
+        expect(field("browser")).toMatch(/^(Chrome|Firefox|Safari) \d+$/);
+        expect(field("layout")).toBe("desktop layout");
         expect(field("text_size")).toBe("normal (16px)");
         expect(field("installed")).toBe("In a browser tab");
         expect(field("messages")).toContain("made-up warning for the bug report");

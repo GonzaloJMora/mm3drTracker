@@ -81,7 +81,12 @@ python -m http.server 8000
 
 Then open <http://localhost:8000>. To try it on a phone, run
 `scripts/dev/serveOnNetwork.py` (or double-click its `.bat`) and open the address it
-prints, on the same Wi-Fi.
+prints, on the same Wi-Fi. That address is plain HTTP, which the phone's browser
+treats as an insecure page, so some features don't work there: Export's Share
+button and Copy Code (the code can still be selected and copied by hand), and
+offline play. They work on the published site, and anywhere else served over HTTPS.
+To try them on a phone during development, serve the page through an HTTPS tunnel
+such as `cloudflared tunnel --url http://localhost:8000`.
 
 Run the tests with `scripts/dev/runTests.py` (or its `.bat`) before opening a pull
 request; you need Node.js 24 or later and Python 3.

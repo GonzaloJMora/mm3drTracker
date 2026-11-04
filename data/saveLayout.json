@@ -11,7 +11,7 @@
     {"kind": "setting", "id": "shuffle_pieces_of_heart", "bits": 1, "options": [false, true]},
     {"kind": "setting", "id": "shuffle_songs", "bits": 2, "options": ["off", "song_locations", "anywhere"]},
     {"kind": "setting", "id": "shuffle_song_of_soaring", "bits": 1, "options": [false, true]},
-    {"kind": "setting", "id": "shuffle_song_of_time", "bits": 1, "options": [false, true]},
+    {"kind": "retired", "bits": 1},
     {"kind": "setting", "id": "shopsanity", "bits": 1, "options": [false, true]},
     {"kind": "setting", "id": "tokensanity", "bits": 1, "options": [false, true]},
     {"kind": "setting", "id": "shuffle_fairy_rewards", "bits": 2, "options": ["off", "great_fairies", "anywhere"]},
